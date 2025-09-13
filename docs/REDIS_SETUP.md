@@ -120,12 +120,12 @@ room:{roomId}:latest_message_id → messageId
 
 ## Benefits
 
-✅ **Reliable Message Delivery**: Users never miss messages  
-✅ **Lightweight Redis Usage**: Only stores delivery tracking, not content  
-✅ **Fast Reconnection**: Quick catch-up queries when users rejoin  
-✅ **Database as Source of Truth**: Messages safely persisted regardless of
-Redis state  
-✅ **Scalable**: Redis tracks pointers, database stores content
+**Reliable Message Delivery**: Users never miss messages  
+**Lightweight Redis Usage**: Only stores delivery tracking, not content  
+**Fast Reconnection**: Quick catch-up queries when users rejoin  
+**Database as Source of Truth**: Messages safely persisted regardless of Redis
+state  
+**Scalable**: Redis tracks pointers, database stores content
 
 ## Testing
 

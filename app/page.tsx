@@ -40,7 +40,6 @@ export default function Home() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="text-2xl mb-2">⏳</div>
           <div className="text-muted-foreground">Initializing...</div>
         </div>
       </div>

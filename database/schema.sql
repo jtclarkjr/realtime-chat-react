@@ -1,5 +1,5 @@
 -- Create messages table for chat with proper schema
--- Run this SQL in your Supabase Dashboard -> SQL Editor
+-- Run this SQL Query to create the table in your DB
 
 CREATE TABLE IF NOT EXISTS messages (
   id TEXT DEFAULT gen_random_uuid()::text PRIMARY KEY,

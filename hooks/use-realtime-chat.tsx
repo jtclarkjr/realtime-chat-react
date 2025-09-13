@@ -44,42 +44,22 @@ export function useRealtimeChat({
   const [isConnected, setIsConnected] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  // Log when hook is created (only once per actual mount)
+  // Hook initialized
   useEffect(() => {
-    console.log('🚀 HOOK INITIALIZED:', {
-      userId: userId.slice(0, 8),
-      username,
-      roomName,
-      timestamp: new Date().toISOString().split('T')[1].slice(0, 8)
-    })
+    // Hook initialized
   }, [roomName, userId, username]) // Add missing dependencies
 
-  // Debug: Log messages state changes
+  // Track messages state changes
   useEffect(() => {
-    console.log('🔔 MESSAGES STATE CHANGE:', {
-      count: messages.length,
-      roomName,
-      userId: userId.slice(0, 8),
-      messages: messages.map((m) => ({
-        id: m.id.slice(0, 8),
-        content: m.content.slice(0, 20),
-        user: m.user.name,
-        createdAt: m.createdAt
-      }))
-    })
+    // Messages state changed
   }, [messages, roomName, userId]) // Add missing dependencies
 
   // Fetch missed messages on mount
   useEffect(() => {
     let isCancelled = false
-    const effectId = Math.random().toString(36).substr(2, 9)
-    console.log(
-      `🚀 STARTING FETCH EFFECT ${effectId} for userId: ${userId.slice(0, 8)}, room: ${roomName}`
-    )
 
     const fetchMissedMessages = async () => {
       try {
-        console.log(`📨 EFFECT ${effectId}: Fetching missed messages...`)
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
 
@@ -96,13 +76,6 @@ export function useRealtimeChat({
 
         if (response.ok) {
           const data = await response.json()
-          console.log(`💾 EFFECT ${effectId}: API RESPONSE:`, {
-            type: data.type,
-            messageCount: data.messages?.length || 0,
-            userId: userId.slice(0, 8),
-            roomName,
-            fullData: data
-          })
 
           if (isCancelled) return // Check again after async operation
 
@@ -125,38 +98,12 @@ export function useRealtimeChat({
               })
             )
 
-            console.log(
-              `✅ EFFECT ${effectId}: SETTING MESSAGES FROM API (${data.type}):`,
-              {
-                count: transformedMessages.length,
-                messages: transformedMessages.map((m: TransformedMessage) => ({
-                  content: m.content.slice(0, 20),
-                  user: m.user.name,
-                  createdAt: m.createdAt,
-                  id: m.id.slice(0, 8)
-                }))
-              }
-            )
-            console.log(
-              `🔍 EFFECT ${effectId}: About to call setMessages with:`,
-              transformedMessages.length,
-              'messages'
-            )
             setMessages(transformedMessages)
-            console.log(
-              `🎉 EFFECT ${effectId}: Loaded ${data.count} ${data.type === 'missed_messages' ? 'missed' : 'recent'} messages - setMessages called`
-            )
           } else {
-            console.log(
-              '⚠️ No messages found - API returned caught_up or empty'
-            )
             // Don't clear messages if we get 'caught_up' - keep existing messages
           }
         } else {
-          console.error(
-            '❌ Failed to fetch missed messages:',
-            response.statusText
-          )
+          console.error('Failed to fetch missed messages:', response.statusText)
         }
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
@@ -168,7 +115,6 @@ export function useRealtimeChat({
         }
       } finally {
         if (!isCancelled) {
-          console.log('Setting loading to false')
           setLoading(false)
         }
       }
@@ -178,7 +124,6 @@ export function useRealtimeChat({
 
     // Cleanup function
     return () => {
-      console.log(`🗳 EFFECT ${effectId}: Cancelled`)
       isCancelled = true
     }
   }, [roomName, userId])
@@ -203,18 +148,9 @@ export function useRealtimeChat({
             // Avoid duplicates by checking message ID
             const exists = current.some((msg) => msg.id === receivedMessage.id)
             if (exists) {
-              console.log('🚫 Duplicate message detected, skipping:', {
-                id: receivedMessage.id.slice(0, 8),
-                content: receivedMessage.content.slice(0, 20)
-              })
               return current
             }
 
-            console.log('📨 Adding broadcast message:', {
-              id: receivedMessage.id.slice(0, 8),
-              content: receivedMessage.content.slice(0, 20),
-              from: receivedMessage.user.name
-            })
             return [...current, receivedMessage]
           })
 
@@ -233,15 +169,12 @@ export function useRealtimeChat({
         }
       })
       .subscribe(async (status) => {
-        console.log('Channel subscription status:', status)
         if (status === 'SUBSCRIBED') {
           setIsConnected(true)
-          console.log('Chat connected and ready!')
         }
       })
 
     return () => {
-      console.log('Cleaning up channel')
       supabase.removeChannel(newChannel)
       setIsConnected(false)
     }
@@ -262,21 +195,8 @@ export function useRealtimeChat({
         roomId: roomName
       }
 
-      console.log('📤 SENDING MESSAGE:', {
-        messageId: message.id.slice(0, 8),
-        content: content.slice(0, 30),
-        userId: userId.slice(0, 8),
-        username,
-        roomName
-      })
-
       try {
         // Save to database via API (API will handle broadcasting)
-        console.log('💾 SAVING TO DATABASE...', {
-          roomName,
-          userId: userId.slice(0, 8),
-          content: content.slice(0, 20)
-        })
 
         const response = await fetch('/api/messages/send', {
           method: 'POST',
@@ -292,11 +212,6 @@ export function useRealtimeChat({
         const result = await response.json()
 
         if (result.success) {
-          console.log('✅ MESSAGE SAVED TO DATABASE:', {
-            messageId: result.message?.id?.slice(0, 8) || 'unknown',
-            status: response.status
-          })
-
           // Add message locally immediately for sender using the backend message ID
           if (result.message?.id) {
             const messageWithBackendId = {
@@ -305,35 +220,23 @@ export function useRealtimeChat({
             }
 
             setMessages((current) => {
-              console.log(
-                '📝 ADDING MESSAGE LOCALLY - Before:',
-                current.length,
-                'After:',
-                current.length + 1
-              )
               return [...current, messageWithBackendId]
             })
           }
         } else {
-          console.error('❌ Failed to save message to database:', result.error)
+          console.error('Failed to save message to database:', result.error)
         }
       } catch (error) {
-        console.error('❌ Error saving message to database:', error)
+        console.error('Error saving message to database:', error)
       }
     },
     [isConnected, roomName, userId, username] // Remove unnecessary 'channel' dependency
   )
 
-  // Cleanup effect to log when user leaves
+  // Cleanup effect when user leaves
   useEffect(() => {
     return () => {
-      console.log('🚪 USER LEAVING ROOM:', {
-        userId: userId.slice(0, 8),
-        username,
-        roomName,
-        messageCount: messages.length,
-        timestamp: new Date().toISOString().split('T')[1].slice(0, 8)
-      })
+      // User leaving room
     }
   }, [userId, username, roomName, messages.length])
 

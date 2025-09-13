@@ -15,7 +15,7 @@ export function getRedisClient(): Redis {
     })
 
     redis.on('connect', () => {
-      console.log('Connected to Redis')
+      // Connected to Redis
     })
   }
 

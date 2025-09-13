@@ -48,15 +48,7 @@ export const RealtimeChat = ({
 
   // Merge realtime messages with initial messages
   const allMessages = useMemo(() => {
-    console.log(
-      'Component: Processing messages - Initial:',
-      initialMessages.length,
-      'Realtime:',
-      realtimeMessages.length
-    )
-
     const mergedMessages = [...initialMessages, ...realtimeMessages]
-    console.log('Component: Merged messages:', mergedMessages)
 
     // Remove duplicates based on message id and filter out invalid messages
     const uniqueMessages = mergedMessages.filter((message, index, self) => {
@@ -67,13 +59,11 @@ export const RealtimeChat = ({
         !message.content?.trim() ||
         !message.user?.name
       ) {
-        console.log('Component: Filtering out invalid message:', message)
         return false
       }
       // Remove duplicates
       return index === self.findIndex((m) => m?.id === message.id)
     })
-    console.log('Component: After filtering unique:', uniqueMessages)
 
     // Sort by creation date with null checks
     const sortedMessages = uniqueMessages.sort((a, b) => {
@@ -82,7 +72,6 @@ export const RealtimeChat = ({
       return new Date(dateA).getTime() - new Date(dateB).getTime()
     })
 
-    console.log('Component: Final sorted messages:', sortedMessages)
     return sortedMessages
   }, [initialMessages, realtimeMessages])
 
@@ -117,12 +106,10 @@ export const RealtimeChat = ({
       >
         {loading ? (
           <div className="text-center text-sm text-muted-foreground py-8">
-            <div className="text-2xl mb-2">⏳</div>
             <div>Loading messages...</div>
           </div>
         ) : allMessages.length === 0 ? (
           <div className="text-center text-sm text-muted-foreground py-8">
-            <div className="text-2xl mb-2">💬</div>
             <div>No messages yet. Start the conversation!</div>
           </div>
         ) : null}
