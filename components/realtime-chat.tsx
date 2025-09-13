@@ -1,0 +1,182 @@
+'use client'
+
+import { cn } from '@/lib/utils'
+import { ChatMessageItem } from '@/components/chat-message'
+import { useChatScroll } from '@/hooks/use-chat-scroll'
+import { type ChatMessage, useRealtimeChat } from '@/hooks/use-realtime-chat'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Send } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+
+interface RealtimeChatProps {
+  roomName: string
+  username: string
+  userId: string
+  onMessage?: (messages: ChatMessage[]) => void
+  messages?: ChatMessage[]
+}
+
+/**
+ * Realtime chat component
+ * @param roomName - The name of the room to join. Each room is a unique chat.
+ * @param username - The username of the user
+ * @param onMessage - The callback function to handle the messages. Useful if you want to store the messages in a database.
+ * @param messages - The messages to display in the chat. Useful if you want to display messages from a database.
+ * @returns The chat component
+ */
+export const RealtimeChat = ({
+  roomName,
+  username,
+  userId,
+  onMessage,
+  messages: initialMessages = []
+}: RealtimeChatProps) => {
+  const { containerRef, scrollToBottom } = useChatScroll()
+
+  const {
+    messages: realtimeMessages,
+    sendMessage,
+    isConnected,
+    loading
+  } = useRealtimeChat({
+    roomName,
+    username,
+    userId
+  })
+  const [newMessage, setNewMessage] = useState('')
+
+  // Merge realtime messages with initial messages
+  const allMessages = useMemo(() => {
+    console.log(
+      'Component: Processing messages - Initial:',
+      initialMessages.length,
+      'Realtime:',
+      realtimeMessages.length
+    )
+
+    const mergedMessages = [...initialMessages, ...realtimeMessages]
+    console.log('Component: Merged messages:', mergedMessages)
+
+    // Remove duplicates based on message id and filter out invalid messages
+    const uniqueMessages = mergedMessages.filter((message, index, self) => {
+      // Filter out messages without content or invalid structure
+      if (
+        !message ||
+        !message.id ||
+        !message.content?.trim() ||
+        !message.user?.name
+      ) {
+        console.log('Component: Filtering out invalid message:', message)
+        return false
+      }
+      // Remove duplicates
+      return index === self.findIndex((m) => m?.id === message.id)
+    })
+    console.log('Component: After filtering unique:', uniqueMessages)
+
+    // Sort by creation date with null checks
+    const sortedMessages = uniqueMessages.sort((a, b) => {
+      const dateA = a.createdAt || new Date().toISOString()
+      const dateB = b.createdAt || new Date().toISOString()
+      return new Date(dateA).getTime() - new Date(dateB).getTime()
+    })
+
+    console.log('Component: Final sorted messages:', sortedMessages)
+    return sortedMessages
+  }, [initialMessages, realtimeMessages])
+
+  useEffect(() => {
+    if (onMessage) {
+      onMessage(allMessages)
+    }
+  }, [allMessages, onMessage])
+
+  useEffect(() => {
+    // Scroll to bottom whenever messages change
+    scrollToBottom()
+  }, [allMessages, scrollToBottom])
+
+  const handleSendMessage = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!newMessage.trim() || !isConnected) return
+
+      sendMessage(newMessage)
+      setNewMessage('')
+    },
+    [newMessage, isConnected, sendMessage]
+  )
+
+  return (
+    <div className="flex flex-col h-full w-full bg-background text-foreground antialiased">
+      {/* Messages */}
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-4"
+      >
+        {loading ? (
+          <div className="text-center text-sm text-muted-foreground py-8">
+            <div className="text-2xl mb-2">⏳</div>
+            <div>Loading messages...</div>
+          </div>
+        ) : allMessages.length === 0 ? (
+          <div className="text-center text-sm text-muted-foreground py-8">
+            <div className="text-2xl mb-2">💬</div>
+            <div>No messages yet. Start the conversation!</div>
+          </div>
+        ) : null}
+        {!loading && (
+          <div className="space-y-1 sm:space-y-2">
+            {allMessages.map((message, index) => {
+              const prevMessage = index > 0 ? allMessages[index - 1] : null
+              const showHeader =
+                !prevMessage || prevMessage.user.name !== message.user.name
+
+              return (
+                <div
+                  key={message.id}
+                  className="animate-in fade-in slide-in-from-bottom-4 duration-300"
+                >
+                  <ChatMessageItem
+                    message={message}
+                    isOwnMessage={message.user.name === username}
+                    showHeader={showHeader}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <form
+        onSubmit={handleSendMessage}
+        className="flex w-full gap-2 sm:gap-3 border-t border-border p-3 sm:p-4 bg-background/50 backdrop-blur-sm"
+      >
+        <Input
+          className={cn(
+            'flex-1 rounded-full bg-background text-base sm:text-sm px-4 py-3 sm:py-2 transition-all duration-300 border-2 focus:border-primary',
+            !isConnected && 'opacity-50 cursor-not-allowed'
+          )}
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder={isConnected ? 'Type a message...' : 'Connecting...'}
+          disabled={!isConnected}
+          autoComplete="off"
+          autoCapitalize="sentences"
+        />
+        {isConnected && newMessage.trim() && (
+          <Button
+            className="aspect-square h-12 w-12 sm:h-10 sm:w-10 rounded-full animate-in fade-in slide-in-from-right-4 duration-300 bg-primary hover:bg-primary/90 active:scale-95"
+            type="submit"
+            disabled={!isConnected}
+          >
+            <Send className="h-5 w-5 sm:h-4 sm:w-4" />
+          </Button>
+        )}
+      </form>
+    </div>
+  )
+}
