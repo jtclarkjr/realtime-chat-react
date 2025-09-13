@@ -11,23 +11,28 @@ export interface Database {
     Tables: {
       messages: {
         Row: {
-          id: number
-          channel_id: number
+          id: string
+          room_id: string
           user_id: string
-          message: string | null
-          inserted_at: string
+          username: string
+          content: string
+          created_at: string
         }
         Insert: {
-          channel_id: number
+          id?: string
+          room_id: string
           user_id: string
-          message?: string | null
+          username: string
+          content: string
+          created_at?: string
         }
         Update: {
-          id?: number
-          channel_id?: number
+          id?: string
+          room_id?: string
           user_id?: string
-          message?: string | null
-          inserted_at?: string
+          username?: string
+          content?: string
+          created_at?: string
         }
         Relationships: []
       }

@@ -1,7 +1,8 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { useCallback, useEffect, useState } from 'react'
+import { ApiMessage } from '@/lib/types/database'
+import { useState, useEffect, useCallback } from 'react'
 
 interface UseRealtimeChatProps {
   roomName: string
@@ -20,6 +21,17 @@ export interface ChatMessage {
   roomId?: string
 }
 
+interface TransformedMessage {
+  id: string
+  content: string
+  user: {
+    id: string
+    name: string
+  }
+  createdAt: string
+  roomId: string
+}
+
 const EVENT_MESSAGE_TYPE = 'message'
 
 export function useRealtimeChat({
@@ -31,9 +43,6 @@ export function useRealtimeChat({
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [channel, setChannel] = useState<ReturnType<
-    typeof supabase.channel
-  > | null>(null)
 
   // Log when hook is created (only once per actual mount)
   useEffect(() => {
@@ -43,7 +52,7 @@ export function useRealtimeChat({
       roomName,
       timestamp: new Date().toISOString().split('T')[1].slice(0, 8)
     })
-  }, []) // Empty deps = only run once
+  }, [roomName, userId, username]) // Add missing dependencies
 
   // Debug: Log messages state changes
   useEffect(() => {
@@ -58,7 +67,7 @@ export function useRealtimeChat({
         createdAt: m.createdAt
       }))
     })
-  }, [messages])
+  }, [messages, roomName, userId]) // Add missing dependencies
 
   // Fetch missed messages on mount
   useEffect(() => {
@@ -103,22 +112,24 @@ export function useRealtimeChat({
             data.messages?.length > 0
           ) {
             // Transform database messages to ChatMessage format
-            const transformedMessages = data.messages.map((msg: any) => ({
-              id: msg.id,
-              content: msg.content,
-              user: {
-                id: msg.user.id,
-                name: msg.user.name
-              },
-              createdAt: msg.createdAt,
-              roomId: msg.channelId
-            }))
+            const transformedMessages: TransformedMessage[] = data.messages.map(
+              (msg: ApiMessage) => ({
+                id: msg.id,
+                content: msg.content,
+                user: {
+                  id: msg.user.id,
+                  name: msg.user.name
+                },
+                createdAt: msg.createdAt,
+                roomId: msg.channelId
+              })
+            )
 
             console.log(
               `✅ EFFECT ${effectId}: SETTING MESSAGES FROM API (${data.type}):`,
               {
                 count: transformedMessages.length,
-                messages: transformedMessages.map((m) => ({
+                messages: transformedMessages.map((m: TransformedMessage) => ({
                   content: m.content.slice(0, 20),
                   user: m.user.name,
                   createdAt: m.createdAt,
@@ -148,7 +159,7 @@ export function useRealtimeChat({
           )
         }
       } catch (error) {
-        if (error.name === 'AbortError') {
+        if (error instanceof Error && error.name === 'AbortError') {
           console.warn(
             'Missed messages fetch timed out, continuing with real-time only'
           )
@@ -228,8 +239,6 @@ export function useRealtimeChat({
           console.log('Chat connected and ready!')
         }
       })
-
-    setChannel(newChannel)
 
     return () => {
       console.log('Cleaning up channel')
@@ -312,7 +321,7 @@ export function useRealtimeChat({
         console.error('❌ Error saving message to database:', error)
       }
     },
-    [isConnected, roomName, userId, username, channel]
+    [isConnected, roomName, userId, username] // Remove unnecessary 'channel' dependency
   )
 
   // Cleanup effect to log when user leaves

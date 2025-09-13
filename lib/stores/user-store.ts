@@ -22,7 +22,7 @@ const generateUserId = () => crypto.randomUUID()
 
 export const useUserStore = create<UserState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // Initial state
       userId: '',
       username: '',

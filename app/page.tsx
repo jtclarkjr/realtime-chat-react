@@ -11,8 +11,6 @@ export default function Home() {
     username: storedUsername,
     roomName: storedRoomName,
     isJoined,
-    setUsername: setStoredUsername,
-    setRoomName: setStoredRoomName,
     joinRoom,
     leaveRoom
   } = useUserStore()

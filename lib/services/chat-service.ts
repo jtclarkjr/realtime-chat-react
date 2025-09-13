@@ -18,16 +18,18 @@ export class ChatService {
   /**
    * Transform database message to chat message format
    */
-  private transformDatabaseMessage(dbMessage: any): ChatMessageWithDB {
+  private transformDatabaseMessage(
+    dbMessage: DatabaseMessage
+  ): ChatMessageWithDB {
     return {
       id: dbMessage.id,
-      content: dbMessage.content || '', // Use 'content' field from our schema
+      content: dbMessage.content,
       user: {
         id: dbMessage.user_id,
-        name: dbMessage.username || 'Anonymous' // Use 'username' field from our schema
+        name: dbMessage.username
       },
-      createdAt: dbMessage.created_at, // Use 'created_at' field from our schema
-      channelId: dbMessage.room_id // Use 'room_id' as channelId for consistency
+      createdAt: dbMessage.created_at,
+      channelId: dbMessage.room_id
     }
   }
 
@@ -35,18 +37,14 @@ export class ChatService {
    * Send a message and persist it to database
    */
   async sendMessage(request: SendMessageRequest): Promise<ChatMessageWithDB> {
-    const messageId = crypto.randomUUID()
-
-    // Save to database
+    // Save to database (id will be auto-generated)
     const { data: message, error } = await this.supabase
       .from('messages')
       .insert({
-        id: messageId,
         room_id: request.roomId,
         user_id: request.userId,
         username: request.username,
-        content: request.content,
-        created_at: new Date().toISOString()
+        content: request.content
       })
       .select()
       .single()
@@ -57,7 +55,7 @@ export class ChatService {
     }
 
     // Track this as the latest message in Redis
-    await trackLatestMessage(request.roomId, messageId)
+    await trackLatestMessage(request.roomId, message.id)
 
     return this.transformDatabaseMessage(message)
   }
