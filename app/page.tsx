@@ -38,7 +38,7 @@ export default function Home() {
   // Don't render until we have userId
   if (!userId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-dvh flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="text-muted-foreground">Initializing...</div>
         </div>
@@ -48,7 +48,7 @@ export default function Home() {
 
   if (!isJoined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
+      <div className="min-h-dvh flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-2xl sm:text-3xl font-bold">Realtime Chat</h1>
@@ -101,7 +101,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-dvh flex flex-col bg-background">
       <header className="border-b border-border p-3 sm:p-4 shrink-0">
         <div className="flex items-center justify-between">
           <div className="w-16"></div>
