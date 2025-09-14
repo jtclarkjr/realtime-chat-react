@@ -4,7 +4,7 @@ A modern, real-time chat application built with Next.js, Supabase, and Redis.
 Features instant messaging, message persistence, and reconnection handling.
 
 🚀 **Live Demo**:
-[https://realtime-chat-react-jtclarkjrs-projects.vercel.app](https://realtime-chat-react-jtclarkjrs-projects.vercel.app)
+[https://realtime-chat-react-psi.vercel.app](https://realtime-chat-react-psi.vercel.app)
 
 ## Features
 
