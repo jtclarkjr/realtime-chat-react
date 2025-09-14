@@ -357,17 +357,20 @@ bun run docker:debug
 
 ## Design Improvements
 
-**Note**: Detailed implementation strategy is available in `AUTH_IMPLEMENTATION.md`
+**Note**: Detailed implementation strategy is available in
+`AUTH_IMPLEMENTATION.md`
 
 ### 1. Authentication & Authorization Enhancement
 
 #### Current Limitations
+
 - Basic user identification via simple userId strings
 - No persistent authentication sessions
 - Public read/write access for all users
 - Room access based only on room name knowledge
 
 #### Proposed: Supabase Auth Integration
+
 - **Full authentication system** with Supabase Auth
 - **JWT-based session management** for secure API access
 - **Enhanced database schema** with user profiles and room memberships
@@ -377,6 +380,7 @@ bun run docker:debug
 ### 2. Security Model Enhancements
 
 #### Database Security
+
 - **User profiles table** linked to Supabase auth users
 - **Room memberships table** for access control
 - **Enhanced messages table** with proper foreign key relationships
@@ -384,12 +388,14 @@ bun run docker:debug
 - **Policy-based authorization** at the database level
 
 #### API Security
+
 - **JWT token validation middleware** for all protected routes
 - **Room access validation** before allowing message operations
 - **User authentication checks** for all sensitive operations
 - **Proper error handling** with security-focused responses
 
 #### Realtime Security
+
 - **Authenticated channel subscriptions** with user context
 - **Presence tracking** for online/offline status
 - **Message broadcasting** only to authorized room members
@@ -398,12 +404,14 @@ bun run docker:debug
 ### 3. Session & State Management
 
 #### Redis Enhancements
+
 - **Session tracking** with TTL-based expiration
 - **User presence management** with automatic cleanup
 - **Room membership caching** for performance
 - **Enhanced key patterns** for authenticated operations
 
 #### Frontend State
+
 - **Auth context provider** for application-wide user state
 - **Protected route handling** with automatic redirects
 - **Session persistence** across browser refreshes
@@ -412,12 +420,14 @@ bun run docker:debug
 ### 4. Additional Security Features
 
 #### Content & Abuse Protection
+
 - **Rate limiting** per user and action type
 - **Content validation** and basic moderation
 - **Message length limits** and format validation
 - **Spam prevention** through Redis-based tracking
 
 #### Monitoring & Compliance
+
 - **Audit logging** for security-relevant events
 - **Failed authentication tracking** for security monitoring
 - **Session management** with proper cleanup
@@ -426,12 +436,14 @@ bun run docker:debug
 ### 5. Migration Strategy
 
 #### Implementation Phases
+
 1. **Database Migration** - Schema updates and RLS policies
 2. **Frontend Updates** - Auth integration and UI updates
 3. **API Security** - Middleware and route protection
 4. **Testing & Rollout** - Comprehensive testing and gradual deployment
 
 #### Backwards Compatibility
+
 - **Feature flags** for gradual rollout
 - **Dual-mode operation** during transition period
 - **Data migration scripts** for existing messages
@@ -450,7 +462,8 @@ The design prioritizes:
 - **Performance**: Fast delivery, minimal latency
 - **Simplicity**: Clear separation of concerns
 - **Scalability**: Foundation for future growth
-- **Security**: Proper authentication and authorization with Supabase Auth and RLS
+- **Security**: Proper authentication and authorization with Supabase Auth and
+  RLS
 
 The proposed improvements add enterprise-level security while maintaining the
 system's performance characteristics. The authentication layer provides proper

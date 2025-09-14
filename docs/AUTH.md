@@ -2,17 +2,19 @@
 
 ## Overview
 
-This document outlines the detailed implementation strategy for adding Supabase Auth and Row Level Security (RLS) to the realtime chat application.
+This document outlines the detailed implementation strategy for adding Supabase
+Auth and Row Level Security (RLS) to the realtime chat application.
 
 ## 1. Supabase Auth Integration
 
 ### Auth Context Implementation
+
 ```typescript
 // Auth Context
 const AuthProvider = () => {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -20,7 +22,7 @@ const AuthProvider = () => {
     })
 
     const {
-      data: { subscription },
+      data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
@@ -32,6 +34,7 @@ const AuthProvider = () => {
 ```
 
 ### Database Schema Updates
+
 ```sql
 -- Enhanced messages table with proper auth
 CREATE TABLE messages (
@@ -68,27 +71,28 @@ CREATE TABLE room_memberships (
 ```
 
 ### Enhanced RLS Policies
+
 ```sql
 -- Messages RLS policies
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
 -- Users can only read messages from rooms they're members of
-CREATE POLICY "Users can read messages from joined rooms" ON messages 
+CREATE POLICY "Users can read messages from joined rooms" ON messages
 FOR SELECT USING (
   EXISTS (
-    SELECT 1 FROM room_memberships 
-    WHERE room_id = messages.channel_id 
+    SELECT 1 FROM room_memberships
+    WHERE room_id = messages.channel_id
     AND user_id = auth.uid()
   )
 );
 
 -- Users can only insert messages to rooms they're members of
-CREATE POLICY "Users can send messages to joined rooms" ON messages 
+CREATE POLICY "Users can send messages to joined rooms" ON messages
 FOR INSERT WITH CHECK (
   user_id = auth.uid() AND
   EXISTS (
-    SELECT 1 FROM room_memberships 
-    WHERE room_id = messages.channel_id 
+    SELECT 1 FROM room_memberships
+    WHERE room_id = messages.channel_id
     AND user_id = auth.uid()
   )
 );
@@ -96,21 +100,21 @@ FOR INSERT WITH CHECK (
 -- User profiles RLS
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view all profiles" ON user_profiles 
+CREATE POLICY "Users can view all profiles" ON user_profiles
 FOR SELECT USING (true);
 
-CREATE POLICY "Users can update own profile" ON user_profiles 
+CREATE POLICY "Users can update own profile" ON user_profiles
 FOR UPDATE USING (auth.uid() = id);
 
 -- Room memberships RLS
 ALTER TABLE room_memberships ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view room memberships" ON room_memberships 
+CREATE POLICY "Users can view room memberships" ON room_memberships
 FOR SELECT USING (
-  user_id = auth.uid() OR 
+  user_id = auth.uid() OR
   EXISTS (
-    SELECT 1 FROM room_memberships rm 
-    WHERE rm.room_id = room_memberships.room_id 
+    SELECT 1 FROM room_memberships rm
+    WHERE rm.room_id = room_memberships.room_id
     AND rm.user_id = auth.uid()
   )
 );
@@ -119,17 +123,21 @@ FOR SELECT USING (
 ## 2. Security Model Implementation
 
 ### JWT Token Validation
+
 ```typescript
 // API middleware for auth validation
 export async function validateAuth(request: Request) {
   const token = request.headers.get('Authorization')?.replace('Bearer ', '')
-  
+
   if (!token) {
     throw new Error('No authorization token provided')
   }
 
-  const { data: { user }, error } = await supabase.auth.getUser(token)
-  
+  const {
+    data: { user },
+    error
+  } = await supabase.auth.getUser(token)
+
   if (error || !user) {
     throw new Error('Invalid or expired token')
   }
@@ -139,6 +147,7 @@ export async function validateAuth(request: Request) {
 ```
 
 ### Room Access Control APIs
+
 ```typescript
 // Enhanced room management API
 POST /api/rooms/join
@@ -163,6 +172,7 @@ GET /api/rooms/{roomId}/members
 ## 3. Realtime Security Enhancement
 
 ### Authenticated Realtime Subscriptions
+
 ```typescript
 // Enhanced realtime chat hook with auth
 export function useAuthenticatedRealtimeChat(roomId: string) {
@@ -176,8 +186,8 @@ export function useAuthenticatedRealtimeChat(roomId: string) {
       .channel(`room:${roomId}`, {
         config: {
           broadcast: { self: true },
-          presence: { key: user.id },
-        },
+          presence: { key: user.id }
+        }
       })
       .on('broadcast', { event: 'message' }, (payload) => {
         // Handle authenticated messages
@@ -193,7 +203,7 @@ export function useAuthenticatedRealtimeChat(roomId: string) {
           newChannel.track({
             user_id: user.id,
             username: user.user_metadata?.username,
-            online_at: new Date().toISOString(),
+            online_at: new Date().toISOString()
           })
         }
       })
@@ -210,6 +220,7 @@ export function useAuthenticatedRealtimeChat(roomId: string) {
 ## 4. Redis Security & Session Management
 
 ### Enhanced Redis Key Structure
+
 ```
 Key Patterns with Auth:
 - user:{userId}:session:{sessionId} → session data
@@ -221,6 +232,7 @@ Key Patterns with Auth:
 ```
 
 ### Session Validation Service
+
 ```typescript
 export class AuthSessionService {
   private redis: Redis
@@ -228,7 +240,7 @@ export class AuthSessionService {
   async validateSession(userId: string, sessionId: string): Promise<boolean> {
     const sessionKey = `user:${userId}:session:${sessionId}`
     const sessionData = await this.redis.get(sessionKey)
-    
+
     if (!sessionData) {
       return false
     }
@@ -256,7 +268,7 @@ export async function POST(request: Request) {
   try {
     // Validate authentication
     const user = await validateAuth(request)
-    
+
     const { content, channelId } = await request.json()
 
     // Validate user has access to room
@@ -281,7 +293,7 @@ export async function POST(request: Request) {
         content,
         channel_id: channelId,
         user_id: user.id,
-        user_name: user.user_metadata?.username || user.email?.split('@')[0],
+        user_name: user.user_metadata?.username || user.email?.split('@')[0]
       })
       .select()
       .single()
@@ -301,6 +313,7 @@ export async function POST(request: Request) {
 ## 6. Additional Security Features
 
 ### Rate Limiting Service
+
 ```typescript
 // Rate limiting service
 export class RateLimitService {
@@ -314,17 +327,18 @@ export class RateLimitService {
   ): Promise<boolean> {
     const key = `rate_limit:${userId}:${action}`
     const current = await this.redis.incr(key)
-    
+
     if (current === 1) {
       await this.redis.expire(key, window)
     }
-    
+
     return current <= limit
   }
 }
 ```
 
 ### Content Moderation
+
 ```typescript
 // Message content validation
 export function validateMessageContent(content: string): ValidationResult {
@@ -332,18 +346,18 @@ export function validateMessageContent(content: string): ValidationResult {
   if (content.length > 2000) {
     return { valid: false, error: 'Message too long' }
   }
-  
+
   // Basic content filtering
   const prohibitedPatterns = [
     // Add patterns for spam, inappropriate content, etc.
   ]
-  
+
   for (const pattern of prohibitedPatterns) {
     if (pattern.test(content)) {
       return { valid: false, error: 'Message contains prohibited content' }
     }
   }
-  
+
   return { valid: true }
 }
 ```
@@ -351,21 +365,25 @@ export function validateMessageContent(content: string): ValidationResult {
 ## 7. Migration Strategy
 
 ### Phase 1: Database Migration
+
 1. Create new tables with auth integration
 2. Migrate existing messages to new schema
 3. Update RLS policies
 
 ### Phase 2: Frontend Updates
+
 1. Add Supabase Auth provider
 2. Implement login/signup flows
 3. Update chat components for authenticated users
 
 ### Phase 3: API Security
+
 1. Add auth middleware to all API routes
 2. Update Redis patterns for authenticated sessions
 3. Implement rate limiting and content moderation
 
 ### Phase 4: Testing & Rollout
+
 1. Test authentication flows
 2. Verify RLS policies work correctly
 3. Performance testing with auth overhead
@@ -374,6 +392,7 @@ export function validateMessageContent(content: string): ValidationResult {
 ## Implementation Checklist
 
 ### Database Setup
+
 - [ ] Create user_profiles table
 - [ ] Create room_memberships table
 - [ ] Update messages table schema
@@ -381,6 +400,7 @@ export function validateMessageContent(content: string): ValidationResult {
 - [ ] Test policy enforcement
 
 ### Frontend Implementation
+
 - [ ] Add Auth context provider
 - [ ] Create login/signup components
 - [ ] Update chat components for auth
@@ -388,6 +408,7 @@ export function validateMessageContent(content: string): ValidationResult {
 - [ ] Implement user profile management
 
 ### Backend Implementation
+
 - [ ] Add auth middleware
 - [ ] Update API routes for security
 - [ ] Implement room management APIs
@@ -395,12 +416,14 @@ export function validateMessageContent(content: string): ValidationResult {
 - [ ] Content moderation system
 
 ### Redis Updates
+
 - [ ] Update key patterns
 - [ ] Implement session service
 - [ ] Add presence tracking
 - [ ] Update delivery tracking
 
 ### Testing
+
 - [ ] Unit tests for auth flows
 - [ ] Integration tests for RLS
 - [ ] Performance testing
@@ -408,6 +431,7 @@ export function validateMessageContent(content: string): ValidationResult {
 - [ ] End-to-end user flows
 
 ### Deployment
+
 - [ ] Environment variables setup
 - [ ] Database migrations
 - [ ] Feature flag configuration
