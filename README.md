@@ -3,15 +3,19 @@
 A modern, real-time chat application built with Next.js, Supabase, and Redis.
 Features instant messaging, message persistence, and reconnection handling.
 
+🚀 **Live Demo**:
+[https://realtime-chat-react-jtclarkjrs-projects.vercel.app](https://realtime-chat-react-jtclarkjrs-projects.vercel.app)
+
 ## Features
 
 - **Real-time messaging** using Supabase Realtime
 - **Message persistence** with automatic message history loading
-- **Redis caching** for improved performance and message tracking
+- **Redis/Vercel KV caching** for improved performance and message tracking
 - **Reconnection handling** with missed message recovery
 - **Responsive design** with Tailwind CSS
 - **TypeScript** for type safety
 - **Multiple room support** with isolated conversations
+- **Production deployment** on Vercel with KV storage
 
 ## Tech Stack
 
@@ -19,16 +23,18 @@ Features instant messaging, message persistence, and reconnection handling.
 - **Styling**: Tailwind CSS v4, Radix UI components
 - **Real-time**: Supabase Realtime (WebSocket)
 - **Database**: Supabase (PostgreSQL)
-- **Caching**: Redis
+- **Caching**: Redis (local) / Vercel KV (production)
 - **State Management**: Zustand
 - **Package Manager**: Bun
+- **Deployment**: Vercel with KV storage
 
 ## Prerequisites
 
 - Node.js 22+
 - Bun package manager
-- Docker and Docker Compose (for Redis)
+- Docker and Docker Compose (for local Redis development)
 - Supabase account and project
+- Vercel account (for deployment)
 
 ## Environment Setup
 
@@ -40,8 +46,14 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# Redis Configuration
+# Redis Configuration (Local Development)
 REDIS_URL=redis://localhost:6379
+
+# Vercel KV Configuration (Production - Auto-configured)
+# KV_REST_API_URL=your_vercel_kv_rest_api_url
+# KV_REST_API_TOKEN=your_vercel_kv_rest_api_token
+# KV_REST_API_READ_ONLY_TOKEN=your_vercel_kv_read_only_token
+# KV_URL=your_vercel_kv_url
 ```
 
 ## Database Setup
@@ -164,13 +176,14 @@ Custom hook managing:
 - Missed message recovery
 - Real-time subscriptions
 
-### Redis Integration
+### Redis/Vercel KV Integration
 
 Used for:
 
 - Message delivery tracking
 - Caching recent messages
 - Connection state management
+- Automatic environment switching (Redis locally, Vercel KV in production)
 
 ## Testing Multiple Instances
 
@@ -204,17 +217,17 @@ Access Redis Commander at [http://localhost:8081](http://localhost:8081)
 
 ## Deployment
 
-### Environment Variables
+This application is deployed on Vercel with automatic KV storage integration.
 
-Ensure all environment variables are set in your deployment platform.
-
-### Database
+### Database Setup
 
 Run the database setup SQL in your production Supabase instance.
 
-### Redis
+### Redis/KV Architecture
 
-Set up a Redis instance (Redis Cloud, Railway, etc.) and update `REDIS_URL`.
+- **Local Development**: Uses Docker Redis container
+- **Production**: Automatically uses Vercel KV (Upstash Redis)
+- **Automatic Detection**: Client switches based on environment variables
 
 ## License
 
