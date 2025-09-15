@@ -59,6 +59,84 @@ REDIS_URL=redis://localhost:6379
 # KV_URL=your_vercel_kv_url
 ```
 
+## Authentication Setup
+
+The application uses Supabase Auth with OAuth providers (GitHub and Discord). Follow these steps to configure authentication:
+
+### 1. OAuth Provider Setup
+
+#### GitHub OAuth App
+
+1. Go to [GitHub Developer Settings](https://github.com/settings/applications/new)
+2. Create a new OAuth App with these settings:
+   - **Application name**: Your app name
+   - **Homepage URL**: `http://localhost:3000` (development) or your production URL
+   - **Authorization callback URL**: `https://your-project-id.supabase.co/auth/v1/callback`
+   - Replace `your-project-id` with your actual Supabase project ID
+3. Copy the **Client ID** and **Client Secret**
+
+#### Discord OAuth App
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Create a new application
+3. Go to **OAuth2** settings
+4. Add redirect URI: `https://your-project-id.supabase.co/auth/v1/callback`
+5. Copy the **Client ID** and **Client Secret**
+
+### 2. Supabase Configuration
+
+1. Go to your Supabase Dashboard → **Authentication** → **Providers**
+
+2. **Enable GitHub Provider:**
+   - Toggle on GitHub
+   - Add your GitHub Client ID and Client Secret
+   - Save changes
+
+3. **Enable Discord Provider:**
+   - Toggle on Discord
+   - Add your Discord Client ID and Client Secret
+   - Save changes
+
+4. **Configure URL Settings:**
+   - Go to **Authentication** → **URL Configuration**
+   - **Site URL**: 
+     - Development: `http://localhost:3000`
+     - Production: `https://your-domain.vercel.app`
+   - **Redirect URLs**: Add these URLs:
+     - Development: `http://localhost:3000/auth/callback`
+     - Production: `https://your-domain.vercel.app/auth/callback`
+
+### 3. Environment Variables
+
+Ensure your `.env.local` includes the callback URL:
+
+```bash
+# Authentication Configuration
+NEXT_PUBLIC_AUTH_CALLBACK_URL=http://localhost:3000/auth/callback
+```
+
+For production deployment, set this environment variable in Vercel:
+
+```bash
+NEXT_PUBLIC_AUTH_CALLBACK_URL=https://your-domain.vercel.app/auth/callback
+```
+
+### 4. Important Notes
+
+- **OAuth Flow**: GitHub/Discord → Supabase Auth → Your App
+- **Callback URLs**: 
+  - OAuth providers use: `https://your-project-id.supabase.co/auth/v1/callback`
+  - Your app uses: `/auth/callback`
+- **Testing**: Make sure to test both providers in development before deploying
+
+### 5. Troubleshooting
+
+If you're getting redirected to the root URL with a code parameter instead of `/auth/callback`:
+
+1. Check that `NEXT_PUBLIC_AUTH_CALLBACK_URL` is set correctly
+2. Verify Supabase redirect URLs include `/auth/callback`
+3. Ensure OAuth provider callback URLs point to Supabase (not your app directly)
+
 ## Database Setup
 
 Set up the following tables in your Supabase database:
