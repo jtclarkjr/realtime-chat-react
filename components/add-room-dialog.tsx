@@ -87,9 +87,8 @@ export function AddRoomDialog({
         <Button
           type="button"
           variant="outline"
-          size="sm"
           disabled={disabled}
-          className="flex items-center gap-2 shrink-0"
+          className="flex items-center gap-2 shrink-0 h-auto min-h-9 px-3 py-2"
         >
           <Plus className="h-4 w-4" />
           Add Room
