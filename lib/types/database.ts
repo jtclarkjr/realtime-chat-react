@@ -7,6 +7,10 @@ export type DatabaseMessageInsert =
 export type DatabaseMessageUpdate =
   Database['public']['Tables']['messages']['Update']
 
+export type DatabaseRoom = Database['public']['Tables']['rooms']['Row']
+export type DatabaseRoomInsert = Database['public']['Tables']['rooms']['Insert']
+export type DatabaseRoomUpdate = Database['public']['Tables']['rooms']['Update']
+
 // API message types from external source
 export interface ApiMessage {
   id: string

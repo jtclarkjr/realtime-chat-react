@@ -4,15 +4,17 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 interface UserState {
   userId: string
   username: string
-  roomName: string
+  roomId: string // Current joined room ID
+  roomName: string // Keep for backward compatibility and display
   isJoined: boolean
 
   // Actions
   setUserId: (userId: string) => void
   setUsername: (username: string) => void
+  setRoomId: (roomId: string) => void
   setRoomName: (roomName: string) => void
   setJoined: (joined: boolean) => void
-  joinRoom: (username: string, roomName: string) => void
+  joinRoom: (username: string, roomId: string, roomName?: string) => void
   leaveRoom: () => void
   reset: () => void
 }
@@ -26,19 +28,22 @@ export const useUserStore = create<UserState>()(
       // Initial state
       userId: '',
       username: '',
+      roomId: '',
       roomName: 'general',
       isJoined: false,
 
       // Actions
       setUserId: (userId) => set({ userId }),
       setUsername: (username) => set({ username }),
+      setRoomId: (roomId) => set({ roomId }),
       setRoomName: (roomName) => set({ roomName }),
       setJoined: (joined) => set({ isJoined: joined }),
 
-      joinRoom: (username, roomName) =>
+      joinRoom: (username, roomId, roomName) =>
         set({
           username: username.trim(),
-          roomName: roomName.trim(),
+          roomId: roomId.trim(),
+          roomName: roomName?.trim() || '',
           isJoined: true
         }),
 
@@ -52,6 +57,7 @@ export const useUserStore = create<UserState>()(
         set({
           userId: generateUserId(),
           username: '',
+          roomId: '',
           roomName: 'general',
           isJoined: false
         })
@@ -73,8 +79,9 @@ export const useUserStore = create<UserState>()(
       partialize: (state) => ({
         userId: state.userId,
         username: state.username,
+        roomId: state.roomId,
         roomName: state.roomName
-        // Don't persist isJoined - always start as not joined
+        // Don't persist isJoined or selectedRoomId - always start fresh
       }),
       // Initialize userId if not present
       onRehydrateStorage: () => (state) => {
