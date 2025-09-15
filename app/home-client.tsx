@@ -94,27 +94,37 @@ export function HomeClient({
         </div>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Signed in as</label>
-            <div className="w-full px-4 py-3 text-base border border-border rounded-lg bg-muted/50 text-foreground">
-              <div className="flex items-center gap-3">
-                {user.user_metadata?.avatar_url && (
-                  <Image
-                    src={user.user_metadata.avatar_url}
-                    alt="Profile"
-                    width={32}
-                    height={32}
-                    className="w-8 h-8 rounded-full"
-                  />
-                )}
-                <div>
-                  <div className="font-medium">
-                    {user.user_metadata?.full_name || 'Anonymous User'}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Signed in as</label>
+              <div className="w-full px-4 py-3 text-base border border-border rounded-lg bg-muted/50 text-foreground">
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-3 flex-1">
+                    {user.user_metadata?.avatar_url && (
+                      <Image
+                        src={user.user_metadata.avatar_url}
+                        alt="Profile"
+                        width={32}
+                        height={32}
+                        className="w-8 h-8 rounded-full"
+                      />
+                    )}
+                    <div>
+                      <div className="font-medium">
+                        {user.user_metadata?.full_name || 'Anonymous User'}
+                      </div>
+                    </div>
                   </div>
+                  <Button
+                    onClick={handleLogout}
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 text-sm font-medium px-2 py-1 h-auto transition-colors ml-4 flex-shrink-0"
+                  >
+                    Sign Out
+                  </Button>
                 </div>
               </div>
             </div>
-          </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Room</label>
@@ -132,16 +142,9 @@ export function HomeClient({
             <Button
               onClick={handleJoinChat}
               disabled={isNavigating}
-              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 py-3 px-4 rounded-lg font-medium text-base transition-all duration-200 active:scale-95 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-3 px-4 rounded-lg font-medium text-base transition-all duration-200 active:scale-95 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isNavigating ? 'Joining...' : 'Join Chat'}
-            </Button>
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              className="px-4 py-3 rounded-lg font-medium text-base transition-colors duration-200"
-            >
-              Sign Out
             </Button>
           </div>
         </div>
