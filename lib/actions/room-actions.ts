@@ -123,30 +123,55 @@ export async function createRoomAction(
   }
 }
 
+// Create cached version of room data (room info only, not messages)
+const getCachedRoomData = unstable_cache(
+  async (roomId: string) => {
+    try {
+      // Only cache room details, NOT messages
+      const room = await roomCacheService.getRoomById(roomId)
+      return room
+    } catch (error) {
+      console.error('Error fetching room data:', error)
+      return null
+    }
+  },
+  ['room-data'], // cache key base
+  {
+    revalidate: 300, // Cache room data for 5 minutes (changes rarely)
+    tags: ['rooms'] // Allow targeted revalidation
+  }
+)
+
 /**
  * Server action to get initial room data with messages for the /room route
  * This includes room details and recent messages for immediate display
+ * 
+ * IMPORTANT: We don't cache messages here because the system needs to
+ * respect the missed message tracking system for each user individually
  */
-export async function getRoomDataWithMessages(roomId: string): Promise<{
+export async function getRoomDataWithMessages(
+  roomId: string
+): Promise<{
   room: DatabaseRoom | null
   messages: ChatMessageWithDB[]
 }> {
   try {
     const chatService = new ChatService()
-
-    // Get room details
-    const room = await roomCacheService.getRoomById(roomId)
-
+    
+    // Get room details (cached)
+    const room = await getCachedRoomData(roomId)
+    
     if (!room) {
       return {
         room: null,
         messages: []
       }
     }
-
-    // Get recent messages for the room
+    
+    // Get recent messages (NOT cached - each user needs fresh data for missed message tracking)
+    // This ensures the missed message system works correctly when users rejoin
     const messages = await chatService.getRecentMessages(roomId, 50)
-
+    
     return {
       room,
       messages

@@ -46,8 +46,10 @@ export function HomeClient({
   useEffect(() => {
     if (!selectedRoomId && initialDefaultRoomId) {
       setSelectedRoomId(initialDefaultRoomId)
+      // Prefetch the default room for faster navigation
+      router.prefetch(`/room/${initialDefaultRoomId}`)
     }
-  }, [selectedRoomId, initialDefaultRoomId])
+  }, [selectedRoomId, initialDefaultRoomId, router])
 
   const handleJoinChat = async () => {
     if (user && selectedRoomId && userId) {
@@ -61,6 +63,8 @@ export function HomeClient({
   const handleRoomChange = (roomId: string) => {
     // Update local selected room state
     setSelectedRoomId(roomId)
+    // Prefetch the room page for faster navigation
+    router.prefetch(`/room/${roomId}`)
   }
 
   const handleLogout = async () => {
