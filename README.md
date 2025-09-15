@@ -6,6 +6,23 @@ Features instant messaging, message persistence, and reconnection handling.
 **Live Demo**:
 [https://realtime-chat-react-psi.vercel.app](https://realtime-chat-react-psi.vercel.app)
 
+## Screenshots
+
+### Login Page
+<img src="images/login.png" alt="Login Page" width="600">
+
+### Lobby - Room Selection
+<img src="images/lobby.png" alt="Lobby - Room Selection" width="600">
+
+### Search Functionality
+<img src="images/search.png" alt="Search Functionality" width="600">
+
+### Add Room Feature
+<img src="images/add-room.png" alt="Add Room Feature" width="600">
+
+### Chat Room Interface
+<img src="images/chat-room.png" alt="Chat Room Interface" width="600">
+
 ## Features
 
 - **Real-time messaging** using Supabase Realtime
