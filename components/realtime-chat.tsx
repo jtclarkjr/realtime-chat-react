@@ -7,6 +7,7 @@ import { type ChatMessage, useRealtimeChat } from '@/hooks/use-realtime-chat'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Send } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 interface RealtimeChatProps {
@@ -125,16 +126,23 @@ export const RealtimeChat = ({
                 !prevMessage || prevMessage.user.name !== message.user.name
 
               return (
-                <div
+                <motion.div
                   key={message.id}
-                  className="animate-in fade-in slide-in-from-bottom-4 duration-300"
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{
+                    duration: 0.3,
+                    delay: index * 0.05, // Stagger effect
+                    ease: [0.25, 0.46, 0.45, 0.94]
+                  }}
+                  className="transform-gpu" // Use GPU acceleration
                 >
                   <ChatMessageItem
                     message={message}
                     isOwnMessage={message.user.name === username}
                     showHeader={showHeader}
                   />
-                </div>
+                </motion.div>
               )
             })}
           </div>

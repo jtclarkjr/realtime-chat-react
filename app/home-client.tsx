@@ -2,6 +2,8 @@
 
 import { Button } from '@/components/ui/button'
 import { RoomSelector } from '@/components/room-selector'
+import { PageTransition } from '@/components/page-transition'
+import { LoadingTransition } from '@/components/loading-transition'
 import { useUserStore, useInitializeUser } from '@/lib/stores/user-store'
 import { useState, useEffect } from 'react'
 import { DatabaseRoom } from '@/lib/types/database'
@@ -21,10 +23,11 @@ export function HomeClient({
 }: HomeClientProps) {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
-
-  const { userId } = useUserStore()
-
-  // Local state for selected room - not persisted
+  const [isNavigating, setIsNavigating] = useState(false)
+  
+  const {
+    userId
+  } = useUserStore()
   const [selectedRoomId, setSelectedRoomId] = useState(
     initialDefaultRoomId || ''
   )
@@ -48,7 +51,9 @@ export function HomeClient({
 
   const handleJoinChat = async () => {
     if (user && selectedRoomId && userId) {
-      // Navigate to the room route instead of joining inline
+      setIsNavigating(true)
+      // Add a small delay to show the transition
+      await new Promise(resolve => setTimeout(resolve, 300))
       router.push(`/room/${selectedRoomId}`)
     }
   }
@@ -69,20 +74,17 @@ export function HomeClient({
 
   // Don't render until we have auth state and userId
   if (authLoading || !userId || !user) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="text-muted-foreground">
-            {authLoading ? 'Loading...' : 'Initializing...'}
-          </div>
-        </div>
-      </div>
-    )
+    return <LoadingTransition message={authLoading ? 'Loading...' : 'Initializing...'} />
+  }
+
+  // Show navigating state
+  if (isNavigating) {
+    return <LoadingTransition message="Entering room..." />
   }
 
   // Always show the room selection interface since we're routing to separate room pages
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
+    <PageTransition className="min-h-dvh flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-2xl sm:text-3xl font-bold">Realtime Chat</h1>
@@ -129,9 +131,10 @@ export function HomeClient({
           <div className="flex gap-2">
             <Button
               onClick={handleJoinChat}
-              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 py-3 px-4 rounded-lg font-medium text-base transition-colors duration-200 active:scale-95"
+              disabled={isNavigating}
+              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 py-3 px-4 rounded-lg font-medium text-base transition-all duration-200 active:scale-95 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              Join Chat
+              {isNavigating ? 'Joining...' : 'Join Chat'}
             </Button>
             <Button
               onClick={handleLogout}
@@ -143,6 +146,6 @@ export function HomeClient({
           </div>
         </div>
       </div>
-    </div>
+    </PageTransition>
   )
 }

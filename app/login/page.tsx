@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { PageTransition } from '@/components/page-transition'
 import { signInWithDiscord, signInWithGitHub } from '@/lib/auth/client'
 import { MessageCircle } from 'lucide-react'
 
@@ -39,7 +40,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
+    <PageTransition className="min-h-dvh flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center mb-4">
@@ -110,6 +111,6 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-    </div>
+    </PageTransition>
   )
 }

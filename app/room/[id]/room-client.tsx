@@ -2,6 +2,7 @@
 
 import { RealtimeChat } from '@/components/realtime-chat'
 import { Button } from '@/components/ui/button'
+import { PageTransition } from '@/components/page-transition'
 import { useInitializeUser } from '@/lib/stores/user-store'
 import { useEffect, useState } from 'react'
 import { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
@@ -48,7 +49,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   }
 
   return (
-    <div className="h-dvh flex flex-col bg-background">
+    <PageTransition className="h-dvh flex flex-col bg-background">
       <header className="border-b border-border p-3 sm:p-4 shrink-0">
         <div className="flex items-center justify-between">
           <Button
@@ -80,6 +81,6 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
           messages={initialMessages}
         />
       </div>
-    </div>
+    </PageTransition>
   )
 }
