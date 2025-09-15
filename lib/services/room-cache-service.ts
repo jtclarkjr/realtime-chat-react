@@ -1,0 +1,238 @@
+import { getRedisClient } from '@/lib/redis/client'
+import {
+  getRooms,
+  createRoom as createRoomInDB,
+  getRoomById as getRoomByIdFromDB
+} from '@/lib/supabase/rooms'
+import { DatabaseRoom, DatabaseRoomInsert } from '@/lib/types/database'
+import {
+  CACHE_KEYS,
+  CACHE_TTL,
+  CACHE_SETTINGS,
+  getCacheConfig
+} from '@/lib/redis/cache-config'
+
+interface CachedRooms {
+  rooms: DatabaseRoom[]
+  timestamp: number
+}
+
+interface CachedRoom {
+  room: DatabaseRoom
+  timestamp: number
+}
+
+export class RoomCacheService {
+  private redis = getRedisClient()
+  private config = getCacheConfig()
+
+  /**
+   * Get all rooms with Redis caching and database fallback
+   */
+  async getAllRooms(): Promise<DatabaseRoom[]> {
+    try {
+      // Try to get from cache first
+      const cachedData = await this.redis.get(CACHE_KEYS.ROOMS_ALL)
+
+      if (cachedData) {
+        const parsed: CachedRooms = JSON.parse(cachedData)
+        const cacheAge = Date.now() - parsed.timestamp
+
+        // Return cached data if it's fresh enough
+        if (cacheAge < CACHE_SETTINGS.SYNC_THRESHOLD) {
+          return parsed.rooms
+        }
+
+        // If cache is stale but exists, return it and refresh in background
+        const ttl = this.config.ttlMultiplier * CACHE_TTL.ROOMS_ALL * 1000
+        if (cacheAge < ttl && this.config.backgroundRefreshEnabled) {
+          this.refreshRoomsCache().catch(console.error)
+          return parsed.rooms
+        }
+      }
+
+      // Cache miss or expired - fetch from database
+      return await this.refreshRoomsCache()
+    } catch (error) {
+      console.error('Error in getAllRooms cache service:', error)
+      // Fallback to direct database query
+      return await getRooms()
+    }
+  }
+
+  /**
+   * Get a specific room by ID with caching
+   */
+  async getRoomById(id: string): Promise<DatabaseRoom | null> {
+    try {
+      const cacheKey = CACHE_KEYS.ROOM_BY_ID(id)
+      const cachedData = await this.redis.get(cacheKey)
+
+      if (cachedData) {
+        const parsed: CachedRoom = JSON.parse(cachedData)
+        const cacheAge = Date.now() - parsed.timestamp
+
+        const ttl = this.config.ttlMultiplier * CACHE_TTL.ROOM_INDIVIDUAL * 1000
+        if (cacheAge < ttl) {
+          return parsed.room
+        }
+      }
+
+      // Cache miss or expired - fetch from database
+      const room = await getRoomByIdFromDB(id)
+
+      if (room) {
+        // Cache the individual room
+        const cacheData: CachedRoom = {
+          room,
+          timestamp: Date.now()
+        }
+        const ttl = Math.round(
+          this.config.ttlMultiplier * CACHE_TTL.ROOM_INDIVIDUAL
+        )
+        await this.redis.set(cacheKey, JSON.stringify(cacheData), 'EX', ttl)
+      }
+
+      return room
+    } catch (error) {
+      console.error('Error in getRoomById cache service:', error)
+      // Fallback to direct database query
+      return await getRoomByIdFromDB(id)
+    }
+  }
+
+  /**
+   * Create a new room and update cache
+   */
+  async createRoom(roomData: DatabaseRoomInsert): Promise<DatabaseRoom> {
+    try {
+      // Create room in database
+      const newRoom = await createRoomInDB(roomData)
+
+      // Invalidate the all rooms cache
+      await this.invalidateRoomsCache()
+
+      // Cache the individual room
+      const cacheData: CachedRoom = {
+        room: newRoom,
+        timestamp: Date.now()
+      }
+      const ttl = Math.round(
+        this.config.ttlMultiplier * CACHE_TTL.ROOM_INDIVIDUAL
+      )
+      await this.redis.set(
+        CACHE_KEYS.ROOM_BY_ID(newRoom.id),
+        JSON.stringify(cacheData),
+        'EX',
+        ttl
+      )
+
+      return newRoom
+    } catch (error) {
+      console.error('Error in createRoom cache service:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Refresh the rooms cache from database
+   */
+  private async refreshRoomsCache(): Promise<DatabaseRoom[]> {
+    try {
+      const rooms = await getRooms()
+
+      const cacheData: CachedRooms = {
+        rooms,
+        timestamp: Date.now()
+      }
+
+      const ttl = Math.round(this.config.ttlMultiplier * CACHE_TTL.ROOMS_ALL)
+      await this.redis.set(
+        CACHE_KEYS.ROOMS_ALL,
+        JSON.stringify(cacheData),
+        'EX',
+        ttl
+      )
+
+      // Update last sync timestamp
+      await this.redis.set(CACHE_KEYS.ROOM_LAST_SYNC, Date.now().toString())
+
+      return rooms
+    } catch (error) {
+      console.error('Error refreshing rooms cache:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Invalidate all room-related caches
+   */
+  async invalidateRoomsCache(): Promise<void> {
+    try {
+      await this.redis.del(CACHE_KEYS.ROOMS_ALL)
+
+      // Also remove last sync timestamp to force refresh
+      await this.redis.del(CACHE_KEYS.ROOM_LAST_SYNC)
+    } catch (error) {
+      console.error('Error invalidating rooms cache:', error)
+    }
+  }
+
+  /**
+   * Invalidate a specific room's cache
+   */
+  async invalidateRoomCache(roomId: string): Promise<void> {
+    try {
+      await this.redis.del(CACHE_KEYS.ROOM_BY_ID(roomId))
+      // Also invalidate the all rooms cache since it contains this room
+      await this.invalidateRoomsCache()
+    } catch (error) {
+      console.error('Error invalidating room cache:', error)
+    }
+  }
+
+  /**
+   * Warm the cache by pre-loading rooms
+   */
+  async warmCache(): Promise<void> {
+    try {
+      await this.refreshRoomsCache()
+    } catch (error) {
+      console.error('Error warming cache:', error)
+    }
+  }
+
+  /**
+   * Check if cache needs reconciliation with database
+   */
+  async needsReconciliation(): Promise<boolean> {
+    try {
+      const lastSync = await this.redis.get(CACHE_KEYS.ROOM_LAST_SYNC)
+      if (!lastSync) return true
+
+      const lastSyncTime = parseInt(lastSync)
+      const timeSinceSync = Date.now() - lastSyncTime
+
+      return timeSinceSync > CACHE_SETTINGS.SYNC_THRESHOLD
+    } catch (error) {
+      console.error('Error checking reconciliation need:', error)
+      return true
+    }
+  }
+
+  /**
+   * Force reconciliation with database
+   */
+  async reconcileWithDatabase(): Promise<void> {
+    try {
+      // Force refresh from database
+      await this.refreshRoomsCache()
+    } catch (error) {
+      console.error('Error during reconciliation:', error)
+      throw error
+    }
+  }
+}
+
+// Export singleton instance
+export const roomCacheService = new RoomCacheService()

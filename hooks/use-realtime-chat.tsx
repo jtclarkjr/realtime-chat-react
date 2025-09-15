@@ -5,6 +5,7 @@ import { ApiMessage } from '@/lib/types/database'
 import { useState, useEffect, useCallback } from 'react'
 
 interface UseRealtimeChatProps {
+  roomId: string
   roomName: string
   username: string
   userId: string
@@ -35,6 +36,7 @@ interface TransformedMessage {
 const EVENT_MESSAGE_TYPE = 'message'
 
 export function useRealtimeChat({
+  roomId,
   roomName,
   username,
   userId
@@ -47,12 +49,12 @@ export function useRealtimeChat({
   // Hook initialized
   useEffect(() => {
     // Hook initialized
-  }, [roomName, userId, username]) // Add missing dependencies
+  }, [roomId, roomName, userId, username]) // Add missing dependencies
 
   // Track messages state changes
   useEffect(() => {
     // Messages state changed
-  }, [messages, roomName, userId]) // Add missing dependencies
+  }, [messages, roomId, userId]) // Add missing dependencies
 
   // Fetch missed messages on mount
   useEffect(() => {
@@ -64,7 +66,7 @@ export function useRealtimeChat({
         const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
 
         const response = await fetch(
-          `/api/rooms/${roomName}/rejoin?userId=${userId}`,
+          `/api/rooms/${roomId}/rejoin?userId=${userId}`,
           {
             signal: controller.signal
           }
@@ -126,13 +128,13 @@ export function useRealtimeChat({
     return () => {
       isCancelled = true
     }
-  }, [roomName, userId])
+  }, [roomId, userId])
 
   // Set up realtime subscription
   useEffect(() => {
     if (loading) return // Wait until missed messages are loaded
 
-    const newChannel = supabase.channel(roomName)
+    const newChannel = supabase.channel(roomId)
 
     newChannel
       .on('broadcast', { event: EVENT_MESSAGE_TYPE }, (payload) => {
@@ -160,7 +162,7 @@ export function useRealtimeChat({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userId,
-              roomId: roomName,
+              roomId: roomId,
               messageId: receivedMessage.id
             })
           }).catch((error) =>
@@ -178,7 +180,7 @@ export function useRealtimeChat({
       supabase.removeChannel(newChannel)
       setIsConnected(false)
     }
-  }, [roomName, supabase, loading, userId])
+  }, [roomId, supabase, loading, userId])
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -192,7 +194,7 @@ export function useRealtimeChat({
           name: username
         },
         createdAt: new Date().toISOString(),
-        roomId: roomName
+        roomId: roomId
       }
 
       try {
@@ -202,7 +204,7 @@ export function useRealtimeChat({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            roomId: roomName,
+            roomId: roomId,
             userId,
             username,
             content: content.trim()
@@ -230,7 +232,7 @@ export function useRealtimeChat({
         console.error('Error saving message to database:', error)
       }
     },
-    [isConnected, roomName, userId, username] // Remove unnecessary 'channel' dependency
+    [isConnected, roomId, userId, username] // Remove unnecessary 'channel' dependency
   )
 
   // Cleanup effect when user leaves
@@ -238,7 +240,7 @@ export function useRealtimeChat({
     return () => {
       // User leaving room
     }
-  }, [userId, username, roomName, messages.length])
+  }, [userId, username, roomId, messages.length])
 
   return { messages, sendMessage, isConnected, loading }
 }

@@ -127,22 +127,26 @@ class UpstashRedisAdapter implements RedisLike {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async subscribe(_channel: string): Promise<void> {
     console.warn(
       'Subscribe operations should be handled through Upstash Redis client directly for pub/sub'
     )
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async unsubscribe(_channel: string): Promise<void> {
     console.warn(
       'Unsubscribe operations should be handled through Upstash Redis client directly for pub/sub'
     )
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   on(_event: string, _callback: (...args: unknown[]) => void): void {
     // No-op for compatibility
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   off(_event: string, _callback: (...args: unknown[]) => void): void {
     // No-op for compatibility
   }

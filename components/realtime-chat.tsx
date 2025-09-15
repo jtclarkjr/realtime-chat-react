@@ -10,6 +10,7 @@ import { Send } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 interface RealtimeChatProps {
+  roomId: string
   roomName: string
   username: string
   userId: string
@@ -26,6 +27,7 @@ interface RealtimeChatProps {
  * @returns The chat component
  */
 export const RealtimeChat = ({
+  roomId,
   roomName,
   username,
   userId,
@@ -40,6 +42,7 @@ export const RealtimeChat = ({
     isConnected,
     loading
   } = useRealtimeChat({
+    roomId,
     roomName,
     username,
     userId
@@ -106,7 +109,7 @@ export const RealtimeChat = ({
       >
         {loading ? (
           <div className="text-center text-sm text-muted-foreground py-8">
-            <div>Loading messages...</div>
+            <div>Connecting to chat...</div>
           </div>
         ) : allMessages.length === 0 ? (
           <div className="text-center text-sm text-muted-foreground py-8">
