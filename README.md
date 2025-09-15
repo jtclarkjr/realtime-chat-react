@@ -8,11 +8,8 @@ Features instant messaging, message persistence, and reconnection handling.
 
 ## Screenshots
 
-<img src="images/login.png" alt="Login Page" width="150">
-<img src="images/lobby.png" alt="Lobby" width="150">
-<img src="images/search.png" alt="Search" width="150">
-<img src="images/add-room.png" alt="Add Room" width="150">
-<img src="images/chat-room.png" alt="Chat Room" width="150">
+<img src="images/login.png" alt="Login Page" width="150"> <img src="images/lobby.png" alt="Lobby" width="150"> <img src="images/search.png" alt="Search" width="150"> <img src="images/add-room.png" alt="Add Room" width="150"> <img src="images/chat-room.png" alt="Chat Room" width="150">
+
 
 ## Features
 
