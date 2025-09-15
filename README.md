@@ -8,8 +8,11 @@ Features instant messaging, message persistence, and reconnection handling.
 
 ## Screenshots
 
-<img src="images/login.png" alt="Login Page" width="150"> <img src="images/lobby.png" alt="Lobby" width="150"> <img src="images/search.png" alt="Search" width="150"> <img src="images/add-room.png" alt="Add Room" width="150"> <img src="images/chat-room.png" alt="Chat Room" width="150">
-
+<img src="images/login.png" alt="Login Page" width="150">
+<img src="images/lobby.png" alt="Lobby" width="150">
+<img src="images/search.png" alt="Search" width="150">
+<img src="images/add-room.png" alt="Add Room" width="150">
+<img src="images/chat-room.png" alt="Chat Room" width="150">
 
 ## Features
 
@@ -54,6 +57,9 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 # Authentication Configuration
 NEXT_PUBLIC_AUTH_CALLBACK_URL=http://localhost:3000/auth/callback
 
+# Site Configuration
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
 # Redis Configuration (Local Development)
 REDIS_URL=redis://localhost:6379
 
@@ -66,17 +72,21 @@ REDIS_URL=redis://localhost:6379
 
 ## Authentication Setup
 
-The application uses Supabase Auth with OAuth providers (GitHub and Discord). Follow these steps to configure authentication:
+The application uses Supabase Auth with OAuth providers (GitHub and Discord).
+Follow these steps to configure authentication:
 
 ### 1. OAuth Provider Setup
 
 #### GitHub OAuth App
 
-1. Go to [GitHub Developer Settings](https://github.com/settings/applications/new)
+1. Go to
+   [GitHub Developer Settings](https://github.com/settings/applications/new)
 2. Create a new OAuth App with these settings:
    - **Application name**: Your app name
-   - **Homepage URL**: `http://localhost:3000` (development) or your production URL
-   - **Authorization callback URL**: `https://your-project-id.supabase.co/auth/v1/callback`
+   - **Homepage URL**: `http://localhost:3000` (development) or your production
+     URL
+   - **Authorization callback URL**:
+     `https://your-project-id.supabase.co/auth/v1/callback`
    - Replace `your-project-id` with your actual Supabase project ID
 3. Copy the **Client ID** and **Client Secret**
 
@@ -104,7 +114,7 @@ The application uses Supabase Auth with OAuth providers (GitHub and Discord). Fo
 
 4. **Configure URL Settings:**
    - Go to **Authentication** → **URL Configuration**
-   - **Site URL**: 
+   - **Site URL**:
      - Development: `http://localhost:3000`
      - Production: `https://your-domain.vercel.app`
    - **Redirect URLs**: Add these URLs:
@@ -120,23 +130,25 @@ Ensure your `.env.local` includes the callback URL:
 NEXT_PUBLIC_AUTH_CALLBACK_URL=http://localhost:3000/auth/callback
 ```
 
-For production deployment, set this environment variable in Vercel:
+For production deployment, set these environment variables in Vercel:
 
 ```bash
 NEXT_PUBLIC_AUTH_CALLBACK_URL=https://your-domain.vercel.app/auth/callback
+NEXT_PUBLIC_SITE_URL=https://your-domain.vercel.app
 ```
 
 ### 4. Important Notes
 
 - **OAuth Flow**: GitHub/Discord → Supabase Auth → Your App
-- **Callback URLs**: 
+- **Callback URLs**:
   - OAuth providers use: `https://your-project-id.supabase.co/auth/v1/callback`
   - Your app uses: `/auth/callback`
 - **Testing**: Make sure to test both providers in development before deploying
 
 ### 5. Troubleshooting
 
-If you're getting redirected to the root URL with a code parameter instead of `/auth/callback`:
+If you're getting redirected to the root URL with a code parameter instead of
+`/auth/callback`:
 
 1. Check that `NEXT_PUBLIC_AUTH_CALLBACK_URL` is set correctly
 2. Verify Supabase redirect URLs include `/auth/callback`

@@ -1,7 +1,7 @@
 # Redis Room Caching
 
-This document describes the Redis caching for room data in the
-realtime chat application.
+This document describes the Redis caching for room data in the realtime chat
+application.
 
 ## Overview
 

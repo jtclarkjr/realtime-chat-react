@@ -3,7 +3,8 @@
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { roomCacheService } from '@/lib/services/room-cache-service'
 import { ensureDefaultRooms } from '@/lib/supabase/rooms'
-import { DatabaseRoom } from '@/lib/types/database'
+import { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
+import { ChatService } from '@/lib/services/chat-service'
 
 /**
  * Server action to get initial rooms data for SSR
@@ -105,6 +106,43 @@ export async function createRoomAction(
     return {
       success: false,
       error: 'Failed to create room'
+    }
+  }
+}
+
+/**
+ * Server action to get initial room data with messages for the /room route
+ * This includes room details and recent messages for immediate display
+ */
+export async function getRoomDataWithMessages(roomId: string): Promise<{
+  room: DatabaseRoom | null
+  messages: ChatMessageWithDB[]
+}> {
+  try {
+    const chatService = new ChatService()
+
+    // Get room details
+    const room = await roomCacheService.getRoomById(roomId)
+
+    if (!room) {
+      return {
+        room: null,
+        messages: []
+      }
+    }
+
+    // Get recent messages for the room
+    const messages = await chatService.getRecentMessages(roomId, 50)
+
+    return {
+      room,
+      messages
+    }
+  } catch (error) {
+    console.error('Error fetching room data with messages:', error)
+    return {
+      room: null,
+      messages: []
     }
   }
 }

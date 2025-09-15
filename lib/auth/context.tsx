@@ -38,7 +38,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     })
 
     // Listen for auth changes
-    const { data: { subscription } } = onAuthStateChange((user) => {
+    const {
+      data: { subscription }
+    } = onAuthStateChange((user) => {
       setUser(user)
       setLoading(false)
     })

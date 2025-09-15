@@ -13,11 +13,12 @@ function getErrorMessage(error?: string, description?: string) {
   if (error === 'signup_disabled') {
     return {
       title: 'Signups Disabled',
-      message: 'New account signups are currently disabled. Please contact an administrator to enable your account.',
+      message:
+        'New account signups are currently disabled. Please contact an administrator to enable your account.',
       suggestion: 'Contact support or try signing in with an existing account.'
     }
   }
-  
+
   if (error === 'access_denied') {
     return {
       title: 'Access Denied',
@@ -28,14 +29,20 @@ function getErrorMessage(error?: string, description?: string) {
 
   return {
     title: 'Authentication Error',
-    message: description || 'There was an error signing you in. Please try again.',
+    message:
+      description || 'There was an error signing you in. Please try again.',
     suggestion: 'If the problem persists, please contact support.'
   }
 }
 
-export default function AuthCodeErrorPage({ searchParams }: AuthCodeErrorPageProps) {
-  const errorInfo = getErrorMessage(searchParams.error, searchParams.description)
-  
+export default function AuthCodeErrorPage({
+  searchParams
+}: AuthCodeErrorPageProps) {
+  const errorInfo = getErrorMessage(
+    searchParams.error,
+    searchParams.description
+  )
+
   return (
     <div className="min-h-dvh flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md space-y-6">
@@ -54,11 +61,9 @@ export default function AuthCodeErrorPage({ searchParams }: AuthCodeErrorPagePro
 
         <div className="space-y-4">
           <Button asChild className="w-full">
-            <Link href="/login">
-              Try Again
-            </Link>
+            <Link href="/login">Try Again</Link>
           </Button>
-          
+
           <div className="text-center">
             <p className="text-xs text-muted-foreground">
               {errorInfo.suggestion}
