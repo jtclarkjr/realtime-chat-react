@@ -4,6 +4,9 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 
+// Force dynamic rendering since we fetch room and message data
+export const dynamic = 'force-dynamic'
+
 interface RoomPageProps {
   params: {
     id: string
