@@ -3,11 +3,11 @@
 import { RealtimeChat } from '@/components/realtime-chat'
 import { Button } from '@/components/ui/button'
 import { PageTransition } from '@/components/page-transition'
+import { LoadingTransition } from '@/components/loading-transition'
 import { useInitializeUser } from '@/lib/stores/user-store'
 import { useEffect, useState } from 'react'
 import { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import { useRouter } from 'next/navigation'
-import { signOut } from '@/lib/auth/client'
 import { User } from '@supabase/supabase-js'
 
 interface RoomClientProps {
@@ -19,6 +19,7 @@ interface RoomClientProps {
 export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const router = useRouter()
   const [isInitialized, setIsInitialized] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
   
   // Initialize userId - this is synchronous now
   const userId = useInitializeUser()
@@ -30,17 +31,11 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
     }
   }, [userId])
 
-  const handleLeaveRoom = () => {
+  const handleLeaveRoom = async () => {
+    setIsLeaving(true)
+    // Add a small delay to show the transition
+    await new Promise(resolve => setTimeout(resolve, 300))
     router.push('/')
-  }
-
-  const handleLogout = async () => {
-    const { error } = await signOut()
-    if (error) {
-      console.error('Error signing out:', error)
-    } else {
-      router.push('/login')
-    }
   }
 
   // Simple initialization check - no store dependency
@@ -48,26 +43,25 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
     return null // Very brief, almost invisible
   }
 
+  // Show leaving transition
+  if (isLeaving) {
+    return <LoadingTransition message="Leaving room..." />
+  }
+
   return (
     <PageTransition className="h-dvh flex flex-col bg-background">
       <header className="border-b border-border p-3 sm:p-4 shrink-0">
         <div className="flex items-center justify-between">
-          <Button
-            onClick={handleLogout}
-            variant="ghost"
-            size="sm"
-            className="text-xs sm:text-sm text-muted-foreground hover:text-foreground"
-          >
-            Sign Out
-          </Button>
+          <div className="w-16"></div>
           <h1 className="text-base sm:text-lg font-semibold flex-1 text-center">
             {room.name}
           </h1>
           <Button
             onClick={handleLeaveRoom}
-            className="text-xs sm:text-sm text-gray-800 bg-white hover:text-white hover:bg-gray-700 transition-colors px-2 py-1 rounded border border-gray-200"
+            disabled={isLeaving}
+            className="text-xs sm:text-sm text-gray-800 bg-white hover:text-white hover:bg-gray-700 transition-all duration-200 px-2 py-1 rounded border border-gray-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
-            Leave
+            {isLeaving ? 'Leaving...' : 'Leave'}
           </Button>
         </div>
       </header>
