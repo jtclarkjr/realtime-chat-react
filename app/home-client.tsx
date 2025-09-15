@@ -6,6 +6,10 @@ import { RoomSelector } from '@/components/room-selector'
 import { useUserStore, useInitializeUser } from '@/lib/stores/user-store'
 import { useState, useEffect } from 'react'
 import { DatabaseRoom } from '@/lib/types/database'
+import { useAuth } from '@/lib/auth/context'
+import { signOut } from '@/lib/auth/client'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 interface HomeClientProps {
   initialRooms: DatabaseRoom[]
@@ -16,9 +20,11 @@ export function HomeClient({
   initialRooms,
   initialDefaultRoomId
 }: HomeClientProps) {
+  const { user, loading: authLoading } = useAuth()
+  const router = useRouter()
+  
   const {
     userId,
-    username: storedUsername,
     roomId: storedRoomId,
     roomName: storedRoomName,
     isJoined,
@@ -28,20 +34,18 @@ export function HomeClient({
     setRoomName
   } = useUserStore()
 
-  // Local form state (before joining)
-  const [formUsername, setFormUsername] = useState(storedUsername)
   // Local state for selected room - not persisted
-  const [selectedRoomId, setSelectedRoomId] = useState(
-    initialDefaultRoomId || ''
-  )
+  const [selectedRoomId, setSelectedRoomId] = useState(initialDefaultRoomId || '')
 
   // Initialize userId
   useInitializeUser()
 
-  // Sync form state with stored values when they change
+  // Redirect to login if not authenticated
   useEffect(() => {
-    setFormUsername(storedUsername)
-  }, [storedUsername])
+    if (!authLoading && !user) {
+      router.push('/login')
+    }
+  }, [user, authLoading, router])
 
   // Set default selected room if none is selected and we have initial rooms
   useEffect(() => {
@@ -50,9 +54,8 @@ export function HomeClient({
     }
   }, [selectedRoomId, initialDefaultRoomId])
 
-  const handleJoinChat = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (formUsername.trim() && selectedRoomId && userId) {
+  const handleJoinChat = async () => {
+    if (user && selectedRoomId && userId) {
       try {
         // Find room name from initial data first
         const room = initialRooms.find((r) => r.id === selectedRoomId)
@@ -69,10 +72,13 @@ export function HomeClient({
           }
         }
 
-        joinRoom(formUsername, selectedRoomId, roomName)
+        // Use user's display name or email as username
+        const username = user.user_metadata?.full_name || user.email || 'Anonymous User'
+        joinRoom(username, selectedRoomId, roomName)
       } catch (error) {
         console.error('Error fetching room data:', error)
-        joinRoom(formUsername, selectedRoomId, 'Unknown Room')
+        const username = user.user_metadata?.full_name || user.email || 'Anonymous User'
+        joinRoom(username, selectedRoomId, 'Unknown Room')
       }
     }
   }
@@ -115,12 +121,23 @@ export function HomeClient({
     }
   }
 
-  // Don't render until we have userId
-  if (!userId) {
+  const handleLogout = async () => {
+    const { error } = await signOut()
+    if (error) {
+      console.error('Error signing out:', error)
+    } else {
+      router.push('/login')
+    }
+  }
+
+  // Don't render until we have auth state and userId
+  if (authLoading || !userId || !user) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="text-muted-foreground">Initializing...</div>
+          <div className="text-muted-foreground">
+            {authLoading ? 'Loading...' : 'Initializing...'}
+          </div>
         </div>
       </div>
     )
@@ -137,20 +154,30 @@ export function HomeClient({
             </p>
           </div>
 
-          <form onSubmit={handleJoinChat} className="space-y-4">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="username" className="text-sm font-medium">
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                placeholder="Enter your username"
-                value={formUsername}
-                onChange={(e) => setFormUsername(e.target.value)}
-                className="w-full px-4 py-3 text-base border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200"
-                required
-              />
+              <label className="text-sm font-medium">Signed in as</label>
+              <div className="w-full px-4 py-3 text-base border border-border rounded-lg bg-muted/50 text-foreground">
+                <div className="flex items-center gap-3">
+                  {user.user_metadata?.avatar_url && (
+                    <Image
+                      src={user.user_metadata.avatar_url}
+                      alt="Profile"
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 rounded-full"
+                    />
+                  )}
+                  <div>
+                    <div className="font-medium">
+                      {user.user_metadata?.full_name || 'Anonymous User'}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {user.email}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -165,13 +192,22 @@ export function HomeClient({
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-3 px-4 rounded-lg font-medium text-base transition-colors duration-200 active:scale-95"
-            >
-              Join Chat
-            </Button>
-          </form>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleJoinChat}
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 py-3 px-4 rounded-lg font-medium text-base transition-colors duration-200 active:scale-95"
+              >
+                Join Chat
+              </Button>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="px-4 py-3 rounded-lg font-medium text-base transition-colors duration-200"
+              >
+                Sign Out
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -198,7 +234,7 @@ export function HomeClient({
         <RealtimeChat
           roomId={storedRoomId}
           roomName={storedRoomName}
-          username={storedUsername}
+          username={user?.user_metadata?.full_name || user?.email || 'Anonymous User'}
           userId={userId}
         />
       </div>
