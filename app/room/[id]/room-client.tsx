@@ -3,7 +3,6 @@
 import { RealtimeChat } from '@/components/realtime-chat'
 import { Button } from '@/components/ui/button'
 import { PageTransition } from '@/components/page-transition'
-import { LoadingTransition } from '@/components/loading-transition'
 import { useInitializeUser } from '@/lib/stores/user-store'
 import { useEffect, useState } from 'react'
 import { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
@@ -20,7 +19,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const router = useRouter()
   const [isInitialized, setIsInitialized] = useState(false)
   const [isLeaving, setIsLeaving] = useState(false)
-  
+
   // Initialize userId - this is synchronous now
   const userId = useInitializeUser()
 
@@ -33,19 +32,14 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
 
   const handleLeaveRoom = async () => {
     setIsLeaving(true)
-    // Add a small delay to show the transition
-    await new Promise(resolve => setTimeout(resolve, 300))
+    // Brief delay to show button state change
+    await new Promise((resolve) => setTimeout(resolve, 150))
     router.push('/')
   }
 
   // Simple initialization check - no store dependency
   if (!isInitialized || !userId) {
     return null // Very brief, almost invisible
-  }
-
-  // Show leaving transition
-  if (isLeaving) {
-    return <LoadingTransition message="Leaving room..." />
   }
 
   return (
