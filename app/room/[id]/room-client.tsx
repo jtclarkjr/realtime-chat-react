@@ -33,9 +33,14 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const handleLeaveRoom = async () => {
     setIsLeaving(true)
     // Brief delay to show button state change
-    await new Promise((resolve) => setTimeout(resolve, 150))
+    await new Promise(resolve => setTimeout(resolve, 150))
     router.push('/')
   }
+
+  // Prefetch home page on component mount for faster navigation
+  useEffect(() => {
+    router.prefetch('/')
+  }, [router])
 
   // Simple initialization check - no store dependency
   if (!isInitialized || !userId) {

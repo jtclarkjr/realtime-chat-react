@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
+import { unstable_cache } from 'next/cache'
 import { roomCacheService } from '@/lib/services/room-cache-service'
 import { ensureDefaultRooms } from '@/lib/supabase/rooms'
 import { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
@@ -10,35 +11,47 @@ import { ChatService } from '@/lib/services/chat-service'
  * Server action to get initial rooms data for SSR
  * This will be called during server rendering to pre-populate room data
  */
+// Create cached version of room data fetching
+const getCachedRoomsData = unstable_cache(
+  async () => {
+    try {
+      // Ensure default rooms exist before fetching
+      await ensureDefaultRooms()
+
+      // Get all rooms from cache (with database fallback)
+      const rooms = await roomCacheService.getAllRooms()
+
+      // Find the default room (prefer 'general' room)
+      let defaultRoomId: string | null = null
+      if (rooms.length > 0) {
+        const generalRoom = rooms.find((room) => room.name === 'general')
+        defaultRoomId = generalRoom?.id || rooms[0].id
+      }
+
+      return {
+        rooms,
+        defaultRoomId
+      }
+    } catch (error) {
+      console.error('Error fetching initial rooms data:', error)
+      return {
+        rooms: [],
+        defaultRoomId: null
+      }
+    }
+  },
+  ['rooms-data'], // cache key
+  {
+    revalidate: 30, // Cache for 30 seconds
+    tags: ['rooms'] // Allow targeted revalidation
+  }
+)
+
 export async function getInitialRoomsData(): Promise<{
   rooms: DatabaseRoom[]
   defaultRoomId: string | null
 }> {
-  try {
-    // Ensure default rooms exist before fetching
-    await ensureDefaultRooms()
-
-    // Get all rooms from cache (with database fallback)
-    const rooms = await roomCacheService.getAllRooms()
-
-    // Find the default room (prefer 'general' room)
-    let defaultRoomId: string | null = null
-    if (rooms.length > 0) {
-      const generalRoom = rooms.find((room) => room.name === 'general')
-      defaultRoomId = generalRoom?.id || rooms[0].id
-    }
-
-    return {
-      rooms,
-      defaultRoomId
-    }
-  } catch (error) {
-    console.error('Error fetching initial rooms data:', error)
-    return {
-      rooms: [],
-      defaultRoomId: null
-    }
-  }
+  return getCachedRoomsData()
 }
 
 /**

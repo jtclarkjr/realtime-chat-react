@@ -1,8 +1,8 @@
 import { getInitialRoomsData } from '@/lib/actions/room-actions'
 import { HomeClient } from './home-client'
 
-// Force dynamic rendering since we fetch room data from Redis/Upstash
-export const dynamic = 'force-dynamic'
+// Use ISR for better performance while keeping data fresh
+export const revalidate = 30 // Revalidate every 30 seconds
 
 export default async function Home() {
   // Fetch initial room data server-side
