@@ -68,17 +68,27 @@ export function HomeClient({
   }
 
   const handleLogout = async () => {
-    const { error } = await signOut()
-    if (error) {
+    // Immediately navigate to login for instant transition
+    router.push('/login')
+    // Sign out in background - don't wait for it
+    signOut().catch((error) => {
       console.error('Error signing out:', error)
-    } else {
-      router.push('/login')
-    }
+    })
   }
 
-  // Don't render until we have auth state and userId
-  if (authLoading || !userId || !user) {
-    return <LoadingTransition message={authLoading ? 'Loading...' : 'Initializing...'} />
+  // Don't render until we have auth state - skip userId check during sign out
+  if (authLoading) {
+    return <LoadingTransition message="Loading..." />
+  }
+  
+  // If no user, let the redirect effect handle it without showing loader
+  if (!user) {
+    return null
+  }
+  
+  // If no userId yet, show minimal loader
+  if (!userId) {
+    return null
   }
 
   // Show navigating state
@@ -122,7 +132,7 @@ export function HomeClient({
                     onClick={handleLogout}
                     variant="ghost"
                     size="sm"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 text-sm font-medium px-2 py-1 h-auto transition-colors ml-4 flex-shrink-0"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 text-sm font-medium px-2 py-1 h-auto transition-all duration-200 hover:scale-105 active:scale-95 ml-4 flex-shrink-0"
                   >
                     Sign Out
                   </Button>
