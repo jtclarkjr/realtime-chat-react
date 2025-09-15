@@ -92,6 +92,7 @@ export const RealtimeChat = ({
   const handleSendMessage = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
+      // Always require connection to send, even with initial messages
       if (!newMessage.trim() || !isConnected) return
 
       sendMessage(newMessage)
@@ -107,16 +108,16 @@ export const RealtimeChat = ({
         ref={containerRef}
         className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-4"
       >
-        {loading ? (
+        {loading && initialMessages.length === 0 ? (
           <div className="text-center text-sm text-muted-foreground py-8">
             <div>Connecting to chat...</div>
           </div>
-        ) : allMessages.length === 0 ? (
+        ) : !loading && allMessages.length === 0 ? (
           <div className="text-center text-sm text-muted-foreground py-8">
             <div>No messages yet. Start the conversation!</div>
           </div>
         ) : null}
-        {!loading && (
+        {(initialMessages.length > 0 || !loading) && (
           <div className="space-y-1 sm:space-y-2">
             {allMessages.map((message, index) => {
               const prevMessage = index > 0 ? allMessages[index - 1] : null
@@ -152,8 +153,12 @@ export const RealtimeChat = ({
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder={isConnected ? 'Type a message...' : 'Connecting...'}
-          disabled={!isConnected}
+          placeholder={
+            isConnected || initialMessages.length > 0
+              ? 'Type a message...'
+              : 'Connecting...'
+          }
+          disabled={!isConnected && initialMessages.length === 0}
           autoComplete="off"
           autoCapitalize="sentences"
         />

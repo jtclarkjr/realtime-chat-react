@@ -2,8 +2,8 @@
 
 import { RealtimeChat } from '@/components/realtime-chat'
 import { Button } from '@/components/ui/button'
-import { useUserStore, useInitializeUser } from '@/lib/stores/user-store'
-import { useEffect } from 'react'
+import { useInitializeUser } from '@/lib/stores/user-store'
+import { useEffect, useState } from 'react'
 import { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import { useRouter } from 'next/navigation'
 import { signOut } from '@/lib/auth/client'
@@ -17,37 +17,19 @@ interface RoomClientProps {
 
 export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const router = useRouter()
-  const {
-    userId,
-    roomId: storedRoomId,
-    isJoined,
-    joinRoom,
-    leaveRoom,
-    setRoomId,
-    setRoomName
-  } = useUserStore()
+  const [isInitialized, setIsInitialized] = useState(false)
+  
+  // Initialize userId - this is synchronous now
+  const userId = useInitializeUser()
 
-  // Initialize userId
-  useInitializeUser()
-
-  // Auto-join room when component mounts if not already joined to this room
+  // Mark as initialized once we have userId
   useEffect(() => {
-    if (userId && user && (!isJoined || storedRoomId !== room.id)) {
-      const displayName = user.user_metadata?.full_name || 'Anonymous User'
-      joinRoom(displayName, room.id, room.name)
+    if (userId) {
+      setIsInitialized(true)
     }
-  }, [userId, user, room.id, room.name, isJoined, storedRoomId, joinRoom])
-
-  // Sync room data if already joined but room changed
-  useEffect(() => {
-    if (isJoined && storedRoomId !== room.id) {
-      setRoomId(room.id)
-      setRoomName(room.name)
-    }
-  }, [isJoined, storedRoomId, room.id, room.name, setRoomId, setRoomName])
+  }, [userId])
 
   const handleLeaveRoom = () => {
-    leaveRoom()
     router.push('/')
   }
 
@@ -56,20 +38,13 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
     if (error) {
       console.error('Error signing out:', error)
     } else {
-      leaveRoom()
       router.push('/login')
     }
   }
 
-  // Don't render until we have userId and are joined
-  if (!userId || !isJoined) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="text-muted-foreground">Joining room...</div>
-        </div>
-      </div>
-    )
+  // Simple initialization check - no store dependency
+  if (!isInitialized || !userId) {
+    return null // Very brief, almost invisible
   }
 
   return (
