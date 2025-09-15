@@ -46,6 +46,9 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
+# Authentication Configuration
+NEXT_PUBLIC_AUTH_CALLBACK_URL=http://localhost:3000/auth/callback
+
 # Redis Configuration (Local Development)
 REDIS_URL=redis://localhost:6379
 

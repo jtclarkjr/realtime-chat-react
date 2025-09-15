@@ -8,7 +8,7 @@ export async function signInWithDiscord() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'discord',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`
+      redirectTo: process.env.NEXT_PUBLIC_AUTH_CALLBACK_URL || `${window.location.origin}/auth/callback`
     }
   })
   return { data, error }
@@ -19,7 +19,7 @@ export async function signInWithGitHub() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'github',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`
+      redirectTo: process.env.NEXT_PUBLIC_AUTH_CALLBACK_URL || `${window.location.origin}/auth/callback`
     }
   })
   return { data, error }
