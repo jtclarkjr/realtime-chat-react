@@ -72,12 +72,12 @@ export function HomeClient({
           }
         }
 
-        // Use user's display name or email as username
-        const username = user.user_metadata?.full_name || user.email || 'Anonymous User'
+        // Use user's display name as username
+        const username = user.user_metadata?.full_name || 'Anonymous User'
         joinRoom(username, selectedRoomId, roomName)
       } catch (error) {
         console.error('Error fetching room data:', error)
-        const username = user.user_metadata?.full_name || user.email || 'Anonymous User'
+        const username = user.user_metadata?.full_name || 'Anonymous User'
         joinRoom(username, selectedRoomId, 'Unknown Room')
       }
     }
@@ -172,9 +172,6 @@ export function HomeClient({
                     <div className="font-medium">
                       {user.user_metadata?.full_name || 'Anonymous User'}
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {user.email}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -234,7 +231,7 @@ export function HomeClient({
         <RealtimeChat
           roomId={storedRoomId}
           roomName={storedRoomName}
-          username={user?.user_metadata?.full_name || user?.email || 'Anonymous User'}
+          username={user?.user_metadata?.full_name || 'Anonymous User'}
           userId={userId}
         />
       </div>
