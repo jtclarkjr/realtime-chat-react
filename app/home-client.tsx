@@ -76,18 +76,13 @@ export function HomeClient({
     })
   }
 
-  // Don't render until we have auth state - skip userId check during sign out
+  // Don't render until we have auth state
   if (authLoading) {
     return <LoadingTransition message="Loading..." />
   }
   
-  // If no user, let the redirect effect handle it without showing loader
-  if (!user) {
-    return null
-  }
-  
-  // If no userId yet, show minimal loader
-  if (!userId) {
+  // If no user or userId, let redirect effect handle it without showing loader
+  if (!user || !userId) {
     return null
   }
 
