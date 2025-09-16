@@ -1,21 +1,18 @@
-import { getRedisClient } from './client'
-
-const USER_LAST_RECEIVED_KEY_PREFIX = 'user'
-const ROOM_LATEST_MESSAGE_KEY_PREFIX = 'room'
-const CACHE_DURATION = 86400 * 30 // 30 days
+import { getRedisClient } from '../client'
+import { MESSAGE_TRACKING_KEYS, MESSAGE_TRACKING_DURATION } from './constants'
 
 /**
  * Generate Redis key for tracking user's last received message in a room
  */
 export function getUserLastReceivedKey(userId: string, roomId: string): string {
-  return `${USER_LAST_RECEIVED_KEY_PREFIX}:${userId}:room:${roomId}:last_received`
+  return MESSAGE_TRACKING_KEYS.getUserLastReceivedKey(userId, roomId)
 }
 
 /**
  * Generate Redis key for tracking latest message in a room
  */
 export function getRoomLatestMessageKey(roomId: string): string {
-  return `${ROOM_LATEST_MESSAGE_KEY_PREFIX}:${roomId}:latest_message_id`
+  return MESSAGE_TRACKING_KEYS.getRoomLatestMessageKey(roomId)
 }
 
 /**
@@ -29,7 +26,7 @@ export async function markMessageReceived(
   const redis = getRedisClient()
   const key = getUserLastReceivedKey(userId, roomId)
 
-  await redis.set(key, messageId, 'EX', CACHE_DURATION)
+  await redis.set(key, messageId, 'EX', MESSAGE_TRACKING_DURATION)
 }
 
 /**

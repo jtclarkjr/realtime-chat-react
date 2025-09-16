@@ -1,25 +1,10 @@
 import Redis from 'ioredis'
 import { Redis as UpstashRedis } from '@upstash/redis'
+import { RedisLike } from './types'
+import { hasUpstashConfig, REDIS_CONFIG } from './constants'
 
 let ioredisClient: Redis | null = null
 // Upstash client is created fresh for each adapter instance
-
-// Check if we're running with Upstash/Vercel KV
-const hasUpstashConfig = Boolean(
-  process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN
-)
-
-type RedisLike = {
-  get(key: string): Promise<string | null>
-  set(
-    key: string,
-    value: string,
-    mode?: string,
-    duration?: number
-  ): Promise<string | null>
-  del(...keys: string[]): Promise<number>
-  quit?(): Promise<void>
-}
 
 class UpstashRedisAdapter implements RedisLike {
   private client: UpstashRedis
@@ -93,14 +78,11 @@ export function getRedisClient(): RedisLike {
 
   // Use ioredis for local development
   if (!ioredisClient) {
-    ioredisClient = new Redis(
-      process.env.REDIS_URL || 'redis://localhost:6379',
-      {
-        maxRetriesPerRequest: 3,
-        enableReadyCheck: false,
-        lazyConnect: true
-      }
-    )
+    ioredisClient = new Redis(REDIS_CONFIG.url, {
+      maxRetriesPerRequest: REDIS_CONFIG.maxRetriesPerRequest,
+      enableReadyCheck: REDIS_CONFIG.enableReadyCheck,
+      lazyConnect: REDIS_CONFIG.lazyConnect
+    })
 
     ioredisClient.on('error', (error) => {
       console.error('Redis connection error:', error)

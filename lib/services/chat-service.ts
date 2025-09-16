@@ -4,7 +4,7 @@ import {
   trackLatestMessage,
   getUserLastReceivedMessageId,
   markUserCaughtUp
-} from '@/lib/redis/message-tracking'
+} from '@/lib/redis'
 import {
   DatabaseMessage,
   ChatMessageWithDB,

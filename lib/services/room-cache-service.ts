@@ -1,4 +1,3 @@
-import { getRedisClient } from '@/lib/redis/client'
 import {
   getRooms,
   createRoom as createRoomInDB,
@@ -6,11 +5,12 @@ import {
 } from '@/lib/supabase/rooms'
 import { DatabaseRoom, DatabaseRoomInsert } from '@/lib/types/database'
 import {
+  getRedisClient,
   CACHE_KEYS,
   CACHE_TTL,
   CACHE_SETTINGS,
   getCacheConfig
-} from '@/lib/redis/cache-config'
+} from '@/lib/redis'
 
 interface CachedRooms {
   rooms: DatabaseRoom[]
