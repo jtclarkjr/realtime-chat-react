@@ -33,7 +33,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const handleLeaveRoom = async () => {
     setIsLeaving(true)
     // Brief delay to show button state change
-    await new Promise(resolve => setTimeout(resolve, 150))
+    await new Promise((resolve) => setTimeout(resolve, 150))
     router.push('/')
   }
 

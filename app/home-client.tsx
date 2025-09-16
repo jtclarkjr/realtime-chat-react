@@ -24,10 +24,8 @@ export function HomeClient({
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
-  
-  const {
-    userId
-  } = useUserStore()
+
+  const { userId } = useUserStore()
   const [selectedRoomId, setSelectedRoomId] = useState(
     initialDefaultRoomId || ''
   )
@@ -55,7 +53,7 @@ export function HomeClient({
     if (user && selectedRoomId && userId) {
       setIsNavigating(true)
       // Add a small delay to show the transition
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise((resolve) => setTimeout(resolve, 300))
       router.push(`/room/${selectedRoomId}`)
     }
   }
@@ -80,7 +78,7 @@ export function HomeClient({
   if (authLoading) {
     return <LoadingTransition message="Loading..." />
   }
-  
+
   // If no user or userId, let redirect effect handle it without showing loader
   if (!user || !userId) {
     return null
@@ -103,37 +101,37 @@ export function HomeClient({
         </div>
 
         <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Signed in as</label>
-              <div className="w-full px-4 py-3 text-base border border-border rounded-lg bg-muted/50 text-foreground">
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-3 flex-1">
-                    {user.user_metadata?.avatar_url && (
-                      <Image
-                        src={user.user_metadata.avatar_url}
-                        alt="Profile"
-                        width={32}
-                        height={32}
-                        className="w-8 h-8 rounded-full"
-                      />
-                    )}
-                    <div>
-                      <div className="font-medium">
-                        {user.user_metadata?.full_name || 'Anonymous User'}
-                      </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Signed in as</label>
+            <div className="w-full px-4 py-3 text-base border border-border rounded-lg bg-muted/50 text-foreground">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-3 flex-1">
+                  {user.user_metadata?.avatar_url && (
+                    <Image
+                      src={user.user_metadata.avatar_url}
+                      alt="Profile"
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 rounded-full"
+                    />
+                  )}
+                  <div>
+                    <div className="font-medium">
+                      {user.user_metadata?.full_name || 'Anonymous User'}
                     </div>
                   </div>
-                  <Button
-                    onClick={handleLogout}
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 text-sm font-medium px-2 py-1 h-auto transition-all duration-200 hover:scale-105 active:scale-95 ml-4 flex-shrink-0"
-                  >
-                    Sign Out
-                  </Button>
                 </div>
+                <Button
+                  onClick={handleLogout}
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 text-sm font-medium px-2 py-1 h-auto transition-all duration-200 hover:scale-105 active:scale-95 ml-4 flex-shrink-0"
+                >
+                  Sign Out
+                </Button>
               </div>
             </div>
+          </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Room</label>
