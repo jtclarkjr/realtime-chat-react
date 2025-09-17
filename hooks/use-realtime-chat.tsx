@@ -56,7 +56,8 @@ export function useRealtimeChat({
         const response = await fetch(
           `/api/rooms/${roomId}/rejoin?userId=${userId}`,
           {
-            signal: controller.signal
+            signal: controller.signal,
+            credentials: 'same-origin'
           }
         )
 
@@ -146,6 +147,7 @@ export function useRealtimeChat({
           fetch('/api/messages/mark-received', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({
               userId,
               roomId: roomId,
@@ -189,6 +191,7 @@ export function useRealtimeChat({
         const response = await fetch('/api/messages/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
           body: JSON.stringify({
             roomId: roomId,
             userId,

@@ -9,12 +9,15 @@ import { headers } from 'next/headers'
 export const revalidate = 300 // Cache room metadata for 5 minutes only
 
 interface RoomPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function RoomPage({ params }: RoomPageProps) {
+  // Await params to access its properties
+  const { id } = await params
+
   // Check authentication server-side
   const headersList = await headers()
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
@@ -32,7 +35,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
   }
 
   // Fetch initial room data and messages server-side
-  const { room, messages } = await getRoomDataWithMessages(params.id)
+  const { room, messages } = await getRoomDataWithMessages(id)
 
   // If room doesn't exist, show 404
   if (!room) {

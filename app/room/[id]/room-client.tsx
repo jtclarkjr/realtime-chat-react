@@ -3,7 +3,6 @@
 import { RealtimeChat } from '@/components/realtime-chat'
 import { Button } from '@/components/ui/button'
 import { PageTransition } from '@/components/page-transition'
-import { useInitializeUser } from '@/lib/stores/user-store'
 import { useEffect, useState } from 'react'
 import { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import { useRouter } from 'next/navigation'
@@ -20,15 +19,13 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const [isInitialized, setIsInitialized] = useState(false)
   const [isLeaving, setIsLeaving] = useState(false)
 
-  // Initialize userId - this is synchronous now
-  const userId = useInitializeUser()
+  // Use the authenticated user's ID instead of generating a new one
+  const userId = user.id
 
-  // Mark as initialized once we have userId
+  // Mark as initialized immediately since we have the user from server
   useEffect(() => {
-    if (userId) {
-      setIsInitialized(true)
-    }
-  }, [userId])
+    setIsInitialized(true)
+  }, [])
 
   const handleLeaveRoom = async () => {
     setIsLeaving(true)
