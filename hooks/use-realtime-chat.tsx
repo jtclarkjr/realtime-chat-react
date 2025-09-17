@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback } from 'react'
 
 interface UseRealtimeChatProps {
   roomId: string
-  roomName: string
   username: string
   userId: string
 }
@@ -37,7 +36,6 @@ const EVENT_MESSAGE_TYPE = 'message'
 
 export function useRealtimeChat({
   roomId,
-  roomName,
   username,
   userId
 }: UseRealtimeChatProps) {
@@ -45,16 +43,6 @@ export function useRealtimeChat({
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const [loading, setLoading] = useState(true)
-
-  // Hook initialized
-  useEffect(() => {
-    // Hook initialized
-  }, [roomId, roomName, userId, username]) // Add missing dependencies
-
-  // Track messages state changes
-  useEffect(() => {
-    // Messages state changed
-  }, [messages, roomId, userId]) // Add missing dependencies
 
   // Fetch missed messages on mount
   useEffect(() => {
@@ -101,8 +89,6 @@ export function useRealtimeChat({
             )
 
             setMessages(transformedMessages)
-          } else {
-            // Don't clear messages if we get 'caught_up' - keep existing messages
           }
         } else {
           console.error('Failed to fetch missed messages:', response.statusText)
@@ -232,7 +218,7 @@ export function useRealtimeChat({
         console.error('Error saving message to database:', error)
       }
     },
-    [isConnected, roomId, userId, username] // Remove unnecessary 'channel' dependency
+    [isConnected, roomId, userId, username]
   )
 
   // Cleanup effect when user leaves

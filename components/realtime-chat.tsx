@@ -29,7 +29,6 @@ interface RealtimeChatProps {
  */
 export const RealtimeChat = ({
   roomId,
-  roomName,
   username,
   userId,
   onMessage,
@@ -44,7 +43,6 @@ export const RealtimeChat = ({
     loading
   } = useRealtimeChat({
     roomId,
-    roomName,
     username,
     userId
   })
@@ -104,7 +102,6 @@ export const RealtimeChat = ({
 
   return (
     <div className="flex flex-col h-full w-full bg-background text-foreground antialiased">
-      {/* Messages */}
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-4"
@@ -135,7 +132,7 @@ export const RealtimeChat = ({
                     delay: index * 0.05, // Stagger effect
                     ease: [0.25, 0.46, 0.45, 0.94]
                   }}
-                  className="transform-gpu" // Use GPU acceleration
+                  className="transform-gpu"
                 >
                   <ChatMessageItem
                     message={message}
@@ -161,11 +158,7 @@ export const RealtimeChat = ({
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder={
-            isConnected || initialMessages.length > 0
-              ? 'Type a message...'
-              : 'Connecting...'
-          }
+          placeholder={'Type a message...'}
           disabled={!isConnected && initialMessages.length === 0}
           autoComplete="off"
           autoCapitalize="sentences"
