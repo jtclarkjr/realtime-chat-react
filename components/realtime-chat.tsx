@@ -90,13 +90,13 @@ export const RealtimeChat = ({
   const handleSendMessage = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
-      // Always require connection to send, even with initial messages
-      if (!newMessage.trim() || !isConnected) return
+      // Prevent sending if loading or no connection
+      if (!newMessage.trim() || loading || !isConnected) return
 
       sendMessage(newMessage)
       setNewMessage('')
     },
-    [newMessage, isConnected, sendMessage]
+    [newMessage, isConnected, sendMessage, loading]
   )
 
   return (
@@ -152,21 +152,22 @@ export const RealtimeChat = ({
         <Input
           className={cn(
             'flex-1 rounded-full bg-background text-base sm:text-sm px-4 py-3 sm:py-2 transition-all duration-300 border-2 focus:border-primary',
-            !isConnected && 'opacity-50 cursor-not-allowed'
+            loading && 'opacity-50 cursor-not-allowed'
           )}
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder={'Type a message...'}
-          disabled={!isConnected && initialMessages.length === 0}
+          placeholder={loading ? 'Connecting...' : 'Type a message...'}
+          disabled={loading}
           autoComplete="off"
           autoCapitalize="sentences"
+          autoFocus={!loading}
         />
-        {isConnected && newMessage.trim() && (
+        {!loading && isConnected && newMessage.trim() && (
           <Button
             className="aspect-square h-12 w-12 sm:h-10 sm:w-10 rounded-full animate-in fade-in slide-in-from-right-4 duration-300 bg-primary hover:bg-primary/90 active:scale-95"
             type="submit"
-            disabled={!isConnected}
+            disabled={loading || !isConnected}
           >
             <Send className="h-5 w-5 sm:h-4 sm:w-4" />
           </Button>
