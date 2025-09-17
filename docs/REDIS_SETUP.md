@@ -77,11 +77,7 @@ Use a managed Redis service like:
 Update your chat components to include `userId`:
 
 ```tsx
-<RealtimeChat
-  roomName="your-room"
-  username="user-name"
-  userId="unique-user-id" // Add this
-/>
+<RealtimeChat roomId="roomId" username="user-name" userId="unique-user-id" />
 ```
 
 ## How It Works

@@ -68,7 +68,6 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
       <div className="flex-1 overflow-hidden">
         <RealtimeChat
           roomId={room.id}
-          roomName={room.name}
           username={user?.user_metadata?.full_name || 'Anonymous User'}
           userId={userId}
           messages={initialMessages}
