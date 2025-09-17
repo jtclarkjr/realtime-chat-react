@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { User } from '@supabase/supabase-js'
-
-interface AuthenticatedRequest extends NextRequest {
-  user: User
-}
+import type { User, SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Authentication middleware for API routes
@@ -12,10 +8,12 @@ interface AuthenticatedRequest extends NextRequest {
  */
 export async function requireAuth(
   request: NextRequest
-): Promise<{ user: User; supabase: any; headers: Headers } | NextResponse> {
+): Promise<
+  { user: User; supabase: SupabaseClient; headers: Headers } | NextResponse
+> {
   try {
     const { supabase, headers } = createClient(request)
-    
+
     // Get the current user from the session
     const {
       data: { user },
@@ -26,7 +24,7 @@ export async function requireAuth(
     if (error || !user) {
       console.error('Authentication failed:', error)
       return NextResponse.json(
-        { 
+        {
           error: 'Authentication required. Please sign in.',
           code: 'UNAUTHENTICATED'
         },
@@ -39,7 +37,7 @@ export async function requireAuth(
   } catch (error) {
     console.error('Error in authentication middleware:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Authentication verification failed.',
         code: 'AUTH_ERROR'
       },
@@ -51,17 +49,21 @@ export async function requireAuth(
 /**
  * Wrapper function to easily add authentication to API route handlers
  */
-export function withAuth<T extends any[]>(
-  handler: (request: NextRequest, auth: { user: User; supabase: any; headers: Headers }, ...args: T) => Promise<NextResponse>
+export function withAuth<T extends unknown[]>(
+  handler: (
+    request: NextRequest,
+    auth: { user: User; supabase: SupabaseClient; headers: Headers },
+    ...args: T
+  ) => Promise<NextResponse>
 ) {
   return async (request: NextRequest, ...args: T): Promise<NextResponse> => {
     const authResult = await requireAuth(request)
-    
+
     // If authResult is a NextResponse (error), return it
     if (authResult instanceof NextResponse) {
       return authResult
     }
-    
+
     // Otherwise, call the handler with the authenticated user
     return handler(request, authResult, ...args)
   }
@@ -70,6 +72,9 @@ export function withAuth<T extends any[]>(
 /**
  * Check if user ID matches the authenticated user (for additional security)
  */
-export function validateUserAccess(authenticatedUserId: string, requestUserId: string): boolean {
+export function validateUserAccess(
+  authenticatedUserId: string,
+  requestUserId: string
+): boolean {
   return authenticatedUserId === requestUserId
 }

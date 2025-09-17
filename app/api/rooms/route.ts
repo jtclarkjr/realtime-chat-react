@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { roomCacheService } from '@/lib/services/room-cache-service'
 import { withAuth } from '@/lib/auth/middleware'
 
-export const GET = withAuth(async (request: NextRequest, { user }) => {
+export const GET = withAuth(async () => {
   try {
     // Use the cache service which handles default room creation and caching
     const rooms = await roomCacheService.getAllRooms()
@@ -17,7 +17,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
   }
 })
 
-export const POST = withAuth(async (request: NextRequest, { user }) => {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
     const body = await request.json()
     const { name, description } = body
