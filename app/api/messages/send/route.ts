@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ChatService } from '@/lib/services/chat-service'
 import { SendMessageRequest } from '@/lib/types/database'
-import { createClient } from '@supabase/supabase-js'
+import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { user, supabase }) => {
   try {
     const body: SendMessageRequest = await request.json()
 
@@ -20,14 +20,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate that the user is sending messages as themselves
+    if (!validateUserAccess(user.id, body.userId)) {
+      return NextResponse.json(
+        { error: 'You can only send messages as yourself' },
+        { status: 403 }
+      )
+    }
+
     const chatService = new ChatService()
     const message = await chatService.sendMessage(body)
 
-    // Also broadcast via Supabase Realtime
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    // Also broadcast via Supabase Realtime (using authenticated client)
     await supabase.channel(body.roomId).send({
       type: 'broadcast',
       event: 'message',
@@ -45,4 +49,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

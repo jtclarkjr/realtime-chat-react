@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ChatService } from '@/lib/services/chat-service'
 import { MarkReceivedRequest } from '@/lib/types/database'
+import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
     const body: MarkReceivedRequest = await request.json()
 
@@ -11,6 +12,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Missing required fields: userId, roomId, messageId' },
         { status: 400 }
+      )
+    }
+
+    // Validate that the user is marking messages for themselves
+    if (!validateUserAccess(user.id, body.userId)) {
+      return NextResponse.json(
+        { error: 'You can only mark messages as received for yourself' },
+        { status: 403 }
       )
     }
 
@@ -27,4 +36,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

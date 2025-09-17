@@ -1,10 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { roomCacheService } from '@/lib/services/room-cache-service'
+import { withAuth } from '@/lib/auth/middleware'
 
-export async function GET(
-  request: Request,
+export const GET = withAuth(async (
+  request: NextRequest,
+  { user },
   { params }: { params: Promise<{ roomId: string }> }
-) {
+) => {
   try {
     const { roomId } = await params
 
@@ -30,4 +32,4 @@ export async function GET(
       { status: 500 }
     )
   }
-}
+})

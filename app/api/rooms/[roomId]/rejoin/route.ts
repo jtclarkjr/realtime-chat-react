@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ChatService } from '@/lib/services/chat-service'
+import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
 
 interface RouteParams {
   params: Promise<{
@@ -7,7 +8,7 @@ interface RouteParams {
   }>
 }
 
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export const POST = withAuth(async (request: NextRequest, { user }, { params }: RouteParams) => {
   try {
     const { roomId } = await params
     const { userId } = await request.json()
@@ -17,6 +18,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         { error: 'Missing required fields: roomId, userId' },
         { status: 400 }
+      )
+    }
+
+    // Validate that the user is requesting their own missed messages
+    if (!validateUserAccess(user.id, userId)) {
+      return NextResponse.json(
+        { error: 'You can only get missed messages for yourself' },
+        { status: 403 }
       )
     }
 
@@ -31,9 +40,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     )
   }
-}
+})
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export const GET = withAuth(async (request: NextRequest, { user }, { params }: RouteParams) => {
   try {
     const { roomId } = await params
     const { searchParams } = new URL(request.url)
@@ -44,6 +53,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         { error: 'Missing required parameters: roomId, userId' },
         { status: 400 }
+      )
+    }
+
+    // Validate that the user is requesting their own missed messages
+    if (!validateUserAccess(user.id, userId)) {
+      return NextResponse.json(
+        { error: 'You can only get missed messages for yourself' },
+        { status: 403 }
       )
     }
 
@@ -58,4 +75,4 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     )
   }
-}
+})
