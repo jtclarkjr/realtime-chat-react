@@ -5,16 +5,14 @@ interface UserState {
   userId: string
   username: string
   roomId: string // Current joined room ID
-  roomName: string // Keep for backward compatibility and display
   isJoined: boolean
 
   // Actions
   setUserId: (userId: string) => void
   setUsername: (username: string) => void
   setRoomId: (roomId: string) => void
-  setRoomName: (roomName: string) => void
   setJoined: (joined: boolean) => void
-  joinRoom: (username: string, roomId: string, roomName?: string) => void
+  joinRoom: (username: string, roomId: string) => void
   leaveRoom: () => void
   reset: () => void
 }
@@ -29,28 +27,24 @@ export const useUserStore = create<UserState>()(
       userId: '',
       username: '',
       roomId: '',
-      roomName: 'general',
       isJoined: false,
 
       // Actions
       setUserId: (userId) => set({ userId }),
       setUsername: (username) => set({ username }),
       setRoomId: (roomId) => set({ roomId }),
-      setRoomName: (roomName) => set({ roomName }),
       setJoined: (joined) => set({ isJoined: joined }),
 
-      joinRoom: (username, roomId, roomName) =>
+      joinRoom: (username, roomId) =>
         set({
           username: username.trim(),
           roomId: roomId.trim(),
-          roomName: roomName?.trim() || '',
           isJoined: true
         }),
 
       leaveRoom: () =>
         set({
           isJoined: false
-          // Keep username and roomName for easy re-join
         }),
 
       reset: () =>
@@ -58,7 +52,6 @@ export const useUserStore = create<UserState>()(
           userId: generateUserId(),
           username: '',
           roomId: '',
-          roomName: 'general',
           isJoined: false
         })
     }),
@@ -80,7 +73,6 @@ export const useUserStore = create<UserState>()(
         userId: state.userId,
         username: state.username,
         roomId: state.roomId,
-        roomName: state.roomName
         // Don't persist isJoined or selectedRoomId - always start fresh
       }),
       // Initialize userId if not present
