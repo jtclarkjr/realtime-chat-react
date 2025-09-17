@@ -27,6 +27,24 @@ export class RoomCacheService {
   private config = getCacheConfig()
 
   /**
+   * Validate and safely stringify data for Redis storage
+   */
+  private safeStringify(data: unknown): string {
+    try {
+      const stringified = JSON.stringify(data)
+      // Validate that it's actually a valid JSON string and not "[object Object]"
+      if (stringified === '[object Object]' || stringified === undefined) {
+        throw new Error('Invalid serialization result')
+      }
+      return stringified
+    } catch (error) {
+      console.error('Error stringifying data for cache:', error)
+      console.error('Data that failed to stringify:', data)
+      throw new Error(`Failed to stringify data for cache: ${error}`)
+    }
+  }
+
+  /**
    * Get all rooms with Redis caching and database fallback
    */
   async getAllRooms(): Promise<DatabaseRoom[]> {
@@ -35,19 +53,35 @@ export class RoomCacheService {
       const cachedData = await this.redis.get(CACHE_KEYS.ROOMS_ALL)
 
       if (cachedData) {
-        const parsed: CachedRooms = JSON.parse(cachedData)
-        const cacheAge = Date.now() - parsed.timestamp
+        // Check for corrupted cache data
+        if (typeof cachedData === 'object') {
+          console.warn('All rooms cached data is already an object, clearing cache')
+          await this.redis.del(CACHE_KEYS.ROOMS_ALL)
+        } else if (cachedData === '[object Object]') {
+          console.warn('Corrupted all rooms cache data: \'[object Object]\', clearing cache')
+          await this.redis.del(CACHE_KEYS.ROOMS_ALL)
+        } else {
+          try {
+            const parsed: CachedRooms = JSON.parse(cachedData)
+            const cacheAge = Date.now() - parsed.timestamp
 
-        // Return cached data if it's fresh enough
-        if (cacheAge < CACHE_SETTINGS.SYNC_THRESHOLD) {
-          return parsed.rooms
-        }
+            // Return cached data if it's fresh enough
+            if (cacheAge < CACHE_SETTINGS.SYNC_THRESHOLD) {
+              return parsed.rooms
+            }
 
-        // If cache is stale but exists, return it and refresh in background
-        const ttl = this.config.ttlMultiplier * CACHE_TTL.ROOMS_ALL * 1000
-        if (cacheAge < ttl && this.config.backgroundRefreshEnabled) {
-          this.refreshRoomsCache().catch(console.error)
-          return parsed.rooms
+            // If cache is stale but exists, return it and refresh in background
+            const ttl = this.config.ttlMultiplier * CACHE_TTL.ROOMS_ALL * 1000
+            if (cacheAge < ttl && this.config.backgroundRefreshEnabled) {
+              this.refreshRoomsCache().catch(console.error)
+              return parsed.rooms
+            }
+          } catch (parseError) {
+            console.error('JSON parse error for all rooms, cached data:', cachedData)
+            console.error('Parse error:', parseError)
+            // Clear the corrupted cache entry
+            await this.redis.del(CACHE_KEYS.ROOMS_ALL)
+          }
         }
       }
 
@@ -69,12 +103,28 @@ export class RoomCacheService {
       const cachedData = await this.redis.get(cacheKey)
 
       if (cachedData) {
-        const parsed: CachedRoom = JSON.parse(cachedData)
-        const cacheAge = Date.now() - parsed.timestamp
+        // Check if cachedData is already an object (shouldn't happen with Redis)
+        if (typeof cachedData === 'object') {
+          console.warn(`Cached data for room ${id} is already an object, clearing cache`)
+          await this.redis.del(cacheKey)
+        } else if (cachedData === '[object Object]') {
+          console.warn(`Corrupted cache data for room ${id}: '[object Object]', clearing cache`)
+          await this.redis.del(cacheKey)
+        } else {
+          try {
+            const parsed: CachedRoom = JSON.parse(cachedData)
+            const cacheAge = Date.now() - parsed.timestamp
 
-        const ttl = this.config.ttlMultiplier * CACHE_TTL.ROOM_INDIVIDUAL * 1000
-        if (cacheAge < ttl) {
-          return parsed.room
+            const ttl = this.config.ttlMultiplier * CACHE_TTL.ROOM_INDIVIDUAL * 1000
+            if (cacheAge < ttl) {
+              return parsed.room
+            }
+          } catch (parseError) {
+            console.error(`JSON parse error for room ${id}, cached data:`, cachedData)
+            console.error('Parse error:', parseError)
+            // Clear the corrupted cache entry
+            await this.redis.del(cacheKey)
+          }
         }
       }
 
@@ -90,7 +140,7 @@ export class RoomCacheService {
         const ttl = Math.round(
           this.config.ttlMultiplier * CACHE_TTL.ROOM_INDIVIDUAL
         )
-        await this.redis.set(cacheKey, JSON.stringify(cacheData), 'EX', ttl)
+        await this.redis.set(cacheKey, this.safeStringify(cacheData), 'EX', ttl)
       }
 
       return room
@@ -122,7 +172,7 @@ export class RoomCacheService {
       )
       await this.redis.set(
         CACHE_KEYS.ROOM_BY_ID(newRoom.id),
-        JSON.stringify(cacheData),
+        this.safeStringify(cacheData),
         'EX',
         ttl
       )
@@ -149,7 +199,7 @@ export class RoomCacheService {
       const ttl = Math.round(this.config.ttlMultiplier * CACHE_TTL.ROOMS_ALL)
       await this.redis.set(
         CACHE_KEYS.ROOMS_ALL,
-        JSON.stringify(cacheData),
+        this.safeStringify(cacheData),
         'EX',
         ttl
       )
