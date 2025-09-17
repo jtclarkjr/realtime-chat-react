@@ -84,17 +84,3 @@ export const useUserStore = create<UserState>()(
     }
   )
 )
-
-// Hook to ensure userId is initialized
-export const useInitializeUser = () => {
-  const { userId, setUserId } = useUserStore()
-
-  // Initialize userId on first load if not present
-  if (!userId) {
-    const newId = generateUserId()
-    setUserId(newId)
-    return newId
-  }
-
-  return userId
-}

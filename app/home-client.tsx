@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { RoomSelector } from '@/components/room-selector'
 import { PageTransition } from '@/components/page-transition'
 import { LoadingTransition } from '@/components/loading-transition'
-import { useUserStore, useInitializeUser } from '@/lib/stores/user-store'
+import { useUserStore } from '@/lib/stores/user-store'
 import { useState, useEffect } from 'react'
 import { DatabaseRoom } from '@/lib/types/database'
 import { useAuth } from '@/lib/auth/context'
@@ -29,9 +29,6 @@ export function HomeClient({
   const [selectedRoomId, setSelectedRoomId] = useState(
     initialDefaultRoomId || ''
   )
-
-  // Initialize userId
-  useInitializeUser()
 
   // Redirect to login if not authenticated
   useEffect(() => {
