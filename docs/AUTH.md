@@ -12,100 +12,35 @@ functionality.
 ```mermaid
 sequenceDiagram
     participant User
-    participant Browser
-    participant NextJS as Next.js App
-    participant AuthContext as Auth Context
-    participant Supabase as Supabase Auth
-    participant OAuth as OAuth Provider (GitHub/Discord)
-    participant Database as PostgreSQL DB
+    participant App as Next.js App
+    participant Supabase
+    participant OAuth as GitHub/Discord
 
-    %% Initial Access Attempt
-    User->>Browser: Access protected route
-    Browser->>NextJS: GET /protected-route
-    NextJS->>AuthContext: Check authentication status
+    %% Login Flow
+    User->>App: Access protected page
+    App-->>User: Redirect to /login
     
-    alt User Not Authenticated
-        AuthContext-->>NextJS: No valid session
-        NextJS-->>Browser: Redirect to /login
-        Browser-->>User: Show login page with OAuth options
-        
-        %% OAuth Authentication Flow
-        User->>Browser: Click OAuth provider (GitHub/Discord)
-        Browser->>NextJS: POST /auth/signin with provider
-        NextJS->>Supabase: signInWithOAuth(provider)
-        Supabase-->>NextJS: Return OAuth authorization URL
-        NextJS-->>Browser: Redirect to OAuth provider
-        Browser->>OAuth: Redirect to authorization endpoint
-        OAuth-->>User: Display permission consent screen
-        
-        %% User Authorization
-        User->>OAuth: Grant permissions
-        OAuth->>NextJS: Redirect to /auth/callback?code=xyz
-        NextJS->>Supabase: exchangeCodeForSession(code)
-        
-        %% Session Creation
-        Supabase->>OAuth: Exchange code for access token
-        OAuth-->>Supabase: Return access token + user profile
-        Supabase->>Database: Store/update user profile data
-        Database-->>Supabase: User data stored
-        Supabase-->>NextJS: Return session + user data
-        
-        %% Cookie and Redirect
-        NextJS->>Browser: Set HTTP-only auth cookies
-        NextJS-->>Browser: Redirect to original route
-        Browser->>AuthContext: Initialize auth context with user
-        AuthContext-->>Browser: User authenticated state
-        Browser-->>User: Show protected content
-        
-    else User Already Authenticated
-        AuthContext-->>NextJS: Valid session exists
-        NextJS->>Supabase: Validate session token
-        Supabase-->>NextJS: Session valid + user data
-        NextJS-->>Browser: Return protected content
-        Browser-->>User: Show content immediately
-    end
-
+    User->>App: Click GitHub/Discord login
+    App->>Supabase: Sign in with OAuth
+    Supabase->>OAuth: Redirect to provider
+    OAuth-->>User: Request permissions
+    
+    User->>OAuth: Grant permissions
+    OAuth->>App: Redirect with auth code
+    App->>Supabase: Exchange code for session
+    Supabase-->>App: Return user session + profile
+    
+    App->>App: Set auth cookies
+    App-->>User: Redirect to protected page
+    
     %% Session Management
-    Note over AuthContext,Supabase: Automatic token refresh
-    AuthContext->>Supabase: Check session expiry
+    Note over App,Supabase: Auto-refresh tokens
     
-    alt Session Near Expiry
-        Supabase->>Supabase: Refresh access token
-        Supabase-->>AuthContext: New session data
-        AuthContext->>Browser: Update auth cookies
-    else Session Expired
-        Supabase-->>AuthContext: Session invalid
-        AuthContext->>Browser: Clear auth state
-        Browser-->>User: Redirect to login
-    end
-
-    %% Cross-tab Synchronization
-    Note over Browser,AuthContext: Cross-tab session sync
-    Browser->>AuthContext: Storage event listener
-    AuthContext->>AuthContext: Sync auth state across tabs
-    AuthContext-->>Browser: Update UI in all tabs
-
     %% Logout Flow
-    User->>Browser: Click logout
-    Browser->>NextJS: POST /auth/signout
-    NextJS->>Supabase: signOut()
-    Supabase-->>NextJS: Session terminated
-    NextJS->>Browser: Clear auth cookies
-    Browser->>AuthContext: Clear auth state
-    AuthContext-->>Browser: Update to unauthenticated state
-    Browser-->>User: Redirect to login page
-
-    %% Error Handling
-    Note over NextJS,Supabase: OAuth Error Scenarios
-    alt OAuth Error (signup_disabled, etc.)
-        OAuth-->>NextJS: Error in callback
-        NextJS-->>Browser: Redirect to /auth/auth-code-error
-        Browser-->>User: Show error message with description
-    else Network/Server Error
-        Supabase-->>NextJS: Authentication error
-        NextJS-->>Browser: Show error state
-        Browser-->>User: Retry authentication option
-    end
+    User->>App: Click logout
+    App->>Supabase: Sign out
+    Supabase-->>App: Session cleared
+    App-->>User: Redirect to login
 ```
 
 ## System Architecture

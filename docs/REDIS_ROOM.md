@@ -44,146 +44,43 @@ database queries. The implementation includes:
 ```mermaid
 sequenceDiagram
     participant Client
-    participant NextJS as Next.js Server
-    participant RoomCacheService as Room Cache Service
+    participant App as Next.js App
+    participant Cache as Room Cache Service
     participant Redis
-    participant Database as PostgreSQL DB
-    participant ReconciliationService as Reconciliation Service
+    participant DB as PostgreSQL
 
-    %% Initial Page Load with SSR
-    Client->>NextJS: GET / (initial page load)
-    NextJS->>RoomCacheService: getInitialRoomsData()
-    RoomCacheService->>Redis: GET rooms:all
+    %% Get Rooms Flow
+    Client->>App: GET / (load rooms)
+    App->>Cache: getAllRooms()
+    Cache->>Redis: GET rooms:all
     
-    alt Cache Hit - Fresh Data
-        Redis-->>RoomCacheService: Return cached rooms + timestamp
-        Note over RoomCacheService: Check cache age < sync threshold
-        RoomCacheService-->>NextJS: Return fresh rooms data
-        NextJS-->>Client: SSR with rooms data (no loading state)
-        
-    else Cache Hit - Stale Data
-        Redis-->>RoomCacheService: Return stale cached rooms + timestamp
-        Note over RoomCacheService: Cache age > sync threshold but < TTL
-        RoomCacheService-->>NextJS: Return stale data immediately
-        NextJS-->>Client: SSR with stale data (instant load)
-        
-        %% Background refresh
-        Note over RoomCacheService: Background refresh enabled
-        RoomCacheService->>Database: SELECT * FROM rooms ORDER BY created_at DESC
-        Database-->>RoomCacheService: Return latest rooms data
-        RoomCacheService->>Redis: SET rooms:all (updated data + timestamp)
-        RoomCacheService->>Redis: SET rooms:last_sync (current timestamp)
-        
+    alt Cache Hit
+        Redis-->>Cache: Return cached rooms
+        Cache-->>App: Return rooms data
+        App-->>Client: Show rooms (fast)
     else Cache Miss
-        Redis-->>RoomCacheService: null/empty response
-        RoomCacheService->>Database: SELECT * FROM rooms ORDER BY created_at DESC
-        Database-->>RoomCacheService: Return rooms data
-        
-        %% Cache population
-        RoomCacheService->>Redis: SET rooms:all (data + timestamp, TTL)
-        RoomCacheService->>Redis: SET rooms:last_sync (current timestamp)
-        RoomCacheService-->>NextJS: Return rooms data
-        NextJS-->>Client: SSR with rooms data
+        Redis-->>Cache: null
+        Cache->>DB: SELECT * FROM rooms
+        DB-->>Cache: Return rooms
+        Cache->>Redis: SET rooms:all (cache for 5min)
+        Cache-->>App: Return rooms data
+        App-->>Client: Show rooms
     end
 
-    %% Individual Room Access
-    Client->>NextJS: GET /room/[id]
-    NextJS->>RoomCacheService: getRoomById(roomId)
-    RoomCacheService->>Redis: GET room:{id}
-    
-    alt Individual Room Cache Hit
-        Redis-->>RoomCacheService: Return cached room + timestamp
-        Note over RoomCacheService: Check TTL validity
-        RoomCacheService-->>NextJS: Return room data
-        NextJS-->>Client: Render room page
-        
-    else Individual Room Cache Miss
-        Redis-->>RoomCacheService: null
-        RoomCacheService->>Database: SELECT * FROM rooms WHERE id = $1
-        Database-->>RoomCacheService: Return room data
-        
-        alt Room Exists
-            RoomCacheService->>Redis: SET room:{id} (room data + timestamp, TTL)
-            RoomCacheService-->>NextJS: Return room data
-            NextJS-->>Client: Render room page
-        else Room Not Found
-            RoomCacheService-->>NextJS: Return null
-            NextJS-->>Client: Render 404 page
-        end
-    end
+    %% Create Room Flow
+    Client->>App: POST /api/rooms
+    App->>Cache: createRoom(data)
+    Cache->>DB: INSERT new room
+    DB-->>Cache: Return new room
+    Cache->>Redis: DEL rooms:all (invalidate cache)
+    Cache-->>App: Return new room
+    App-->>Client: Room created
 
-    %% Room Creation Flow
-    Client->>NextJS: POST /api/rooms (create new room)
-    NextJS->>RoomCacheService: createRoom(roomData)
-    RoomCacheService->>Database: INSERT INTO rooms (...) RETURNING *
-    Database-->>RoomCacheService: Return new room data
-    
-    %% Cache invalidation and update
-    RoomCacheService->>Redis: DEL rooms:all (invalidate list cache)
-    RoomCacheService->>Redis: DEL rooms:last_sync (force refresh)
-    RoomCacheService->>Redis: SET room:{newId} (cache new room, TTL)
-    RoomCacheService-->>NextJS: Return new room
-    NextJS-->>Client: Room created successfully
-
-    %% Background Reconciliation Process
-    Note over ReconciliationService: Runs every 5 minutes (production)
-    ReconciliationService->>RoomCacheService: needsReconciliation()
-    RoomCacheService->>Redis: GET rooms:last_sync
-    Redis-->>RoomCacheService: Last sync timestamp
-    
-    alt Reconciliation Needed
-        Note over RoomCacheService: Time since sync > threshold
-        RoomCacheService-->>ReconciliationService: true (needs sync)
-        ReconciliationService->>RoomCacheService: reconcileWithDatabase()
-        
-        %% Compare cache with database
-        RoomCacheService->>Redis: GET rooms:all
-        RoomCacheService->>Database: SELECT * FROM rooms WITH timestamps
-        
-        par Parallel data retrieval
-            Redis-->>RoomCacheService: Cached rooms data
-        and
-            Database-->>RoomCacheService: Current database state
-        end
-        
-        alt Changes Detected
-            Note over RoomCacheService: Rooms added/removed/modified
-            RoomCacheService->>Redis: SET rooms:all (updated data, TTL)
-            RoomCacheService->>Redis: SET rooms:last_sync (current time)
-            Note over ReconciliationService: Log: "Reconciliation completed - X changes"
-            
-        else No Changes
-            RoomCacheService->>Redis: SET rooms:last_sync (current time)
-            Note over ReconciliationService: Log: "Reconciliation completed - no changes"
-        end
-        
-    else No Reconciliation Needed
-        RoomCacheService-->>ReconciliationService: false (recent sync)
-        Note over ReconciliationService: Skip reconciliation cycle
-    end
-
-    %% Error Handling and Fallbacks
-    Note over RoomCacheService,Redis: Redis Connection Error
-    Client->>NextJS: GET /api/rooms
-    NextJS->>RoomCacheService: getAllRooms()
-    RoomCacheService->>Redis: GET rooms:all
-    Redis-->>RoomCacheService: Connection error
-    
-    %% Fallback to database
-    Note over RoomCacheService: Redis unavailable - fallback
-    RoomCacheService->>Database: Direct database query
-    Database-->>RoomCacheService: Return rooms data
-    RoomCacheService-->>NextJS: Return data (no caching)
-    NextJS-->>Client: Rooms data (slower response)
-
-    %% Cache Corruption Detection
-    RoomCacheService->>Redis: GET rooms:all
-    Redis-->>RoomCacheService: Corrupted data ("[object Object]")
-    Note over RoomCacheService: Detect corrupted cache
-    RoomCacheService->>Redis: DEL rooms:all (clear corruption)
-    RoomCacheService->>Database: Fetch fresh data
-    Database-->>RoomCacheService: Clean room data
-    RoomCacheService->>Redis: SET rooms:all (clean data, TTL)
+    %% Background Reconciliation
+    Note over Cache: Every 5 minutes
+    Cache->>DB: Check for changes
+    DB-->>Cache: Latest room data
+    Cache->>Redis: Update cache if needed
 ```
 
 ### Data Flow
