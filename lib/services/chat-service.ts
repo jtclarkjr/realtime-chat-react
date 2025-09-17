@@ -5,7 +5,7 @@ import {
   getUserLastReceivedMessageId,
   markUserCaughtUp
 } from '@/lib/redis'
-import {
+import type {
   DatabaseMessage,
   ChatMessageWithDB,
   MissedMessagesResponse,

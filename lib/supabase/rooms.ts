@@ -1,7 +1,7 @@
 'use server'
 
 import { getServiceClient } from './service-client'
-import { DatabaseRoom, DatabaseRoomInsert } from '@/lib/types/database'
+import type { DatabaseRoom, DatabaseRoomInsert } from '@/lib/types/database'
 
 export async function getRooms(): Promise<DatabaseRoom[]> {
   const supabase = getServiceClient()

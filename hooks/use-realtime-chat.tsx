@@ -1,8 +1,8 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { ApiMessage } from '@/lib/types/database'
 import { useState, useEffect, useCallback } from 'react'
+import type { ApiMessage } from '@/lib/types/database'
 
 interface UseRealtimeChatProps {
   roomId: string

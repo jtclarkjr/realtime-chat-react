@@ -1,12 +1,12 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { RealtimeChat } from '@/components/realtime-chat'
 import { Button } from '@/components/ui/button'
 import { PageTransition } from '@/components/page-transition'
 import { useEffect, useState } from 'react'
-import { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
-import { useRouter } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
+import type { User } from '@supabase/supabase-js'
 
 interface RoomClientProps {
   room: DatabaseRoom

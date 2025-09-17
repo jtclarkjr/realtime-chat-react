@@ -72,7 +72,7 @@ export const useUserStore = create<UserState>()(
       partialize: (state) => ({
         userId: state.userId,
         username: state.username,
-        roomId: state.roomId,
+        roomId: state.roomId
         // Don't persist isJoined or selectedRoomId - always start fresh
       }),
       // Initialize userId if not present

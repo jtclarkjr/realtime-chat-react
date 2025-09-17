@@ -1,16 +1,16 @@
 'use client'
 
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { RoomSelector } from '@/components/room-selector'
 import { PageTransition } from '@/components/page-transition'
 import { LoadingTransition } from '@/components/loading-transition'
 import { useUserStore } from '@/lib/stores/user-store'
 import { useState, useEffect } from 'react'
-import { DatabaseRoom } from '@/lib/types/database'
 import { useAuth } from '@/lib/auth/context'
 import { signOut } from '@/lib/auth/client'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
+import type { DatabaseRoom } from '@/lib/types/database'
 
 interface HomeClientProps {
   initialRooms: DatabaseRoom[]

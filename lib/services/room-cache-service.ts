@@ -3,7 +3,7 @@ import {
   createRoom as createRoomInDB,
   getRoomById as getRoomByIdFromDB
 } from '@/lib/supabase/rooms'
-import { DatabaseRoom, DatabaseRoomInsert } from '@/lib/types/database'
+import type { DatabaseRoom, DatabaseRoomInsert } from '@/lib/types/database'
 import {
   getRedisClient,
   CACHE_KEYS,

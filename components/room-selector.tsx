@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
-import { DatabaseRoom } from '@/lib/types/database'
 import { MessageCircle } from 'lucide-react'
 import { AddRoomDialog } from '@/components/add-room-dialog'
+import type { DatabaseRoom } from '@/lib/types/database'
 
 interface RoomSelectorProps {
   selectedRoom: string

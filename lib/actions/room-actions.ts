@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import { unstable_cache } from 'next/cache'
 import { roomCacheService } from '@/lib/services/room-cache-service'
 import { ensureDefaultRooms } from '@/lib/supabase/rooms'
-import { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
+import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import { ChatService } from '@/lib/services/chat-service'
 
 /**

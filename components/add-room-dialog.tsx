@@ -13,8 +13,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus } from 'lucide-react'
-import { DatabaseRoom } from '@/lib/types/database'
 import { createRoomAction } from '@/lib/actions/room-actions'
+import type { DatabaseRoom } from '@/lib/types/database'
 
 interface AddRoomDialogProps {
   onRoomCreated?: (room: DatabaseRoom) => void

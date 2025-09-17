@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ChatService } from '@/lib/services/chat-service'
-import { SendMessageRequest } from '@/lib/types/database'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
+import type { SendMessageRequest } from '@/lib/types/database'
 
 export const POST = withAuth(
   async (request: NextRequest, { user, supabase }) => {
