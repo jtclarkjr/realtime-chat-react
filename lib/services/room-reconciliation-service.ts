@@ -225,14 +225,14 @@ export class RoomReconciliationService {
 export const roomReconciliationService = new RoomReconciliationService()
 
 // Auto-start the service in server environments
-if (typeof window === 'undefined') {
-  // Only start in production or when explicitly enabled
-  if (
-    process.env.NODE_ENV === 'production' ||
-    process.env.ENABLE_ROOM_RECONCILIATION === 'true'
-  ) {
-    setTimeout(() => {
-      roomReconciliationService.start()
-    }, 1000) // Small delay to ensure other services are ready
-  }
-}
+// if (typeof window === 'undefined') {
+//   // Only start in production or when explicitly enabled
+//   if (
+//     process.env.NODE_ENV === 'production' ||
+//     process.env.ENABLE_ROOM_RECONCILIATION === 'true'
+//   ) {
+//     setTimeout(() => {
+//       roomReconciliationService.start()
+//     }, 1000) // Small delay to ensure other services are ready
+//   }
+// }
