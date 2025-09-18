@@ -14,6 +14,11 @@ Features instant messaging, message persistence, and reconnection handling.
 ## Features
 
 - **Real-time messaging** using Supabase Realtime
+- **AI Assistant integration** with Claude 3.5 Haiku (Anthropic)
+  - Public AI responses (visible to all users)
+  - Private AI responses (visible only to requester)
+  - Real-time streaming responses
+  - Context-aware conversations
 - **Message persistence** with automatic message history loading
 - **Redis/Vercel KV caching** for improved performance and message tracking
 - **Reconnection handling** with missed message recovery
@@ -39,6 +44,7 @@ Features instant messaging, message persistence, and reconnection handling.
 - Bun package manager
 - Docker and Docker Compose (for local Redis development)
 - Supabase account and project
+- Anthropic account (for AI assistant - optional)
 - Vercel account (for deployment)
 
 ## Environment Setup
@@ -50,6 +56,9 @@ Features instant messaging, message persistence, and reconnection handling.
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# AI Assistant Configuration (Anthropic Claude)
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
 # Authentication Configuration
 NEXT_PUBLIC_AUTH_CALLBACK_URL=http://localhost:3000/auth/callback
@@ -151,20 +160,40 @@ If you're getting redirected to the root URL with a code parameter instead of
 2. Verify Supabase redirect URLs include `/auth/callback`
 3. Ensure OAuth provider callback URLs point to Supabase (not your app directly)
 
+## AI Assistant
+
+The application includes an AI assistant powered by Anthropic's Claude 3.5 Haiku.
+
+### Add to Environment Variables
+
+Add your Anthropic API key to `.env.local`:
+
+```bash
+# AI Assistant Configuration
+ANTHROPIC_API_KEY=your_actual_api_key_here
+```
+
 ## Database Setup
 
 Set up the following tables in your Supabase database:
 
 ```sql
--- Messages table
+-- Messages table (updated schema with AI support)
 CREATE TABLE messages (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   content TEXT NOT NULL,
-  channel_id TEXT NOT NULL,
+  room_id TEXT NOT NULL,
   user_id TEXT NOT NULL,
-  user_name TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  username TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  is_ai_message BOOLEAN DEFAULT false NOT NULL,
+  is_private BOOLEAN DEFAULT false NOT NULL
 );
+
+-- Add index for efficient private message queries
+CREATE INDEX IF NOT EXISTS idx_messages_private_user 
+ON messages(is_private, user_id) 
+WHERE is_private = true;
 
 -- Enable RLS
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
@@ -172,6 +201,21 @@ ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 -- Create policies
 CREATE POLICY "Anyone can read messages" ON messages FOR SELECT USING (true);
 CREATE POLICY "Anyone can insert messages" ON messages FOR INSERT WITH CHECK (true);
+
+-- Rooms table
+CREATE TABLE rooms (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS for rooms
+ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
+
+-- Room policies
+CREATE POLICY "Anyone can read rooms" ON rooms FOR SELECT USING (true);
+CREATE POLICY "Anyone can create rooms" ON rooms FOR INSERT WITH CHECK (true);
 ```
 
 ## Installation
@@ -260,7 +304,7 @@ src/
 
 ### RealtimeChat
 
-Main chat component handling message display, sending, and real-time updates.
+Main chat component handling message display, sending, real-time updates, and AI integration.
 
 ### useRealtimeChat Hook
 
@@ -270,6 +314,15 @@ Custom hook managing:
 - Message state
 - Missed message recovery
 - Real-time subscriptions
+
+### useAIChat Hook
+
+AI assistant integration hook managing:
+
+- AI message streaming
+- Privacy controls (public/private responses)
+- Context-aware conversations
+- Anthropic Claude API integration
 
 ### Redis/Vercel KV Integration
 
