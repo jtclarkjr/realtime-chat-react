@@ -110,51 +110,112 @@ export function useRealtimeChat({
   useEffect(() => {
     if (loading) return // Wait until missed messages are loaded
 
-    const newChannel = supabase.channel(roomId)
+    let reconnectTimeout: NodeJS.Timeout
+    let heartbeatInterval: NodeJS.Timeout
+    let isCleanedUp = false
 
-    newChannel
-      .on('broadcast', { event: EVENT_MESSAGE_TYPE }, (payload) => {
-        const receivedMessage = payload.payload as ChatMessage
-        // Only add messages that have content and valid structure
-        if (
-          receivedMessage &&
-          receivedMessage.content &&
-          receivedMessage.content.trim() &&
-          receivedMessage.user?.name
-        ) {
-          setMessages((current) => {
-            // Avoid duplicates by checking message ID
-            const exists = current.some((msg) => msg.id === receivedMessage.id)
-            if (exists) {
-              return current
-            }
+    const setupChannel = () => {
+      if (isCleanedUp) return
 
-            return [...current, receivedMessage]
-          })
+      const newChannel = supabase
+        .channel(roomId, {
+          config: {
+            broadcast: { self: false }, // Don't receive own messages via broadcast
+            presence: { key: userId }, // Track presence with userId
+          },
+        })
+        .on('broadcast', { event: EVENT_MESSAGE_TYPE }, (payload) => {
+          const receivedMessage = payload.payload as ChatMessage
+          // Only add messages that have content and valid structure
+          if (
+            receivedMessage &&
+            receivedMessage.content &&
+            receivedMessage.content.trim() &&
+            receivedMessage.user?.name
+          ) {
+            setMessages((current) => {
+              // Avoid duplicates by checking message ID
+              const exists = current.some((msg) => msg.id === receivedMessage.id)
+              if (exists) {
+                return current
+              }
 
-          // Mark message as received (async, don't wait)
-          fetch('/api/messages/mark-received', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({
-              userId,
-              roomId: roomId,
-              messageId: receivedMessage.id
+              return [...current, receivedMessage]
             })
-          }).catch((error) =>
-            console.error('Error marking message as received:', error)
-          )
-        }
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          setIsConnected(true)
-        }
-      })
 
+            // Mark message as received (async, don't wait)
+            fetch('/api/messages/mark-received', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({
+                userId,
+                roomId: roomId,
+                messageId: receivedMessage.id
+              })
+            }).catch((error) =>
+              console.error('Error marking message as received:', error)
+            )
+          }
+        })
+        .on('system', {}, (payload) => {
+          // Handle system events (connection state changes)
+          if (payload.extension === 'postgres_changes' && payload.type === 'error') {
+            console.error('Channel error:', payload)
+            setIsConnected(false)
+            // Attempt to reconnect after error
+            if (!isCleanedUp) {
+              clearTimeout(reconnectTimeout)
+              reconnectTimeout = setTimeout(() => {
+                supabase.removeChannel(newChannel)
+                setupChannel()
+              }, 3000)
+            }
+          }
+        })
+        .subscribe((status, error) => {
+          if (status === 'SUBSCRIBED') {
+            setIsConnected(true)
+            
+            // Start heartbeat to keep connection alive
+            clearInterval(heartbeatInterval)
+            heartbeatInterval = setInterval(() => {
+              // Send a presence update as heartbeat
+              newChannel.track({ online: true, userId, timestamp: Date.now() })
+            }, 30000) // Send heartbeat every 30 seconds
+          } else if (status === 'CHANNEL_ERROR') {
+            setIsConnected(false)
+            if (error) {
+              console.error('Channel subscription error:', error)
+            }
+            // Attempt reconnection
+            if (!isCleanedUp) {
+              clearTimeout(reconnectTimeout)
+              reconnectTimeout = setTimeout(() => {
+                supabase.removeChannel(newChannel)
+                setupChannel()
+              }, 3000)
+            }
+          } else if (status === 'TIMED_OUT') {
+            setIsConnected(false)
+          } else if (status === 'CLOSED') {
+            setIsConnected(false)
+          }
+        })
+
+      return newChannel
+    }
+
+    const channel = setupChannel()
+
+    // Cleanup function
     return () => {
-      supabase.removeChannel(newChannel)
+      isCleanedUp = true
+      clearTimeout(reconnectTimeout)
+      clearInterval(heartbeatInterval)
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
       setIsConnected(false)
     }
   }, [roomId, supabase, loading, userId])
