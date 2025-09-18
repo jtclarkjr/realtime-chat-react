@@ -11,7 +11,7 @@ export function createClient() {
           heartbeatIntervalMs: 30000, // Send heartbeat every 30 seconds
         },
         timeout: 20000, // Connection timeout
-        reconnectAfterMs: (tries) => {
+        reconnectAfterMs: (tries: number) => {
           // Exponential backoff: 1s, 2s, 4s, 8s, then every 10s
           return tries > 4 ? 10000 : Math.min(1000 * Math.pow(2, tries - 1), 10000)
         },
