@@ -40,7 +40,7 @@ export function useRealtimeChat({
     const fetchMissedMessages = async () => {
       try {
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 0)
+        const timeoutId = setTimeout(() => controller.abort(), 5000)
 
         const response = await fetch(
           `/api/rooms/${roomId}/rejoin?userId=${userId}`,
