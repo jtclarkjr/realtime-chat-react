@@ -32,7 +32,11 @@ export async function createRoom(
 
   if (error) {
     console.error('Error creating room:', error)
-    throw new Error('Failed to create room')
+    // Pass through specific database error information
+    if (error.code === '23505' && error.message?.includes('duplicate key')) {
+      throw new Error(`A room with this name already exists`)
+    }
+    throw new Error(`Failed to create room: ${error.message || error.code || 'Unknown error'}`)
   }
 
   return data
@@ -41,19 +45,39 @@ export async function createRoom(
 export async function ensureDefaultRooms(): Promise<void> {
   const supabase = getServiceClient()
 
-  // Check if "general" room exists
-  const { data: generalRoom } = await supabase
-    .from('rooms')
-    .select('id')
-    .eq('name', 'general')
-    .single()
+  try {
+    // Check if "general" room exists
+    const { data: generalRoom, error: fetchError } = await supabase
+      .from('rooms')
+      .select('id')
+      .eq('name', 'general')
+      .single()
 
-  // If general room doesn't exist, create it
-  if (!generalRoom) {
-    await createRoom({
-      name: 'general',
-      description: 'General chat room for everyone'
-    })
+    // If there's an error but it's not "no rows" error, log it
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Error checking for general room:', fetchError)
+      return
+    }
+
+    // If general room doesn't exist, create it
+    if (!generalRoom) {
+      try {
+        await createRoom({
+          name: 'general',
+          description: 'General chat room for everyone'
+        })
+      } catch (createError) {
+        // If it's a duplicate key error, that's fine - room already exists
+        if (createError instanceof Error && createError.message.includes('already exists')) {
+          console.log('General room already exists, skipping creation')
+        } else {
+          throw createError
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error in ensureDefaultRooms:', error)
+    // Don't throw here - failing to create default rooms shouldn't break the app
   }
 }
 

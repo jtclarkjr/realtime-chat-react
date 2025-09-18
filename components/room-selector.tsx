@@ -138,7 +138,11 @@ export function RoomSelector({
       />
 
       {showAddRoom && (
-        <AddRoomDialog onRoomCreated={handleRoomCreated} disabled={disabled} />
+        <AddRoomDialog 
+          onRoomCreated={handleRoomCreated} 
+          disabled={disabled} 
+          existingRooms={rooms}
+        />
       )}
     </div>
   )

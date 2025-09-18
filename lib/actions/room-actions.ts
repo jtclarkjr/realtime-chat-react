@@ -108,17 +108,20 @@ export async function createRoomAction(
     if (
       error instanceof Error &&
       (error.message.includes('duplicate key') ||
-        error.message.includes('unique constraint'))
+        error.message.includes('unique constraint') ||
+        error.message.includes('already exists'))
     ) {
       return {
         success: false,
-        error: 'A room with this name already exists'
+        error: error.message.includes('already exists') 
+          ? error.message 
+          : 'A room with this name already exists'
       }
     }
 
     return {
       success: false,
-      error: 'Failed to create room'
+      error: error instanceof Error ? error.message : 'Failed to create room'
     }
   }
 }
