@@ -3,9 +3,12 @@
 import { cn } from '@/lib/utils'
 import { ChatMessageItem } from '@/components/chat-message'
 import { useChatScroll } from '@/hooks/use-chat-scroll'
-import { type ChatMessage, useRealtimeChat } from '@/hooks/use-realtime-chat'
+import { useRealtimeChat } from '@/hooks/use-realtime-chat'
+import { useAIChat } from '@/hooks/use-ai-chat'
+import type { ChatMessage } from '@/lib/types/database'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { AIBadge } from '@/components/ui/ai-badge'
 import { Send } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -16,6 +19,17 @@ interface RealtimeChatProps {
   userId: string
   onMessage?: (messages: ChatMessage[]) => void
   messages?: ChatMessage[]
+}
+
+function getPlaceholderText(
+  loading: boolean,
+  isAILoading: boolean,
+  isAIEnabled: boolean
+): string {
+  if (loading) return 'Connecting...'
+  if (isAILoading) return 'AI is responding...'
+  if (isAIEnabled) return 'Ask AI assistant...'
+  return 'Type a message...'
 }
 
 /**
@@ -45,11 +59,70 @@ export const RealtimeChat = ({
     username,
     userId
   })
-  const [newMessage, setNewMessage] = useState('')
 
-  // Merge realtime messages with initial messages
+  const {
+    isAIEnabled,
+    setIsAIEnabled,
+    isAIPrivate,
+    setIsAIPrivate,
+    isAILoading,
+    sendAIMessage
+  } = useAIChat({
+    roomId,
+    userId,
+    isConnected,
+    onStreamingMessage: (message) => {
+      setStreamingMessage(message)
+    },
+    onCompleteMessage: (completedMessage) => {
+      // For private messages, keep the completed message permanently since no broadcast will replace it
+      if (completedMessage.isPrivate) {
+        // Remove the isStreaming flag and keep the message
+        const finalPrivateMessage = { ...completedMessage, isStreaming: false }
+        setStreamingMessage(finalPrivateMessage)
+      } else {
+        // For public messages, update and wait for broadcast replacement
+        setStreamingMessage(completedMessage)
+
+        // Set a timeout to clear it in case broadcast fails (only for public messages)
+        setTimeout(() => {
+          setStreamingMessage((current) => {
+            // Only clear if the message hasn't been replaced by broadcast
+            if (current && current.id === completedMessage.id) {
+              return null
+            }
+            return current
+          })
+        }, 2000) // Give broadcast 2 seconds to arrive
+      }
+    }
+  })
+
+  const [newMessage, setNewMessage] = useState('')
+  const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(
+    null
+  )
+
+  // Merge realtime messages with initial messages and streaming message
   const allMessages = useMemo(() => {
     const mergedMessages = [...initialMessages, ...realtimeMessages]
+
+    // Handle streaming message and potential duplicates
+    if (streamingMessage) {
+      // Check if there's already a broadcast message with the same ID
+      const existingBroadcastMessage = mergedMessages.find(
+        (msg) => msg.id === streamingMessage.id && msg !== streamingMessage
+      )
+
+      if (existingBroadcastMessage && !streamingMessage.isPrivate) {
+        // Public message: broadcast exists, clear streaming message
+        setTimeout(() => setStreamingMessage(null), 0)
+        // Don't add streaming message since broadcast already exists
+      } else {
+        // Either no broadcast yet, or this is a private message (which won't have broadcasts)
+        mergedMessages.push(streamingMessage)
+      }
+    }
 
     // Remove duplicates based on message id and filter out invalid messages
     const uniqueMessages = mergedMessages.filter((message, index, self) => {
@@ -57,13 +130,37 @@ export const RealtimeChat = ({
       if (
         !message ||
         !message.id ||
-        !message.content?.trim() ||
+        (!message.content?.trim() && message !== streamingMessage) || // Allow empty content for streaming messages
         !message.user?.name
       ) {
         return false
       }
-      // Remove duplicates
-      return index === self.findIndex((m) => m?.id === message.id)
+
+      // Filter out private messages that don't belong to current user
+      // Private messages should only be visible to the user who requested them
+      if (message.isPrivate && message.requesterId !== userId) {
+        return false
+      }
+
+      // For messages with the same ID, prefer non-streaming (broadcast) messages
+      const duplicateIndex = self.findIndex((m) => m?.id === message.id)
+      if (duplicateIndex !== index) {
+        // This is a duplicate - prefer broadcast messages over streaming
+        const firstOccurrence = self[duplicateIndex]
+        const isStreamingMessage =
+          message.isStreaming || message === streamingMessage
+        const isFirstStreaming =
+          firstOccurrence?.isStreaming || firstOccurrence === streamingMessage
+
+        if (isStreamingMessage && !isFirstStreaming) {
+          return false // Remove streaming message in favor of broadcast
+        }
+        if (isFirstStreaming && !isStreamingMessage) {
+          return true // Keep broadcast message over streaming
+        }
+      }
+
+      return duplicateIndex === index // Keep first occurrence for non-conflicting cases
     })
 
     // Sort by creation date with null checks
@@ -74,7 +171,7 @@ export const RealtimeChat = ({
     })
 
     return sortedMessages
-  }, [initialMessages, realtimeMessages])
+  }, [initialMessages, realtimeMessages, streamingMessage, userId])
 
   useEffect(() => {
     if (onMessage) {
@@ -87,16 +184,42 @@ export const RealtimeChat = ({
     scrollToBottom()
   }, [allMessages, scrollToBottom])
 
+  useEffect(() => {
+    // Scroll to bottom when streaming message updates
+    if (streamingMessage) {
+      scrollToBottom()
+    }
+  }, [streamingMessage, scrollToBottom])
+
   const handleSendMessage = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault()
       // Prevent sending if loading or no connection
-      if (!newMessage.trim() || loading || !isConnected) return
+      if (!newMessage.trim() || loading || !isConnected || isAILoading) return
 
-      sendMessage(newMessage)
+      const messageContent = newMessage.trim()
       setNewMessage('')
+
+      if (isAIEnabled) {
+        // First send the user's message
+        sendMessage(messageContent)
+        // Then send to AI for response with recent messages as context
+        await sendAIMessage(messageContent, allMessages.slice(-10))
+      } else {
+        // Send regular message
+        sendMessage(messageContent)
+      }
     },
-    [newMessage, isConnected, sendMessage, loading]
+    [
+      newMessage,
+      isConnected,
+      sendMessage,
+      sendAIMessage,
+      loading,
+      isAIEnabled,
+      isAILoading,
+      allMessages
+    ]
   )
 
   return (
@@ -114,7 +237,7 @@ export const RealtimeChat = ({
             <div>No messages yet. Start the conversation!</div>
           </div>
         ) : null}
-        {(initialMessages.length > 0 || !loading) && (
+        {(initialMessages.length > 0 || (!loading && isConnected)) && (
           <div className="space-y-1 sm:space-y-2">
             {allMessages.map((message, index) => {
               const prevMessage = index > 0 ? allMessages[index - 1] : null
@@ -124,12 +247,11 @@ export const RealtimeChat = ({
               return (
                 <motion.div
                   key={message.id}
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{
-                    duration: 0.3,
-                    delay: index * 0.05, // Stagger effect
-                    ease: [0.25, 0.46, 0.45, 0.94]
+                    duration: 0.15,
+                    ease: 'easeOut'
                   }}
                   className="transform-gpu"
                 >
@@ -137,6 +259,7 @@ export const RealtimeChat = ({
                     message={message}
                     isOwnMessage={message.user.name === username}
                     showHeader={showHeader}
+                    currentUserId={userId}
                   />
                 </motion.div>
               )
@@ -149,20 +272,30 @@ export const RealtimeChat = ({
         onSubmit={handleSendMessage}
         className="flex w-full gap-2 sm:gap-3 border-t border-border p-3 sm:p-4 bg-background/50 backdrop-blur-sm"
       >
-        <Input
-          className={cn(
-            'flex-1 rounded-full bg-background text-base sm:text-sm px-4 py-3 sm:py-2 transition-all duration-300 border-2 focus:border-primary',
-            loading && 'opacity-50 cursor-not-allowed'
-          )}
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder={loading ? 'Connecting...' : 'Type a message...'}
-          disabled={loading}
-          autoComplete="off"
-          autoCapitalize="sentences"
-          autoFocus={!loading}
-        />
+        <div className="flex-1 relative">
+          <Input
+            className={cn(
+              'w-full rounded-full bg-background text-base sm:text-sm pl-4 pr-16 py-3 sm:py-2 transition-all duration-300 border-2 focus:border-primary',
+              (loading || isAILoading) && 'opacity-50 cursor-not-allowed'
+            )}
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder={getPlaceholderText(loading, isAILoading, isAIEnabled)}
+            disabled={loading || isAILoading}
+            autoComplete="off"
+            autoCapitalize="sentences"
+            autoFocus={!loading && !isAILoading}
+          />
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            <AIBadge
+              isActive={isAIEnabled}
+              onToggle={() => setIsAIEnabled(!isAIEnabled)}
+              isPrivate={isAIPrivate}
+              onPrivacyToggle={() => setIsAIPrivate(!isAIPrivate)}
+            />
+          </div>
+        </div>
         {!loading && isConnected && newMessage.trim() && (
           <Button
             className="aspect-square h-12 w-12 sm:h-10 sm:w-10 rounded-full animate-in fade-in slide-in-from-right-4 duration-300 bg-primary hover:bg-primary/90 active:scale-95"

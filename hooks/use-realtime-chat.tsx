@@ -2,23 +2,12 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useCallback } from 'react'
-import type { ApiMessage } from '@/lib/types/database'
+import type { ApiMessage, ChatMessage } from '@/lib/types/database'
 
 interface UseRealtimeChatProps {
   roomId: string
   username: string
   userId: string
-}
-
-export interface ChatMessage {
-  id: string
-  content: string
-  user: {
-    id?: string
-    name: string
-  }
-  createdAt: string
-  roomId?: string
 }
 
 interface TransformedMessage {
@@ -182,12 +171,12 @@ export function useRealtimeChat({
           name: username
         },
         createdAt: new Date().toISOString(),
-        roomId: roomId
+        roomId: roomId,
+        isAI: false
       }
 
       try {
         // Save to database via API (API will handle broadcasting)
-
         const response = await fetch('/api/messages/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

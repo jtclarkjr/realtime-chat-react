@@ -33,6 +33,25 @@ export interface ChatMessageWithDB {
   }
   createdAt: string
   channelId: string
+  isAI?: boolean
+  isPrivate?: boolean
+  requesterId?: string
+}
+
+// Chat message interface used in components and hooks
+export interface ChatMessage {
+  id: string
+  content: string
+  user: {
+    id?: string
+    name: string
+  }
+  createdAt: string
+  roomId?: string
+  isAI?: boolean
+  isStreaming?: boolean
+  isPrivate?: boolean
+  requesterId?: string // ID of user who requested the AI response (for private messages)
 }
 
 // Response types
@@ -48,6 +67,13 @@ export interface SendMessageRequest {
   userId: string
   username: string
   content: string
+}
+
+export interface SendAIMessageRequest {
+  roomId: string
+  content: string
+  isPrivate?: boolean
+  requesterId?: string
 }
 
 export interface MarkReceivedRequest {

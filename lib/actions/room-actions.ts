@@ -149,7 +149,10 @@ const getCachedRoomData = unstable_cache(
  * IMPORTANT: We don't cache messages here because the system needs to
  * respect the missed message tracking system for each user individually
  */
-export async function getRoomDataWithMessages(roomId: string): Promise<{
+export async function getRoomDataWithMessages(
+  roomId: string,
+  userId?: string
+): Promise<{
   room: DatabaseRoom | null
   messages: ChatMessageWithDB[]
 }> {
@@ -166,9 +169,11 @@ export async function getRoomDataWithMessages(roomId: string): Promise<{
       }
     }
 
-    // Get recent messages (NOT cached - each user needs fresh data for missed message tracking)
+    // Get recent messages with user context for privacy filtering
+    // (NOT cached - each user needs fresh data for missed message tracking)
     // This ensures the missed message system works correctly when users rejoin
-    const messages = await chatService.getRecentMessages(roomId, 50)
+    // AND respects private message visibility
+    const messages = await chatService.getRecentMessages(roomId, userId, 50)
 
     return {
       room,

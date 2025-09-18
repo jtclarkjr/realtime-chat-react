@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS messages (
   user_id TEXT NOT NULL,
   username TEXT NOT NULL,
   content TEXT NOT NULL,
+  is_ai_message BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
