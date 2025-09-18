@@ -43,44 +43,29 @@ database queries. The implementation includes:
 
 ```mermaid
 sequenceDiagram
-    participant Client
-    participant App as Next.js App
-    participant Cache as Room Cache Service
+    participant User
     participant Redis
-    participant DB as PostgreSQL
+    participant Database
 
-    %% Get Rooms Flow
-    Client->>App: GET / (load rooms)
-    App->>Cache: getAllRooms()
-    Cache->>Redis: GET rooms:all
+    %% Load Rooms
+    User->>Redis: Request rooms
     
     alt Cache Hit
-        Redis-->>Cache: Return cached rooms
-        Cache-->>App: Return rooms data
-        App-->>Client: Show rooms (fast)
+        Redis-->>User: Show rooms (fast)
     else Cache Miss
-        Redis-->>Cache: null
-        Cache->>DB: SELECT * FROM rooms
-        DB-->>Cache: Return rooms
-        Cache->>Redis: SET rooms:all (cache for 5min)
-        Cache-->>App: Return rooms data
-        App-->>Client: Show rooms
+        Redis->>Database: Fetch rooms
+        Database-->>Redis: Room data
+        Redis-->>User: Show rooms
     end
 
-    %% Create Room Flow
-    Client->>App: POST /api/rooms
-    App->>Cache: createRoom(data)
-    Cache->>DB: INSERT new room
-    DB-->>Cache: Return new room
-    Cache->>Redis: DEL rooms:all (invalidate cache)
-    Cache-->>App: Return new room
-    App-->>Client: Room created
+    %% Create Room
+    User->>Database: Create new room
+    Database->>Redis: Clear cache
+    Database-->>User: Room created
 
-    %% Background Reconciliation
-    Note over Cache: Every 5 minutes
-    Cache->>DB: Check for changes
-    DB-->>Cache: Latest room data
-    Cache->>Redis: Update cache if needed
+    %% Background Sync
+    Note over Redis,Database: Periodic sync
+    Database->>Redis: Update cache
 ```
 
 ### Data Flow
