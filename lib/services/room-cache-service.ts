@@ -55,10 +55,14 @@ export class RoomCacheService {
       if (cachedData) {
         // Check for corrupted cache data
         if (typeof cachedData === 'object') {
-          console.warn('All rooms cached data is already an object, clearing cache')
+          console.warn(
+            'All rooms cached data is already an object, clearing cache'
+          )
           await this.redis.del(CACHE_KEYS.ROOMS_ALL)
         } else if (cachedData === '[object Object]') {
-          console.warn('Corrupted all rooms cache data: \'[object Object]\', clearing cache')
+          console.warn(
+            "Corrupted all rooms cache data: '[object Object]', clearing cache"
+          )
           await this.redis.del(CACHE_KEYS.ROOMS_ALL)
         } else {
           try {
@@ -77,7 +81,10 @@ export class RoomCacheService {
               return parsed.rooms
             }
           } catch (parseError) {
-            console.error('JSON parse error for all rooms, cached data:', cachedData)
+            console.error(
+              'JSON parse error for all rooms, cached data:',
+              cachedData
+            )
             console.error('Parse error:', parseError)
             // Clear the corrupted cache entry
             await this.redis.del(CACHE_KEYS.ROOMS_ALL)
@@ -105,22 +112,30 @@ export class RoomCacheService {
       if (cachedData) {
         // Check if cachedData is already an object (shouldn't happen with Redis)
         if (typeof cachedData === 'object') {
-          console.warn(`Cached data for room ${id} is already an object, clearing cache`)
+          console.warn(
+            `Cached data for room ${id} is already an object, clearing cache`
+          )
           await this.redis.del(cacheKey)
         } else if (cachedData === '[object Object]') {
-          console.warn(`Corrupted cache data for room ${id}: '[object Object]', clearing cache`)
+          console.warn(
+            `Corrupted cache data for room ${id}: '[object Object]', clearing cache`
+          )
           await this.redis.del(cacheKey)
         } else {
           try {
             const parsed: CachedRoom = JSON.parse(cachedData)
             const cacheAge = Date.now() - parsed.timestamp
 
-            const ttl = this.config.ttlMultiplier * CACHE_TTL.ROOM_INDIVIDUAL * 1000
+            const ttl =
+              this.config.ttlMultiplier * CACHE_TTL.ROOM_INDIVIDUAL * 1000
             if (cacheAge < ttl) {
               return parsed.room
             }
           } catch (parseError) {
-            console.error(`JSON parse error for room ${id}, cached data:`, cachedData)
+            console.error(
+              `JSON parse error for room ${id}, cached data:`,
+              cachedData
+            )
             console.error('Parse error:', parseError)
             // Clear the corrupted cache entry
             await this.redis.del(cacheKey)

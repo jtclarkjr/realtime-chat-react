@@ -4,9 +4,9 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 
-// Use minimal caching to respect the missed message tracking system
-// Room metadata can be cached, but messages must be fresh for each user
-export const revalidate = 300 // Cache room metadata for 5 minutes only
+// No page-level caching since we need user-specific data for private messages
+// Room metadata is cached separately in the room-actions.ts
+export const revalidate = 0 // Always fetch fresh data for each user to respect privacy
 
 interface RoomPageProps {
   params: Promise<{
@@ -34,8 +34,8 @@ export default async function RoomPage({ params }: RoomPageProps) {
     redirect('/login')
   }
 
-  // Fetch initial room data and messages server-side
-  const { room, messages } = await getRoomDataWithMessages(id)
+  // Fetch initial room data and messages server-side with user context for privacy
+  const { room, messages } = await getRoomDataWithMessages(id, user.id)
 
   // If room doesn't exist, show 404
   if (!room) {

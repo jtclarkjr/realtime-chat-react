@@ -39,9 +39,15 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
     router.prefetch('/')
   }, [router])
 
-  // Simple initialization check - no store dependency
+  // Ensure proper initialization before showing chat
   if (!isInitialized || !userId) {
-    return null // Very brief, almost invisible
+    return (
+      <PageTransition className="h-dvh flex flex-col bg-background">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-sm text-muted-foreground">Loading room...</div>
+        </div>
+      </PageTransition>
+    )
   }
 
   return (
@@ -67,7 +73,14 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
           roomId={room.id}
           username={user?.user_metadata?.full_name || 'Anonymous User'}
           userId={userId}
-          messages={initialMessages}
+          messages={initialMessages.map((msg) => ({
+            ...msg,
+            roomId: msg.channelId, // Convert channelId to roomId for consistency
+            user: {
+              id: msg.user.id,
+              name: msg.user.name
+            }
+          }))}
         />
       </div>
     </PageTransition>

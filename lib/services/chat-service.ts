@@ -9,7 +9,8 @@ import type {
   DatabaseMessage,
   ChatMessageWithDB,
   MissedMessagesResponse,
-  SendMessageRequest
+  SendMessageRequest,
+  SendAIMessageRequest
 } from '@/lib/types/database'
 
 export class ChatService {
@@ -29,7 +30,11 @@ export class ChatService {
         name: dbMessage.username
       },
       createdAt: dbMessage.created_at,
-      channelId: dbMessage.room_id
+      channelId: dbMessage.room_id,
+      // Add privacy and AI information
+      isAI: dbMessage.is_ai_message || false,
+      isPrivate: dbMessage.is_private || false,
+      requesterId: dbMessage.is_private ? dbMessage.user_id : undefined
     }
   }
 
@@ -44,7 +49,8 @@ export class ChatService {
         room_id: request.roomId,
         user_id: request.userId,
         username: request.username,
-        content: request.content
+        content: request.content,
+        is_ai_message: false
       })
       .select()
       .single()
@@ -52,6 +58,39 @@ export class ChatService {
     if (error) {
       console.error('Error saving message to database:', error)
       throw new Error('Failed to save message')
+    }
+
+    // Track this as the latest message in Redis
+    await trackLatestMessage(request.roomId, message.id)
+
+    return this.transformDatabaseMessage(message)
+  }
+
+  /**
+   * Send an AI message and persist it to database
+   */
+  async sendAIMessage(
+    request: SendAIMessageRequest
+  ): Promise<ChatMessageWithDB> {
+    // Save AI message to database
+    const { data: message, error } = await this.supabase
+      .from('messages')
+      .insert({
+        room_id: request.roomId,
+        user_id: request.isPrivate
+          ? request.requesterId || 'ai-assistant'
+          : 'ai-assistant',
+        username: 'AI Assistant',
+        content: request.content,
+        is_ai_message: true,
+        is_private: request.isPrivate || false
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error saving AI message to database:', error)
+      throw new Error('Failed to save AI message')
     }
 
     // Track this as the latest message in Redis
@@ -73,11 +112,14 @@ export class ChatService {
 
       if (!lastReceivedId) {
         // User is new or been away for 30+ days
-        // Get recent messages from database
+        // Get recent messages from database (exclude private messages not for this user)
         const { data: recentMessages, error } = await this.supabase
           .from('messages')
           .select('*')
           .eq('room_id', roomId)
+          .or(
+            `is_private.eq.false,and(is_private.eq.true,user_id.eq.${userId})`
+          )
           .order('created_at', { ascending: false })
           .limit(50)
 
@@ -111,12 +153,13 @@ export class ChatService {
       const lastMessageTimestamp =
         await this.getMessageTimestamp(lastReceivedId)
 
-      // Get messages after their last received message
+      // Get messages after their last received message (exclude private messages not for this user)
       const { data: missedMessages, error } = await this.supabase
         .from('messages')
         .select('*')
         .eq('room_id', roomId)
         .gt('created_at', lastMessageTimestamp)
+        .or(`is_private.eq.false,and(is_private.eq.true,user_id.eq.${userId})`)
         .order('created_at', { ascending: true })
 
       if (error) {
@@ -137,6 +180,9 @@ export class ChatService {
           .from('messages')
           .select('*')
           .eq('room_id', roomId)
+          .or(
+            `is_private.eq.false,and(is_private.eq.true,user_id.eq.${userId})`
+          )
           .order('created_at', { ascending: false })
           .limit(20) // Get last 20 messages for context
 
@@ -198,13 +244,26 @@ export class ChatService {
    */
   async getRecentMessages(
     roomId: string,
+    userId?: string,
     limit: number = 50
   ): Promise<ChatMessageWithDB[]> {
     try {
-      const { data: messages, error } = await this.supabase
+      let query = this.supabase
         .from('messages')
         .select('*')
         .eq('room_id', roomId)
+
+      // If userId is provided, filter private messages
+      if (userId) {
+        query = query.or(
+          `is_private.eq.false,and(is_private.eq.true,user_id.eq.${userId})`
+        )
+      } else {
+        // If no userId, only show public messages
+        query = query.eq('is_private', false)
+      }
+
+      const { data: messages, error } = await query
         .order('created_at', { ascending: false })
         .limit(limit)
 

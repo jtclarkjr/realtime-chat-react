@@ -17,6 +17,8 @@ export interface Database {
           username: string
           content: string
           created_at: string
+          is_ai_message: boolean
+          is_private: boolean
         }
         Insert: {
           id?: string
@@ -25,6 +27,8 @@ export interface Database {
           username: string
           content: string
           created_at?: string
+          is_ai_message?: boolean
+          is_private?: boolean
         }
         Update: {
           id?: string
@@ -33,6 +37,8 @@ export interface Database {
           username?: string
           content?: string
           created_at?: string
+          is_ai_message?: boolean
+          is_private?: boolean
         }
         Relationships: []
       }
