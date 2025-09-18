@@ -67,6 +67,7 @@ export interface SendMessageRequest {
   userId: string
   username: string
   content: string
+  isPrivate?: boolean
 }
 
 export interface SendAIMessageRequest {

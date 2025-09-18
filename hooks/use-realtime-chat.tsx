@@ -160,7 +160,7 @@ export function useRealtimeChat({
   }, [roomId, supabase, loading, userId])
 
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, isPrivate = false) => {
       if (!isConnected || !content.trim()) return
 
       const message: ChatMessage = {
@@ -172,7 +172,9 @@ export function useRealtimeChat({
         },
         createdAt: new Date().toISOString(),
         roomId: roomId,
-        isAI: false
+        isAI: false,
+        isPrivate,
+        requesterId: isPrivate ? userId : undefined
       }
 
       try {
@@ -185,7 +187,8 @@ export function useRealtimeChat({
             roomId: roomId,
             userId,
             username,
-            content: content.trim()
+            content: content.trim(),
+            isPrivate
           })
         })
 

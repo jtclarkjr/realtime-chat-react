@@ -50,7 +50,8 @@ export class ChatService {
         user_id: request.userId,
         username: request.username,
         content: request.content,
-        is_ai_message: false
+        is_ai_message: false,
+        is_private: request.isPrivate || false
       })
       .select()
       .single()

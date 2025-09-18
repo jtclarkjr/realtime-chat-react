@@ -201,8 +201,8 @@ export const RealtimeChat = ({
       setNewMessage('')
 
       if (isAIEnabled) {
-        // First send the user's message
-        sendMessage(messageContent)
+        // First send the user's message (private if AI is in private mode)
+        sendMessage(messageContent, isAIPrivate)
         // Then send to AI for response with recent messages as context
         await sendAIMessage(messageContent, allMessages.slice(-10))
       } else {
@@ -217,6 +217,7 @@ export const RealtimeChat = ({
       sendAIMessage,
       loading,
       isAIEnabled,
+      isAIPrivate,
       isAILoading,
       allMessages
     ]

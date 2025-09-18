@@ -34,12 +34,14 @@ export const POST = withAuth(
       const chatService = new ChatService()
       const message = await chatService.sendMessage(body)
 
-      // Also broadcast via Supabase Realtime (using authenticated client)
-      await supabase.channel(body.roomId).send({
-        type: 'broadcast',
-        event: 'message',
-        payload: message
-      })
+      // Only broadcast non-private messages via Supabase Realtime
+      if (!body.isPrivate) {
+        await supabase.channel(body.roomId).send({
+          type: 'broadcast',
+          event: 'message',
+          payload: message
+        })
+      }
 
       return NextResponse.json({
         success: true,

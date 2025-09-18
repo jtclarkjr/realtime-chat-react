@@ -18,7 +18,7 @@ export const ChatMessageItem = ({
   const isAIMessage = message.isAI || message.user.name === 'AI Assistant'
   const isStreaming =
     isAIMessage && (message.isStreaming || !message.content.trim()) // AI message with no content or marked as streaming
-  const isPrivateMessage = message.isPrivate && isAIMessage
+  const isPrivateMessage = message.isPrivate
   const isPrivateForCurrentUser =
     isPrivateMessage && message.requesterId === currentUserId
 
@@ -63,8 +63,12 @@ export const ChatMessageItem = ({
               </span>
               {isPrivateForCurrentUser && (
                 <div
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
-                  title="Private AI response - only visible to you"
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ${
+                    isAIMessage 
+                      ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
+                      : "bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400"
+                  }`}
+                  title={isAIMessage ? "Private AI response - only visible to you" : "Private message - only visible to you"}
                 >
                   <EyeOff className="h-2.5 w-2.5" />
                   <span className="text-xs font-medium">Private</span>
@@ -84,13 +88,15 @@ export const ChatMessageItem = ({
           className={cn(
             'py-3 px-4 rounded-2xl text-sm sm:text-base w-fit break-words shadow-sm transition-all duration-200 hover:shadow-md',
             {
-              'bg-primary text-primary-foreground rounded-br-md': isOwnMessage,
-              'bg-orange-50 dark:bg-orange-950/30 text-foreground rounded-bl-md border border-orange-200 dark:border-orange-800/50':
-                isPrivateForCurrentUser,
+              'bg-primary text-primary-foreground rounded-br-md': isOwnMessage && !isPrivateForCurrentUser,
+              'bg-orange-50 dark:bg-orange-950/30 text-foreground border border-orange-200 dark:border-orange-800/50':
+                isPrivateForCurrentUser && isAIMessage,
+              'bg-gray-100 dark:bg-gray-800/50 text-foreground rounded-br-md border border-gray-300 dark:border-gray-600':
+                isPrivateForCurrentUser && isOwnMessage && !isAIMessage,
               'bg-blue-50 dark:bg-blue-950/30 text-foreground rounded-bl-md border border-blue-200 dark:border-blue-800/50':
                 isAIMessage && !isOwnMessage && !isPrivateForCurrentUser,
               'bg-muted text-foreground rounded-bl-md border border-border/50':
-                !isOwnMessage && !isAIMessage
+                !isOwnMessage && !isAIMessage && !isPrivateForCurrentUser
             }
           )}
         >
