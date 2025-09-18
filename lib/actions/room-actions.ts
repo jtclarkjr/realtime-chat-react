@@ -113,8 +113,8 @@ export async function createRoomAction(
     ) {
       return {
         success: false,
-        error: error.message.includes('already exists') 
-          ? error.message 
+        error: error.message.includes('already exists')
+          ? error.message
           : 'A room with this name already exists'
       }
     }

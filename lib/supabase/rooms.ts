@@ -36,7 +36,9 @@ export async function createRoom(
     if (error.code === '23505' && error.message?.includes('duplicate key')) {
       throw new Error(`A room with this name already exists`)
     }
-    throw new Error(`Failed to create room: ${error.message || error.code || 'Unknown error'}`)
+    throw new Error(
+      `Failed to create room: ${error.message || error.code || 'Unknown error'}`
+    )
   }
 
   return data
@@ -68,7 +70,10 @@ export async function ensureDefaultRooms(): Promise<void> {
         })
       } catch (createError) {
         // If it's a duplicate key error, that's fine - room already exists
-        if (createError instanceof Error && createError.message.includes('already exists')) {
+        if (
+          createError instanceof Error &&
+          createError.message.includes('already exists')
+        ) {
           console.log('General room already exists, skipping creation')
         } else {
           throw createError

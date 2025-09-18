@@ -64,11 +64,15 @@ export const ChatMessageItem = ({
               {isPrivateForCurrentUser && (
                 <div
                   className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ${
-                    isAIMessage 
-                      ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
-                      : "bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400"
+                    isAIMessage
+                      ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                      : 'bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400'
                   }`}
-                  title={isAIMessage ? "Private AI response - only visible to you" : "Private message - only visible to you"}
+                  title={
+                    isAIMessage
+                      ? 'Private AI response - only visible to you'
+                      : 'Private message - only visible to you'
+                  }
                 >
                   <EyeOff className="h-2.5 w-2.5" />
                   <span className="text-xs font-medium">Private</span>
@@ -88,7 +92,8 @@ export const ChatMessageItem = ({
           className={cn(
             'py-3 px-4 rounded-2xl text-sm sm:text-base w-fit break-words shadow-sm transition-all duration-200 hover:shadow-md',
             {
-              'bg-primary text-primary-foreground rounded-br-md': isOwnMessage && !isPrivateForCurrentUser,
+              'bg-primary text-primary-foreground rounded-br-md':
+                isOwnMessage && !isPrivateForCurrentUser,
               'bg-orange-50 dark:bg-orange-950/30 text-foreground border border-orange-200 dark:border-orange-800/50':
                 isPrivateForCurrentUser && isAIMessage,
               'bg-gray-100 dark:bg-gray-800/50 text-foreground rounded-br-md border border-gray-300 dark:border-gray-600':

@@ -94,10 +94,14 @@ export function AddRoomDialog({
       }
     } catch (err) {
       console.error('Error creating room:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create room'
-      
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to create room'
+
       // Don't show duplicate name errors in the bottom error area since they're already shown under the input
-      if (errorMessage.includes('already exists') || errorMessage.includes('duplicate')) {
+      if (
+        errorMessage.includes('already exists') ||
+        errorMessage.includes('duplicate')
+      ) {
         // The real-time validation will handle this error display
         setError(null)
       } else {
@@ -159,8 +163,8 @@ export function AddRoomDialog({
               disabled={loading}
               required
               className={`w-full ${
-                roomName.trim() && roomNameExists(roomName) 
-                  ? 'border-destructive focus:border-destructive' 
+                roomName.trim() && roomNameExists(roomName)
+                  ? 'border-destructive focus:border-destructive'
                   : ''
               }`}
             />
@@ -202,8 +206,8 @@ export function AddRoomDialog({
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={loading || !roomName.trim() || roomNameExists(roomName)}
             >
               {loading ? 'Creating...' : 'Create Room'}
