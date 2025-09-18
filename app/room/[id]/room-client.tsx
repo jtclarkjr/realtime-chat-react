@@ -30,7 +30,6 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const handleLeaveRoom = async () => {
     setIsLeaving(true)
     // Brief delay to show button state change
-    await new Promise((resolve) => setTimeout(resolve, 150))
     router.push('/')
   }
 
@@ -63,7 +62,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
             disabled={isLeaving}
             className="text-xs sm:text-sm text-gray-800 bg-white hover:text-white hover:bg-gray-700 transition-all duration-200 px-2 py-1 rounded border border-gray-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
-            {isLeaving ? 'Leaving...' : 'Leave'}
+            Leave
           </Button>
         </div>
       </header>
