@@ -50,7 +50,7 @@ export function HomeClient({
     if (user && selectedRoomId && userId) {
       setIsNavigating(true)
       // Add a small delay to show the transition
-      await new Promise((resolve) => setTimeout(resolve, 300))
+      // await new Promise((resolve) => setTimeout(resolve, 300))
       router.push(`/room/${selectedRoomId}`)
     }
   }
