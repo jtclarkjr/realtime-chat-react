@@ -9,35 +9,36 @@ import { MessageCircle } from 'lucide-react'
 export default function LoginPage() {
   const [loading, setLoading] = useState<string | null>(null)
 
-  const handleDiscordSignIn = async () => {
+  const handleOAuthSignIn = async (
+    provider: 'discord' | 'github',
+    signInFn: () => Promise<{ error: Error | null }>
+  ) => {
     try {
-      setLoading('discord')
-      const { error } = await signInWithDiscord()
+      setLoading(provider)
+
+      // Set a timeout to reset loading state in case of redirect
+      const timeoutId = setTimeout(() => {
+        setLoading(null)
+      }, 5000)
+
+      const { error } = await signInFn()
+
+      // Clear timeout if we get here (error case)
+      clearTimeout(timeoutId)
+
       if (error) {
-        console.error('Error signing in with Discord:', error)
-        // You might want to show a toast or error message here
+        console.error(`Error signing in with ${provider}:`, error)
+        setLoading(null)
       }
     } catch (error) {
-      console.error('Error signing in with Discord:', error)
-    } finally {
+      console.error(`Error signing in with ${provider}:`, error)
       setLoading(null)
     }
   }
 
-  const handleGitHubSignIn = async () => {
-    try {
-      setLoading('github')
-      const { error } = await signInWithGitHub()
-      if (error) {
-        console.error('Error signing in with GitHub:', error)
-        // You might want to show a toast or error message here
-      }
-    } catch (error) {
-      console.error('Error signing in with GitHub:', error)
-    } finally {
-      setLoading(null)
-    }
-  }
+  const handleDiscordSignIn = () =>
+    handleOAuthSignIn('discord', signInWithDiscord)
+  const handleGitHubSignIn = () => handleOAuthSignIn('github', signInWithGitHub)
 
   return (
     <PageTransition className="min-h-dvh flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
