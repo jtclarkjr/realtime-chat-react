@@ -19,11 +19,13 @@ import type { DatabaseRoom } from '@/lib/types/database'
 interface AddRoomDialogProps {
   onRoomCreated?: (room: DatabaseRoom) => void
   disabled?: boolean
+  existingRooms?: DatabaseRoom[]
 }
 
 export function AddRoomDialog({
   onRoomCreated,
-  disabled = false
+  disabled = false,
+  existingRooms = []
 }: AddRoomDialogProps) {
   const [open, setOpen] = useState(false)
   const [roomName, setRoomName] = useState('')
@@ -31,12 +33,39 @@ export function AddRoomDialog({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Check if room name already exists (case-insensitive)
+  const roomNameExists = (name: string) => {
+    return existingRooms.some(
+      (room) => room.name.toLowerCase() === name.trim().toLowerCase()
+    )
+  }
+
+  // Real-time validation
+  const validateRoomName = (name: string) => {
+    const trimmedName = name.trim()
+    if (!trimmedName) {
+      return 'Room name is required'
+    }
+    if (trimmedName.length < 2) {
+      return 'Room name must be at least 2 characters'
+    }
+    if (trimmedName.length > 50) {
+      return 'Room name must be less than 50 characters'
+    }
+    if (roomNameExists(trimmedName)) {
+      return 'A room with this name already exists'
+    }
+    return null
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     e.stopPropagation() // Prevent bubbling to parent form
 
-    if (!roomName.trim()) {
-      setError('Room name is required')
+    // Use the validation function for consistency
+    const validationError = validateRoomName(roomName)
+    if (validationError) {
+      // Don't set error state - validation error is already shown under input
       return
     }
 
@@ -65,7 +94,15 @@ export function AddRoomDialog({
       }
     } catch (err) {
       console.error('Error creating room:', err)
-      setError(err instanceof Error ? err.message : 'Failed to create room')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create room'
+      
+      // Don't show duplicate name errors in the bottom error area since they're already shown under the input
+      if (errorMessage.includes('already exists') || errorMessage.includes('duplicate')) {
+        // The real-time validation will handle this error display
+        setError(null)
+      } else {
+        setError(errorMessage)
+      }
     } finally {
       setLoading(false)
     }
@@ -112,11 +149,26 @@ export function AddRoomDialog({
               type="text"
               placeholder="e.g., general, random, team-chat"
               value={roomName}
-              onChange={(e) => setRoomName(e.target.value)}
+              onChange={(e) => {
+                const newValue = e.target.value
+                setRoomName(newValue)
+                // Clear any previous API errors when user starts typing
+                // Validation errors are shown under the input field, not in bottom error area
+                setError(null)
+              }}
               disabled={loading}
               required
-              className="w-full"
+              className={`w-full ${
+                roomName.trim() && roomNameExists(roomName) 
+                  ? 'border-destructive focus:border-destructive' 
+                  : ''
+              }`}
             />
+            {roomName.trim() && roomNameExists(roomName) && (
+              <p className="text-xs text-destructive mt-1">
+                A room with this name already exists
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <label htmlFor="description" className="text-sm font-medium">
@@ -150,7 +202,10 @@ export function AddRoomDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !roomName.trim()}>
+            <Button 
+              type="submit" 
+              disabled={loading || !roomName.trim() || roomNameExists(roomName)}
+            >
               {loading ? 'Creating...' : 'Create Room'}
             </Button>
           </DialogFooter>
