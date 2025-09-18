@@ -110,6 +110,7 @@ export function HomeClient({
                       width={32}
                       height={32}
                       className="w-8 h-8 rounded-full"
+                      priority
                     />
                   )}
                   <div>
