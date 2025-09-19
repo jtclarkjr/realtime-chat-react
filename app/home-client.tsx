@@ -6,6 +6,7 @@ import { RoomSelector } from '@/components/room-selector'
 import { PageTransition } from '@/components/page-transition'
 import { LoadingTransition } from '@/components/loading-transition'
 import { useUserStore } from '@/lib/stores/user-store'
+import { useRoomStore } from '@/lib/stores/room-store'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth/context'
 import { signOut } from '@/lib/auth/client'
@@ -26,9 +27,7 @@ export function HomeClient({
   const [isNavigating, setIsNavigating] = useState(false)
 
   const { userId } = useUserStore()
-  const [selectedRoomId, setSelectedRoomId] = useState(
-    initialDefaultRoomId || ''
-  )
+  const { selectedRoomId, setSelectedRoomId } = useRoomStore()
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -44,7 +43,7 @@ export function HomeClient({
       // Prefetch the default room for faster navigation
       router.prefetch(`/room/${initialDefaultRoomId}`)
     }
-  }, [selectedRoomId, initialDefaultRoomId, router])
+  }, [selectedRoomId, initialDefaultRoomId, router, setSelectedRoomId])
 
   const handleJoinChat = async () => {
     if (user && selectedRoomId && userId) {
@@ -54,16 +53,12 @@ export function HomeClient({
   }
 
   const handleRoomChange = (roomId: string) => {
-    // Update local selected room state
     setSelectedRoomId(roomId)
-    // Prefetch the room page for faster navigation
     router.prefetch(`/room/${roomId}`)
   }
 
   const handleLogout = async () => {
-    // Immediately navigate to login for instant transition
     router.push('/login')
-    // Sign out in background - don't wait for it
     signOut().catch((error) => {
       console.error('Error signing out:', error)
     })
@@ -84,7 +79,6 @@ export function HomeClient({
     return <LoadingTransition message="Entering room..." />
   }
 
-  // Always show the room selection interface since we're routing to separate room pages
   return (
     <PageTransition className="min-h-dvh flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md space-y-6">
