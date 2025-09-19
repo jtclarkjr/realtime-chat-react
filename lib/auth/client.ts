@@ -29,6 +29,19 @@ export async function signInWithGitHub() {
   return { data, error }
 }
 
+export async function signInWithApple() {
+  const supabase = createClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'apple',
+    options: {
+      redirectTo:
+        process.env.NEXT_PUBLIC_AUTH_CALLBACK_URL ||
+        `${window.location.origin}/auth/callback`
+    }
+  })
+  return { data, error }
+}
+
 export async function signOut() {
   const supabase = createClient()
   const { error } = await supabase.auth.signOut()
