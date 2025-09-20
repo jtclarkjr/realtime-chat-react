@@ -10,7 +10,6 @@ Features instant messaging, message persistence, and reconnection handling.
 
 <img src="images/login.png" alt="Login Page" width="150"> <img src="images/lobby.png" alt="Lobby" width="150"> <img src="images/search.png" alt="Search" width="150"> <img src="images/add-room.png" alt="Add Room" width="150"> <img src="images/chat-room.png" alt="Chat Room" width="150">
 
-
 ## Features
 
 - **Real-time messaging** using Supabase Realtime
@@ -25,6 +24,7 @@ Features instant messaging, message persistence, and reconnection handling.
 - **Responsive design** with Tailwind CSS
 - **TypeScript** for type safety
 - **Multiple room support** with isolated conversations
+- **OpenAPI/Swagger documentation** for API endpoints
 - **Production deployment** on Vercel with KV storage
 
 ## Tech Stack
@@ -162,7 +162,8 @@ If you're getting redirected to the root URL with a code parameter instead of
 
 ## AI Assistant
 
-The application includes an AI assistant powered by Anthropic's Claude 3.5 Haiku.
+The application includes an AI assistant powered by Anthropic's Claude 3.5
+Haiku.
 
 ### Add to Environment Variables
 
@@ -191,8 +192,8 @@ CREATE TABLE messages (
 );
 
 -- Add index for efficient private message queries
-CREATE INDEX IF NOT EXISTS idx_messages_private_user 
-ON messages(is_private, user_id) 
+CREATE INDEX IF NOT EXISTS idx_messages_private_user
+ON messages(is_private, user_id)
 WHERE is_private = true;
 
 -- Enable RLS
@@ -247,6 +248,21 @@ bun run dev
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## API Documentation
+
+Interactive Swagger/OpenAPI documentation is available at:
+
+- **Swagger UI**:
+  [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+- **OpenAPI Spec**:
+  [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
+
+### Quick Start
+
+1. Start the development server: `bun run dev`
+2. Visit `/api-docs` to explore and test all API endpoints
+3. Use the "Authorize" button to add your JWT token for authenticated requests
+
 ## Available Scripts
 
 ### Development
@@ -280,10 +296,13 @@ bun run dev
 src/
 ├── app/                    # Next.js App Router
 │   ├── api/               # API routes
-│   │   ├── messages/      # Message handling
-│   │   └── rooms/         # Room management
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx          # Main chat interface
+│   │   ├── ai/           # AI assistant endpoints
+│   │   ├── docs/         # OpenAPI spec endpoint
+│   │   ├── messages/     # Message handling
+│   │   └── rooms/        # Room management
+│   ├── api-docs/         # Swagger UI documentation page
+│   ├── layout.tsx        # Root layout
+│   └── page.tsx         # Main chat interface
 ├── components/            # React components
 │   ├── ui/               # Reusable UI components
 │   ├── chat-message.tsx  # Individual message component
@@ -296,6 +315,7 @@ src/
 │   ├── services/         # Business logic services
 │   ├── stores/           # Zustand state stores
 │   ├── supabase/         # Supabase client configuration
+│   ├── swagger.ts        # OpenAPI/Swagger configuration
 │   └── types/            # TypeScript type definitions
 └── docker-compose.yml     # Redis container configuration
 ```
@@ -304,7 +324,8 @@ src/
 
 ### RealtimeChat
 
-Main chat component handling message display, sending, real-time updates, and AI integration.
+Main chat component handling message display, sending, real-time updates, and AI
+integration.
 
 ### useRealtimeChat Hook
 

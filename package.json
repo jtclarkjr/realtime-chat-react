@@ -40,6 +40,8 @@
     "prettier": "^3.6.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-react": "^5.29.0",
     "tailwind-merge": "^3.3.1",
     "zustand": "^5.0.8"
   },
@@ -49,6 +51,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-react": "^5.18.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.3",
     "tailwindcss": "^4",

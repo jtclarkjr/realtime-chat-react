@@ -1,0 +1,76 @@
+/* Swagger UI Theme Overrides */
+.swagger-ui {
+  font-family: inherit !important;
+}
+
+/* Dark mode support */
+.dark .swagger-ui {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.dark .swagger-ui .scheme-container {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.dark .swagger-ui .topbar {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Hide the Swagger UI topbar */
+.swagger-ui .topbar {
+  display: none;
+}
+
+/* Custom styling for better integration */
+.swagger-ui .info {
+  margin: 20px 0;
+}
+
+.swagger-ui .info .title {
+  color: hsl(var(--foreground));
+}
+
+/* Button styling */
+.swagger-ui .btn {
+  border-radius: 6px;
+}
+
+/* Response styling */
+.swagger-ui .responses-inner {
+  padding: 20px;
+  background: hsl(var(--muted));
+  border-radius: 6px;
+}
+
+/* Parameter styling */
+.swagger-ui .parameters-col_description {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Model styling */
+.swagger-ui .model-box {
+  background: hsl(var(--muted));
+  border-radius: 6px;
+}
+
+/* Try it out button */
+.swagger-ui .try-out__btn {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
+}
+
+.swagger-ui .try-out__btn:hover {
+  background: hsl(var(--primary) / 0.9);
+}
+
+/* Execute button */
+.swagger-ui .execute-wrapper .btn {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
+}
+
+.swagger-ui .execute-wrapper .btn:hover {
+  background: hsl(var(--primary) / 0.9);
+}
