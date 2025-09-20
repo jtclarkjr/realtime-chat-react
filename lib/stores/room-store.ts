@@ -17,7 +17,8 @@ export const useRoomStore = create<RoomState>()(
     {
       name: 'room-storage',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ selectedRoomId: state.selectedRoomId }) as PersistedState
+      partialize: (state) =>
+        ({ selectedRoomId: state.selectedRoomId }) as PersistedState
     }
   )
 )

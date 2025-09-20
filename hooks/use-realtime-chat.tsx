@@ -121,8 +121,8 @@ export function useRealtimeChat({
         .channel(roomId, {
           config: {
             broadcast: { self: false }, // Don't receive own messages via broadcast
-            presence: { key: userId }, // Track presence with userId
-          },
+            presence: { key: userId } // Track presence with userId
+          }
         })
         .on('broadcast', { event: EVENT_MESSAGE_TYPE }, (payload) => {
           const receivedMessage = payload.payload as ChatMessage
@@ -135,7 +135,9 @@ export function useRealtimeChat({
           ) {
             setMessages((current) => {
               // Avoid duplicates by checking message ID
-              const exists = current.some((msg) => msg.id === receivedMessage.id)
+              const exists = current.some(
+                (msg) => msg.id === receivedMessage.id
+              )
               if (exists) {
                 return current
               }
@@ -160,7 +162,10 @@ export function useRealtimeChat({
         })
         .on('system', {}, (payload) => {
           // Handle system events (connection state changes)
-          if (payload.extension === 'postgres_changes' && payload.type === 'error') {
+          if (
+            payload.extension === 'postgres_changes' &&
+            payload.type === 'error'
+          ) {
             console.error('Channel error:', payload)
             setIsConnected(false)
             // Attempt to reconnect after error
@@ -176,7 +181,7 @@ export function useRealtimeChat({
         .subscribe((status, error) => {
           if (status === 'SUBSCRIBED') {
             setIsConnected(true)
-            
+
             // Start heartbeat to keep connection alive
             clearInterval(heartbeatInterval)
             heartbeatInterval = setInterval(() => {

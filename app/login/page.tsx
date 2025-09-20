@@ -3,7 +3,6 @@ import { MessageCircle } from 'lucide-react'
 import { LoginClient } from './login-client'
 
 export default function LoginPage() {
-
   return (
     <PageTransition className="min-h-dvh flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md space-y-6">
