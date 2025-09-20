@@ -51,7 +51,7 @@ export function LoginClient() {
         onClick={handleDiscordSignIn}
         disabled={!!loading}
         variant="discord"
-        className="w-full py-3 px-4 rounded-lg font-medium text-base"
+        size="xl"
       >
         {loading === 'discord' ? (
           <span className="flex items-center gap-2">
@@ -70,7 +70,7 @@ export function LoginClient() {
         onClick={handleGitHubSignIn}
         disabled={!!loading}
         variant="github"
-        className="w-full py-3 px-4 rounded-lg font-medium text-base"
+        size="xl"
       >
         {loading === 'github' ? (
           <span className="flex items-center gap-2">
@@ -89,7 +89,7 @@ export function LoginClient() {
         onClick={handleAppleSignIn}
         disabled={!!loading}
         variant="apple"
-        className="w-full py-3 px-4 rounded-lg font-medium text-base"
+        size="xl"
       >
         {loading === 'apple' ? (
           <span className="flex items-center gap-2">
