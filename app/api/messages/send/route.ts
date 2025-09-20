@@ -3,58 +3,6 @@ import { ChatService } from '@/lib/services/chat-service'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
 import type { SendMessageRequest } from '@/lib/types/database'
 
-/**
- * @swagger
- * /api/messages/send:
- *   post:
- *     summary: Send a message
- *     description: Send a message to a chat room
- *     tags: [Messages]
- *     security:
- *       - BearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/SendMessageRequest'
- *     responses:
- *       200:
- *         description: Message sent successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   $ref: '#/components/schemas/Message'
- *       400:
- *         description: Missing required fields
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Cannot send messages as another user
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Failed to send message
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
 export const POST = withAuth(
   async (request: NextRequest, { user, supabase }) => {
     try {
