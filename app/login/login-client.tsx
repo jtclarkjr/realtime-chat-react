@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { DiscordIcon, GitHubIcon, AppleIcon } from '@/components/ui/icons'
 import {
   signInWithDiscord,
@@ -49,11 +50,12 @@ export function LoginClient() {
       <Button
         onClick={handleDiscordSignIn}
         disabled={!!loading}
-        className="w-full bg-[#5865F2] text-white hover:bg-[#4752C4] py-3 px-4 rounded-lg font-medium text-base transition-colors duration-200"
+        variant="discord"
+        className="w-full py-3 px-4 rounded-lg font-medium text-base"
       >
         {loading === 'discord' ? (
           <span className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+            <Spinner variant="white" />
             Signing in...
           </span>
         ) : (
@@ -67,12 +69,12 @@ export function LoginClient() {
       <Button
         onClick={handleGitHubSignIn}
         disabled={!!loading}
-        variant="outline"
-        className="w-full py-3 px-4 rounded-lg font-medium text-base transition-colors duration-200"
+        variant="github"
+        className="w-full py-3 px-4 rounded-lg font-medium text-base"
       >
         {loading === 'github' ? (
           <span className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-foreground border-t-transparent"></div>
+            <Spinner />
             Signing in...
           </span>
         ) : (
@@ -86,11 +88,12 @@ export function LoginClient() {
       <Button
         onClick={handleAppleSignIn}
         disabled={!!loading}
-        className="w-full py-3 px-4 rounded-lg font-medium text-base transition-colors duration-200 bg-black text-white hover:bg-zinc-800 hover:text-white"
+        variant="apple"
+        className="w-full py-3 px-4 rounded-lg font-medium text-base"
       >
         {loading === 'apple' ? (
           <span className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+            <Spinner variant="white" />
             Signing in...
           </span>
         ) : (
