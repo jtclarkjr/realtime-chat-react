@@ -49,7 +49,7 @@ export const AIBadge = ({
           onClick={onPrivacyToggle}
           className={cn(
             'inline-flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 border',
-            'hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1',
+            'hover:scale-105 active:scale-95 focus:outline-none',
             isPrivate
               ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 border-orange-200 dark:border-orange-800'
               : 'bg-green-100 dark:bg-green-900/30 text-green-600 border-green-200 dark:border-green-800'

@@ -23,11 +23,11 @@ const buttonVariants = cva(
         discord:
           'bg-[#5865F2] text-white hover:bg-[#4752C4] shadow-xs transition-colors duration-200',
         github:
-          'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 transition-colors duration-200',
+          'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground transition-colors duration-200',
         apple:
-          'bg-black text-white hover:bg-zinc-800 shadow-xs transition-colors duration-200',
+          'bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 shadow-xs transition-colors duration-200',
         'text-danger':
-          'text-red-600 hover:text-red-700 hover:bg-red-50 font-medium px-2 py-1 h-auto transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0'
+          'text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30 font-medium px-2 py-1 h-auto transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0'
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',

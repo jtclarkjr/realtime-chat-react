@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { RoomSelector } from '@/components/room-selector'
 import { PageTransition } from '@/components/page-transition'
 import { LoadingTransition } from '@/components/loading-transition'
@@ -111,13 +112,12 @@ export function HomeClient({
                     </div>
                   </div>
                 </div>
-                <Button
-                  onClick={handleLogout}
-                  variant="text-danger"
-                  className="ml-4"
-                >
-                  Sign Out
-                </Button>
+                <div className="flex items-center gap-2 ml-4">
+                  <ThemeToggle />
+                  <Button onClick={handleLogout} variant="text-danger">
+                    Sign Out
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

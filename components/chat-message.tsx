@@ -94,11 +94,11 @@ export const ChatMessageItem = ({
             {
               'bg-primary text-primary-foreground rounded-br-md':
                 isOwnMessage && !isPrivateForCurrentUser,
-              'bg-orange-50 dark:bg-orange-950/30 text-foreground border border-orange-200 dark:border-orange-800/50':
+              'bg-orange-100 dark:bg-orange-900/30 text-foreground border border-orange-200 dark:border-orange-800/50':
                 isPrivateForCurrentUser && isAIMessage,
               'bg-gray-100 dark:bg-gray-800/50 text-foreground rounded-br-md border border-gray-300 dark:border-gray-600':
                 isPrivateForCurrentUser && isOwnMessage && !isAIMessage,
-              'bg-blue-50 dark:bg-blue-950/30 text-foreground rounded-bl-md border border-blue-200 dark:border-blue-800/50':
+              'bg-blue-50 dark:bg-blue-900/50 text-foreground rounded-bl-md border border-blue-200 dark:border-blue-700':
                 isAIMessage && !isOwnMessage && !isPrivateForCurrentUser,
               'bg-muted text-foreground rounded-bl-md border border-border/50':
                 !isOwnMessage && !isAIMessage && !isPrivateForCurrentUser
