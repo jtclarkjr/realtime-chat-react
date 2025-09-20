@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Realtime Chat App',
   description:
-    'A modern, real-time chat application built with Next.js, Supabase, and Vercel KV. Features instant messaging, message persistence, and reconnection handling.',
+    'A modern, real-time chat application. Features instant messaging, message persistence, and reconnection handling.',
   keywords: ['chat', 'realtime', 'nextjs', 'supabase', 'redis', 'websocket'],
   authors: [{ name: 'James' }],
   openGraph: {
