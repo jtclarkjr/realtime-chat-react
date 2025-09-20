@@ -15,7 +15,7 @@ export function LoginClient() {
 
   const handleOAuthSignIn = async (
     provider: 'discord' | 'github' | 'apple',
-    signInFn: () => Promise<{ error: Error | null }>
+    signIn: () => Promise<{ error: Error | null }>
   ) => {
     try {
       setLoading(provider)
@@ -25,7 +25,7 @@ export function LoginClient() {
         setLoading(null)
       }, 5000)
 
-      const { error } = await signInFn()
+      const { error } = await signIn()
 
       // Clear timeout if we get here (error case)
       clearTimeout(timeoutId)
