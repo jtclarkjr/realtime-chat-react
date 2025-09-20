@@ -25,7 +25,9 @@ const buttonVariants = cva(
         github:
           'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 transition-colors duration-200',
         apple:
-          'bg-black text-white hover:bg-zinc-800 shadow-xs transition-colors duration-200'
+          'bg-black text-white hover:bg-zinc-800 shadow-xs transition-colors duration-200',
+        'text-danger':
+          'text-red-600 hover:text-red-700 hover:bg-red-50 font-medium px-2 py-1 h-auto transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0'
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',

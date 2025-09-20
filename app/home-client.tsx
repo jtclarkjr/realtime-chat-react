@@ -113,9 +113,8 @@ export function HomeClient({
                 </div>
                 <Button
                   onClick={handleLogout}
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 text-sm font-medium px-2 py-1 h-auto transition-all duration-200 hover:scale-105 active:scale-95 ml-4 flex-shrink-0"
+                  variant="text-danger"
+                  className="ml-4"
                 >
                   Sign Out
                 </Button>
