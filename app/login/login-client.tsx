@@ -13,6 +13,7 @@ import {
 export function LoginClient() {
   const [loading, setLoading] = useState<string | null>(null)
 
+  // Handle clearing loading state when returning to the page
   useEffect(() => {
     const handleWindowFocus = () => {
       if (!document.hidden) {
@@ -20,6 +21,7 @@ export function LoginClient() {
       }
     }
 
+    // Clear loading state on mount in case page loads while visible
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         setLoading(null)
@@ -31,7 +33,9 @@ export function LoginClient() {
       setLoading(null)
     }
 
+    // Clear loading when returning from external sites (GitHub/Discord login)
     window.addEventListener('focus', handleWindowFocus)
+    // Clear loading when tab becomes visible again
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
