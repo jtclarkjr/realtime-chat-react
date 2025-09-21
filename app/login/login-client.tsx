@@ -89,7 +89,7 @@ export function LoginClient() {
       // Set a timeout to reset loading state in case of redirect
       const timeoutId = setTimeout(() => {
         setLoading(null)
-      }, 5000)
+      }, 1500)
 
       const { error } = await signIn()
 
