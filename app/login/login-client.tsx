@@ -14,77 +14,23 @@ export function LoginClient() {
   const [loading, setLoading] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!loading) return
+    // Only activate cancellation detection for Apple login
+    if (loading !== 'apple') return
 
-    // Detect iOS devices
-    const isIOS =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1)
+    let intervalId: NodeJS.Timeout
 
-    let intervalId: NodeJS.Timeout | null = null
-    let setupTimeoutId: NodeJS.Timeout | null = null
-    let handlePageShow: (() => void) | null = null
-
-    // Reset loading state when user returns to the page from cancelled login popup
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && loading) {
-        setTimeout(() => {
+    // Wait 2s for Apple popup to show, then start cancellation detection
+    const timeoutId = setTimeout(() => {
+      intervalId = setInterval(() => {
+        if (document.visibilityState === 'visible' && !document.hidden) {
           setLoading(null)
-        }, 1000)
-      }
-    }
-
-    const handleFocus = () => {
-      if (loading) {
-        setTimeout(() => {
-          setLoading(null)
-        }, 1000)
-      }
-    }
-
-    // Wait before setting up cancellation detection to allow popup to show
-    setupTimeoutId = setTimeout(() => {
-      // iOS-specific handling: poll for page visibility since events don't fire reliably
-      if (isIOS && loading) {
-        intervalId = setInterval(() => {
-          // Check if we're back in focus and reset loading
-          if (document.visibilityState === 'visible' && !document.hidden) {
-            setLoading(null)
-          }
-        }, 500) // Check every 500ms on iOS
-      }
-
-      // Standard event listeners for non-iOS
-      if (!isIOS) {
-        document.addEventListener('visibilitychange', handleVisibilityChange)
-        window.addEventListener('focus', handleFocus)
-      }
-
-      // Additional pageshow event for iOS (fires when returning from native apps)
-      if (isIOS) {
-        handlePageShow = () => {
-          if (loading) {
-            setTimeout(() => {
-              setLoading(null)
-            }, 1000)
-          }
         }
-        window.addEventListener('pageshow', handlePageShow)
-      }
-    }, 2000) // Wait 2 seconds before starting cancellation detection
+      }, 500)
+    }, 2000)
 
     return () => {
-      if (setupTimeoutId) clearTimeout(setupTimeoutId)
+      clearTimeout(timeoutId)
       if (intervalId) clearInterval(intervalId)
-
-      if (!isIOS) {
-        document.removeEventListener('visibilitychange', handleVisibilityChange)
-        window.removeEventListener('focus', handleFocus)
-      }
-
-      if (isIOS && handlePageShow) {
-        window.removeEventListener('pageshow', handlePageShow)
-      }
     }
   }, [loading])
 
