@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { DiscordIcon, GitHubIcon, AppleIcon } from '@/components/ui/icons'
@@ -12,6 +12,29 @@ import {
 
 export function LoginClient() {
   const [loading, setLoading] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Reset loading state when user returns to the page from cancelled Safari Apple login popup
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && loading) {
+        setLoading(null)
+      }
+    }
+
+    const handleFocus = () => {
+      if (loading) {
+        setLoading(null)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [loading])
 
   const handleOAuthSignIn = async (
     provider: 'discord' | 'github' | 'apple',
