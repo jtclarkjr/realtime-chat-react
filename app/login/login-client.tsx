@@ -24,14 +24,16 @@ export function LoginClient() {
     // Reset loading state when user returns to the page from cancelled login popup
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && loading) {
-        setLoading(null)
+        setTimeout(() => {
+          setLoading(null)
+        }, 1000)
       }
     }
 
     const handleFocus = () => {
-      if (loading) {
+      setTimeout(() => {
         setLoading(null)
-      }
+      }, 1000)
     }
 
     // iOS-specific handling: poll for page visibility since events don't fire reliably
@@ -41,7 +43,7 @@ export function LoginClient() {
         if (document.visibilityState === 'visible' && !document.hidden) {
           setLoading(null)
         }
-      }, 500) // Check every 500ms on iOS
+      }, 1000) // Check every 1000ms on iOS
     }
 
     // Standard event listeners for non-iOS
@@ -53,7 +55,9 @@ export function LoginClient() {
     // Additional pageshow event for iOS (fires when returning from native apps)
     const handlePageShow = () => {
       if (loading) {
-        setLoading(null)
+        setTimeout(() => {
+          setLoading(null)
+        }, 1000)
       }
     }
 
