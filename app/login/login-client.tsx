@@ -14,6 +14,33 @@ export function LoginClient() {
   const [loading, setLoading] = useState<string | null>(null)
 
   useEffect(() => {
+    const handleWindowFocus = () => {
+      if (!document.hidden) {
+        setLoading(null)
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        setLoading(null)
+      }
+    }
+
+    // Check on mount
+    if (!document.hidden) {
+      setLoading(null)
+    }
+
+    window.addEventListener('focus', handleWindowFocus)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [])
+
+  useEffect(() => {
     // Only activate cancellation detection for Apple login
     if (loading !== 'apple') return
 
