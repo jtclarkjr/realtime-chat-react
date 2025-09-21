@@ -11,7 +11,7 @@ const SwaggerUI = dynamic(() => import('swagger-ui-react'), {
 })
 
 interface SwaggerUIClientProps {
-  specPromise: Promise<any>
+  specPromise: Promise<Record<string, unknown>>
 }
 
 const SwaggerUIClient = ({ specPromise }: SwaggerUIClientProps) => {
