@@ -13,69 +13,55 @@ import {
 export function LoginClient() {
   const [loading, setLoading] = useState<string | null>(null)
 
+  // Handle clearing loading state when returning to the page
   useEffect(() => {
-    // Detect iOS devices
-    const isIOS =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1)
-
-    let intervalId: NodeJS.Timeout | null = null
-
-    // Reset loading state when user returns to the page from cancelled login popup
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && loading) {
-        setTimeout(() => {
-          setLoading(null)
-        }, 1500)
+    const handleWindowFocus = () => {
+      if (!document.hidden) {
+        setLoading(null)
       }
     }
 
-    const handleFocus = () => {
-      setTimeout(() => {
+    // Clear loading state on mount in case page loads while visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
         setLoading(null)
-      }, 1500)
+      }
     }
 
-    // iOS-specific handling: poll for page visibility since events don't fire reliably
-    if (isIOS && loading) {
+    // Check on mount
+    if (!document.hidden) {
+      setLoading(null)
+    }
+
+    // Clear loading when returning from external sites (GitHub/Discord login)
+    window.addEventListener('focus', handleWindowFocus)
+    // Clear loading when tab becomes visible again
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [])
+
+  useEffect(() => {
+    // Only activate cancellation detection for Apple login
+    if (loading !== 'apple') return
+
+    let intervalId: NodeJS.Timeout
+
+    // Wait 2s for Apple popup to show, then start cancellation detection
+    const timeoutId = setTimeout(() => {
       intervalId = setInterval(() => {
-        // Check if we're back in focus and reset loading
         if (document.visibilityState === 'visible' && !document.hidden) {
           setLoading(null)
         }
-      }, 1500) // Check every 1000ms on iOS
-    }
-
-    // Standard event listeners for non-iOS
-    if (!isIOS) {
-      document.addEventListener('visibilitychange', handleVisibilityChange)
-      window.addEventListener('focus', handleFocus)
-    }
-
-    // Additional pageshow event for iOS (fires when returning from native apps)
-    const handlePageShow = () => {
-      if (loading) {
-        setTimeout(() => {
-          setLoading(null)
-        }, 1500)
-      }
-    }
-
-    if (isIOS) {
-      window.addEventListener('pageshow', handlePageShow)
-    }
+      }, 500)
+    }, 2000)
 
     return () => {
+      clearTimeout(timeoutId)
       if (intervalId) clearInterval(intervalId)
-
-      if (!isIOS) {
-        document.removeEventListener('visibilitychange', handleVisibilityChange)
-        window.removeEventListener('focus', handleFocus)
-      }
-
-      if (isIOS) {
-        window.removeEventListener('pageshow', handlePageShow)
-      }
     }
   }, [loading])
 
