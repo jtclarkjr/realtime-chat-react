@@ -14,7 +14,14 @@ export function LoginClient() {
   const [loading, setLoading] = useState<string | null>(null)
 
   useEffect(() => {
-    // Reset loading state when user returns to the page from cancelled Safari Apple login popup
+    // Detect iOS devices
+    const isIOS =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1)
+
+    let intervalId: NodeJS.Timeout | null = null
+
+    // Reset loading state when user returns to the page from cancelled login popup
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && loading) {
         setLoading(null)
@@ -27,12 +34,44 @@ export function LoginClient() {
       }
     }
 
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleFocus)
+    // iOS-specific handling: poll for page visibility since events don't fire reliably
+    if (isIOS && loading) {
+      intervalId = setInterval(() => {
+        // Check if we're back in focus and reset loading
+        if (document.visibilityState === 'visible' && !document.hidden) {
+          setLoading(null)
+        }
+      }, 500) // Check every 500ms on iOS
+    }
+
+    // Standard event listeners for non-iOS
+    if (!isIOS) {
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      window.addEventListener('focus', handleFocus)
+    }
+
+    // Additional pageshow event for iOS (fires when returning from native apps)
+    const handlePageShow = () => {
+      if (loading) {
+        setLoading(null)
+      }
+    }
+
+    if (isIOS) {
+      window.addEventListener('pageshow', handlePageShow)
+    }
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleFocus)
+      if (intervalId) clearInterval(intervalId)
+
+      if (!isIOS) {
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        window.removeEventListener('focus', handleFocus)
+      }
+
+      if (isIOS) {
+        window.removeEventListener('pageshow', handlePageShow)
+      }
     }
   }, [loading])
 
