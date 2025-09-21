@@ -26,14 +26,14 @@ export function LoginClient() {
       if (document.visibilityState === 'visible' && loading) {
         setTimeout(() => {
           setLoading(null)
-        }, 1000)
+        }, 1500)
       }
     }
 
     const handleFocus = () => {
       setTimeout(() => {
         setLoading(null)
-      }, 1000)
+      }, 1500)
     }
 
     // iOS-specific handling: poll for page visibility since events don't fire reliably
@@ -43,7 +43,7 @@ export function LoginClient() {
         if (document.visibilityState === 'visible' && !document.hidden) {
           setLoading(null)
         }
-      }, 1000) // Check every 1000ms on iOS
+      }, 1500) // Check every 1000ms on iOS
     }
 
     // Standard event listeners for non-iOS
@@ -57,7 +57,7 @@ export function LoginClient() {
       if (loading) {
         setTimeout(() => {
           setLoading(null)
-        }, 1000)
+        }, 1500)
       }
     }
 
