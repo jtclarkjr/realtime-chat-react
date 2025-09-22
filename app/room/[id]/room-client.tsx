@@ -16,8 +16,8 @@ interface RoomClientProps {
 
 export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const router = useRouter()
-  const [isInitialized, setIsInitialized] = useState(false)
-  const [isLeaving, setIsLeaving] = useState(false)
+  const [isInitialized, setIsInitialized] = useState<boolean>(false)
+  const [isLeaving, setIsLeaving] = useState<boolean>(false)
 
   // Use the authenticated user's ID instead of generating a new one
   const userId = user.id

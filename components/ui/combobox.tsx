@@ -1,6 +1,6 @@
 'use client'
 
-import * as React from 'react'
+import { useMemo, useState } from 'react'
 import { Check, ChevronsUpDown } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -50,15 +50,15 @@ function Combobox({
   triggerClassName,
   contentClassName
 }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false)
-  const [searchValue, setSearchValue] = React.useState('')
+  const [open, setOpen] = useState<boolean>(false)
+  const [searchValue, setSearchValue] = useState<string>('')
 
-  const selectedOption = React.useMemo(
+  const selectedOption = useMemo(
     () => options.find((option) => option.value === value),
     [options, value]
   )
 
-  const filteredOptions = React.useMemo(() => {
+  const filteredOptions = useMemo(() => {
     if (!searchValue) return options
 
     return options.filter((option) => {

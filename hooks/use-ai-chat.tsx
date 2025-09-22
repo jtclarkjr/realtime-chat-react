@@ -30,9 +30,9 @@ export function useAIChat({
   onStreamingMessage,
   onCompleteMessage
 }: UseAIChatProps): UseAIChatReturn {
-  const [isAIEnabled, setIsAIEnabled] = useState(false)
-  const [isAIPrivate, setIsAIPrivate] = useState(false)
-  const [isAILoading, setIsAILoading] = useState(false)
+  const [isAIEnabled, setIsAIEnabled] = useState<boolean>(false)
+  const [isAIPrivate, setIsAIPrivate] = useState<boolean>(false)
+  const [isAILoading, setIsAILoading] = useState<boolean>(false)
 
   const sendAIMessage = useCallback(
     async (content: string, previousMessages: ChatMessage[] = []) => {

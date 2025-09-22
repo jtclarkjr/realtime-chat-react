@@ -30,8 +30,8 @@ export function useRealtimeChat({
 }: UseRealtimeChatProps) {
   const supabase = createClient()
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [isConnected, setIsConnected] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [isConnected, setIsConnected] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(true)
 
   // Fetch missed messages on mount
   useEffect(() => {

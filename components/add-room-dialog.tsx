@@ -27,10 +27,10 @@ export function AddRoomDialog({
   disabled = false,
   existingRooms = []
 }: AddRoomDialogProps) {
-  const [open, setOpen] = useState(false)
-  const [roomName, setRoomName] = useState('')
-  const [description, setDescription] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [open, setOpen] = useState<boolean>(false)
+  const [roomName, setRoomName] = useState<string>('')
+  const [description, setDescription] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
 
   // Check if room name already exists (case-insensitive)

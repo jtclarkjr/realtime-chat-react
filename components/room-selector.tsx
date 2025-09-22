@@ -22,7 +22,7 @@ export function RoomSelector({
   initialRooms = []
 }: RoomSelectorProps) {
   const [rooms, setRooms] = useState<DatabaseRoom[]>(initialRooms)
-  const [loading, setLoading] = useState(initialRooms.length === 0)
+  const [loading, setLoading] = useState<boolean>(initialRooms.length === 0)
   const [error, setError] = useState<string | null>(null)
 
   // Memoize onRoomChange to prevent useEffect re-runs

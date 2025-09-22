@@ -25,7 +25,7 @@ export function HomeClient({
 }: HomeClientProps) {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
-  const [isNavigating, setIsNavigating] = useState(false)
+  const [isNavigating, setIsNavigating] = useState<boolean>(false)
 
   const { userId } = useUserStore()
   const { selectedRoomId, setSelectedRoomId } = useRoomStore()

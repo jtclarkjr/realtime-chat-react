@@ -98,7 +98,7 @@ export const RealtimeChat = ({
     }
   })
 
-  const [newMessage, setNewMessage] = useState('')
+  const [newMessage, setNewMessage] = useState<string>('')
   const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(
     null
   )
