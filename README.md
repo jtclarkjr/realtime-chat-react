@@ -24,6 +24,7 @@ Features instant messaging, message persistence, and reconnection handling.
 - **Responsive design** with Tailwind CSS
 - **TypeScript** for type safety
 - **Multiple room support** with isolated conversations
+- **Room management** with create and delete capabilities
 - **OpenAPI/Swagger documentation** for API endpoints
 - **Production deployment** on Vercel with KV storage
 
