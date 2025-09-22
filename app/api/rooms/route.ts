@@ -57,7 +57,7 @@ export const POST = withAuth(async (request: NextRequest, auth) => {
   }
 })
 
-export const DELETE = withAuth(async (request: NextRequest, auth) => {
+export const DELETE = withAuth(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url)
     const roomId = searchParams.get('id')
