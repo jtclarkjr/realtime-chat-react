@@ -106,10 +106,7 @@ export async function getRoomById(id: string): Promise<DatabaseRoom | null> {
 export async function deleteRoom(roomId: string): Promise<boolean> {
   const supabase = getServiceClient()
 
-  const { error } = await supabase
-    .from('rooms')
-    .delete()
-    .eq('id', roomId)
+  const { error } = await supabase.from('rooms').delete().eq('id', roomId)
 
   if (error) {
     console.error('Error deleting room:', error)
@@ -117,7 +114,9 @@ export async function deleteRoom(roomId: string): Promise<boolean> {
     if (error.code === '42501' || error.message?.includes('permission')) {
       throw new Error('unauthorized')
     }
-    throw new Error(`Failed to delete room: ${error.message || 'Unknown error'}`)
+    throw new Error(
+      `Failed to delete room: ${error.message || 'Unknown error'}`
+    )
   }
 
   return true

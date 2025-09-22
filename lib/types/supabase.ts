@@ -42,11 +42,11 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: "messages_room_id_fkey"
-            columns: ["room_id"]
+            foreignKeyName: 'messages_room_id_fkey'
+            columns: ['room_id']
             isOneToOne: false
-            referencedRelation: "rooms"
-            referencedColumns: ["id"]
+            referencedRelation: 'rooms'
+            referencedColumns: ['id']
           }
         ]
       }

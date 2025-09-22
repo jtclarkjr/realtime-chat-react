@@ -297,7 +297,7 @@ export class RoomCacheService {
       if (success) {
         // Invalidate all room caches
         await this.invalidateRoomCache(roomId)
-        
+
         // Also invalidate any message cache for this room
         // This ensures Redis doesn't have stale message data
         // Note: We'll try to delete specific known keys instead of using pattern matching
@@ -305,10 +305,10 @@ export class RoomCacheService {
         try {
           // Delete known cache keys for this room
           const keysToDelete = [
-            `chat:latest_message:${roomId}`,
+            `chat:latest_message:${roomId}`
             // Add other specific keys as needed
           ]
-          
+
           for (const key of keysToDelete) {
             await this.redis.del(key)
           }

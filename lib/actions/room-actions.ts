@@ -216,9 +216,7 @@ export async function getRoomDataWithMessages(
 /**
  * Server action to delete a room
  */
-export async function deleteRoomAction(
-  roomId: string
-): Promise<{
+export async function deleteRoomAction(roomId: string): Promise<{
   success: boolean
   error?: string
 }> {

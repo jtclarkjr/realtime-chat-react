@@ -1,7 +1,11 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Combobox, type ComboboxOption, type ComboboxAction } from '@/components/ui/combobox'
+import {
+  Combobox,
+  type ComboboxOption,
+  type ComboboxAction
+} from '@/components/ui/combobox'
 import { MessageCircle, Trash2 } from 'lucide-react'
 import { AddRoomDialog } from '@/components/add-room-dialog'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
@@ -92,10 +96,10 @@ export function RoomSelector({
 
   const handleDeleteRoomClick = (roomId: string) => {
     if (deleting || !currentUserId) return
-    
-    const room = rooms.find(r => r.id === roomId)
+
+    const room = rooms.find((r) => r.id === roomId)
     if (!room) return
-    
+
     setConfirmDelete({
       open: true,
       roomId,
@@ -109,35 +113,41 @@ export function RoomSelector({
 
     setDeleting(roomId)
     setConfirmDelete({ open: false, roomId: null, roomName: null })
-    
+
     try {
       const result = await deleteRoomAction(roomId)
-      
+
       if (result.success) {
         // Remove the room from the list
-        setRooms((prevRooms) => prevRooms.filter(room => room.id !== roomId))
-        
+        setRooms((prevRooms) => prevRooms.filter((room) => room.id !== roomId))
+
         // If the deleted room was selected, switch to another room
         if (selectedRoom === roomId && rooms.length > 1) {
-          const remainingRooms = rooms.filter(room => room.id !== roomId)
+          const remainingRooms = rooms.filter((room) => room.id !== roomId)
           if (remainingRooms.length > 0) {
-            const generalRoom = remainingRooms.find(room => room.name === 'general')
+            const generalRoom = remainingRooms.find(
+              (room) => room.name === 'general'
+            )
             const fallbackRoom = generalRoom || remainingRooms[0]
             onRoomChange(fallbackRoom.id)
           }
         }
-        
+
         toast.success('Room deleted successfully', {
           description: `"${confirmDelete.roomName}" has been deleted along with all its messages.`,
           duration: 4000
         })
-        
+
         // Announce to screen readers
-        setAnnouncement(`Room ${confirmDelete.roomName} has been successfully deleted`)
+        setAnnouncement(
+          `Room ${confirmDelete.roomName} has been successfully deleted`
+        )
       } else {
         console.error('Failed to delete room:', result.error)
         toast.error('Failed to delete room', {
-          description: result.error || 'An unexpected error occurred while deleting the room.',
+          description:
+            result.error ||
+            'An unexpected error occurred while deleting the room.',
           duration: 6000
         })
       }
@@ -192,9 +202,13 @@ export function RoomSelector({
   // Convert rooms to combobox options
   const comboboxOptions: ComboboxOption[] = rooms.map((room) => {
     const actions: ComboboxAction[] = []
-    
+
     // Add delete action if user has permission and it's not the currently selected room
-    if (currentUserId && room.created_by === currentUserId && room.id !== selectedRoom) {
+    if (
+      currentUserId &&
+      room.created_by === currentUserId &&
+      room.id !== selectedRoom
+    ) {
       actions.push({
         icon: Trash2,
         label: 'Delete room',
@@ -203,7 +217,7 @@ export function RoomSelector({
         variant: 'destructive'
       })
     }
-    
+
     return {
       value: room.id,
       label: `# ${room.name}`,
@@ -234,7 +248,7 @@ export function RoomSelector({
           existingRooms={rooms}
         />
       )}
-      
+
       <ConfirmationDialog
         open={confirmDelete.open}
         onOpenChange={(open) => {
@@ -254,12 +268,12 @@ export function RoomSelector({
         onConfirm={handleDeleteRoomConfirm}
         loading={deleting === confirmDelete.roomId}
       />
-      
+
       {/* Live region for screen reader announcements */}
-      <div 
-        role="status" 
-        aria-live="polite" 
-        aria-atomic="true" 
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
         className="sr-only"
       >
         {announcement}

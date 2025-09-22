@@ -6,7 +6,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 
@@ -45,17 +45,10 @@ export function ConfirmationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="sm:max-w-[425px]"
-        role="alertdialog"
-      >
+      <DialogContent className="sm:max-w-[425px]" role="alertdialog">
         <DialogHeader>
-          <DialogTitle>
-            {title}
-          </DialogTitle>
-          <DialogDescription>
-            {description}
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button
@@ -78,7 +71,9 @@ export function ConfirmationDialog({
             {loading ? (
               <>
                 <span aria-hidden="true">Processing...</span>
-                <span className="sr-only">Please wait, processing your request</span>
+                <span className="sr-only">
+                  Please wait, processing your request
+                </span>
               </>
             ) : (
               confirmText

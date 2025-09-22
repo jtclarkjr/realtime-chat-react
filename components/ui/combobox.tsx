@@ -163,46 +163,55 @@ function Combobox({
                       </div>
                       <div className="flex items-center gap-1">
                         {/* Action buttons */}
-                        {option.actions && option.actions.map((action, actionIndex) => {
-                          const Icon = action.icon
-                          const isDisabled = action.disabled?.(option.value) ?? false
-                          return (
-                            <Button
-                              key={actionIndex}
-                              variant="ghost"
-                              size="sm"
-                              className={cn(
-                                "h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity",
-                                action.variant === 'destructive' && "hover:bg-destructive/10 hover:text-destructive",
-                                isDisabled && "opacity-30 cursor-not-allowed"
-                              )}
-                              disabled={isDisabled}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (!isDisabled) {
-                                  action.onClick(option.value)
-                                }
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault()
+                        {option.actions &&
+                          option.actions.map((action, actionIndex) => {
+                            const Icon = action.icon
+                            const isDisabled =
+                              action.disabled?.(option.value) ?? false
+                            return (
+                              <Button
+                                key={actionIndex}
+                                variant="ghost"
+                                size="sm"
+                                className={cn(
+                                  'h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity',
+                                  action.variant === 'destructive' &&
+                                    'hover:bg-destructive/10 hover:text-destructive',
+                                  isDisabled && 'opacity-30 cursor-not-allowed'
+                                )}
+                                disabled={isDisabled}
+                                onClick={(e) => {
                                   e.stopPropagation()
                                   if (!isDisabled) {
                                     action.onClick(option.value)
                                   }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    if (!isDisabled) {
+                                      action.onClick(option.value)
+                                    }
+                                  }
+                                }}
+                                title={`${action.label} for ${option.label}`}
+                                aria-label={`${action.label} for ${option.label}`}
+                                aria-describedby={
+                                  isDisabled
+                                    ? `${option.value}-disabled`
+                                    : undefined
                                 }
-                              }}
-                              title={`${action.label} for ${option.label}`}
-                              aria-label={`${action.label} for ${option.label}`}
-                              aria-describedby={isDisabled ? `${option.value}-disabled` : undefined}
-                              role="button"
-                              tabIndex={isDisabled ? -1 : 0}
-                            >
-                              <Icon className="h-3 w-3" aria-hidden="true" />
-                              <span className="sr-only">{action.label} for {option.label}</span>
-                            </Button>
-                          )
-                        })}
+                                role="button"
+                                tabIndex={isDisabled ? -1 : 0}
+                              >
+                                <Icon className="h-3 w-3" aria-hidden="true" />
+                                <span className="sr-only">
+                                  {action.label} for {option.label}
+                                </span>
+                              </Button>
+                            )
+                          })}
                         {/* Selection check */}
                         <Check
                           className={cn(
