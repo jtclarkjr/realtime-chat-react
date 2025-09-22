@@ -172,7 +172,7 @@ function Combobox({
                               variant="ghost"
                               size="sm"
                               className={cn(
-                                "h-6 w-6 p-0 transition-opacity",
+                                "h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity",
                                 action.variant === 'destructive' && "hover:bg-destructive/10 hover:text-destructive",
                                 isDisabled && "opacity-30 cursor-not-allowed"
                               )}
@@ -183,10 +183,23 @@ function Combobox({
                                   action.onClick(option.value)
                                 }
                               }}
-                              title={action.label}
-                              aria-label={action.label}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  if (!isDisabled) {
+                                    action.onClick(option.value)
+                                  }
+                                }
+                              }}
+                              title={`${action.label} for ${option.label}`}
+                              aria-label={`${action.label} for ${option.label}`}
+                              aria-describedby={isDisabled ? `${option.value}-disabled` : undefined}
+                              role="button"
+                              tabIndex={isDisabled ? -1 : 0}
                             >
-                              <Icon className="h-3 w-3" />
+                              <Icon className="h-3 w-3" aria-hidden="true" />
+                              <span className="sr-only">{action.label} for {option.label}</span>
                             </Button>
                           )
                         })}

@@ -35,6 +35,7 @@ export function RoomSelector({
     roomId: string | null
     roomName: string | null
   }>({ open: false, roomId: null, roomName: null })
+  const [announcement, setAnnouncement] = useState<string>('')
 
   // Memoize onRoomChange to prevent useEffect re-runs
   const memoizedOnRoomChange = useCallback(onRoomChange, [onRoomChange])
@@ -127,18 +128,24 @@ export function RoomSelector({
         }
         
         toast.success('Room deleted successfully', {
-          description: `"${confirmDelete.roomName}" has been deleted along with all its messages.`
+          description: `"${confirmDelete.roomName}" has been deleted along with all its messages.`,
+          duration: 4000
         })
+        
+        // Announce to screen readers
+        setAnnouncement(`Room ${confirmDelete.roomName} has been successfully deleted`)
       } else {
         console.error('Failed to delete room:', result.error)
         toast.error('Failed to delete room', {
-          description: result.error || 'An unexpected error occurred while deleting the room.'
+          description: result.error || 'An unexpected error occurred while deleting the room.',
+          duration: 6000
         })
       }
     } catch (error) {
       console.error('Error deleting room:', error)
       toast.error('Failed to delete room', {
-        description: 'An unexpected error occurred while deleting the room.'
+        description: 'An unexpected error occurred while deleting the room.',
+        duration: 6000
       })
     } finally {
       setDeleting(null)
@@ -238,8 +245,8 @@ export function RoomSelector({
         title="Delete Room"
         description={
           confirmDelete.roomName
-            ? `Are you sure you want to delete "${confirmDelete.roomName}"? This action cannot be undone and will delete all messages in the room.`
-            : 'Are you sure you want to delete this room?'
+            ? `Are you sure you want to delete "${confirmDelete.roomName}"? This action cannot be undone and will permanently delete the room and all messages in it.`
+            : 'Are you sure you want to delete this room? This action cannot be undone.'
         }
         confirmText="Delete Room"
         cancelText="Cancel"
@@ -247,6 +254,16 @@ export function RoomSelector({
         onConfirm={handleDeleteRoomConfirm}
         loading={deleting === confirmDelete.roomId}
       />
+      
+      {/* Live region for screen reader announcements */}
+      <div 
+        role="status" 
+        aria-live="polite" 
+        aria-atomic="true" 
+        className="sr-only"
+      >
+        {announcement}
+      </div>
     </div>
   )
 }

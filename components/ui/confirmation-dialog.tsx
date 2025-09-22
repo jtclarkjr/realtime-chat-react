@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -46,10 +45,17 @@ export function ConfirmationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        role="alertdialog"
+      >
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogTitle>
+            {title}
+          </DialogTitle>
+          <DialogDescription>
+            {description}
+          </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button
@@ -57,6 +63,7 @@ export function ConfirmationDialog({
             variant="outline"
             onClick={handleCancel}
             disabled={loading}
+            aria-label={`${cancelText} - Close confirmation dialog`}
           >
             {cancelText}
           </Button>
@@ -65,8 +72,17 @@ export function ConfirmationDialog({
             variant={variant}
             onClick={handleConfirm}
             disabled={loading}
+            aria-label={`${loading ? 'Processing' : confirmText} - Confirm action`}
+            autoFocus
           >
-            {loading ? 'Processing...' : confirmText}
+            {loading ? (
+              <>
+                <span aria-hidden="true">Processing...</span>
+                <span className="sr-only">Please wait, processing your request</span>
+              </>
+            ) : (
+              confirmText
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
