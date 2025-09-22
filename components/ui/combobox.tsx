@@ -174,7 +174,7 @@ function Combobox({
                                 variant="ghost"
                                 size="sm"
                                 className={cn(
-                                  'h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity',
+                                  'h-6 w-6 p-0 transition-opacity',
                                   action.variant === 'destructive' &&
                                     'hover:bg-destructive/10 hover:text-destructive',
                                   isDisabled && 'opacity-30 cursor-not-allowed'
