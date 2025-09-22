@@ -19,10 +19,19 @@ import {
   PopoverTrigger
 } from '@/components/ui/popover'
 
+interface ComboboxAction {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  onClick: (value: string) => void
+  disabled?: (value: string) => boolean
+  variant?: 'default' | 'destructive'
+}
+
 interface ComboboxOption {
   value: string
   label: string
   description?: string
+  actions?: ComboboxAction[]
 }
 
 interface ComboboxProps {
@@ -141,6 +150,7 @@ function Combobox({
                     onSelect={handleSelect}
                     role="option"
                     aria-selected={value === option.value}
+                    className="group"
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="flex flex-col items-start min-w-0 flex-1">
@@ -151,13 +161,44 @@ function Combobox({
                           </span>
                         )}
                       </div>
-                      <Check
-                        className={cn(
-                          'ml-2 h-4 w-4 shrink-0',
-                          value === option.value ? 'opacity-100' : 'opacity-0'
-                        )}
-                        aria-hidden="true"
-                      />
+                      <div className="flex items-center gap-1">
+                        {/* Action buttons */}
+                        {option.actions && option.actions.map((action, actionIndex) => {
+                          const Icon = action.icon
+                          const isDisabled = action.disabled?.(option.value) ?? false
+                          return (
+                            <Button
+                              key={actionIndex}
+                              variant="ghost"
+                              size="sm"
+                              className={cn(
+                                "h-6 w-6 p-0 transition-opacity",
+                                action.variant === 'destructive' && "hover:bg-destructive/10 hover:text-destructive",
+                                isDisabled && "opacity-30 cursor-not-allowed"
+                              )}
+                              disabled={isDisabled}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (!isDisabled) {
+                                  action.onClick(option.value)
+                                }
+                              }}
+                              title={action.label}
+                              aria-label={action.label}
+                            >
+                              <Icon className="h-3 w-3" />
+                            </Button>
+                          )
+                        })}
+                        {/* Selection check */}
+                        <Check
+                          className={cn(
+                            'ml-2 h-4 w-4 shrink-0',
+                            value === option.value ? 'opacity-100' : 'opacity-0'
+                          )}
+                          aria-hidden="true"
+                        />
+                      </div>
                     </div>
                   </CommandItem>
                 ))}
@@ -171,4 +212,4 @@ function Combobox({
 }
 
 export { Combobox }
-export type { ComboboxOption, ComboboxProps }
+export type { ComboboxOption, ComboboxAction, ComboboxProps }

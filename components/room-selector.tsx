@@ -1,10 +1,13 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
-import { MessageCircle } from 'lucide-react'
+import { Combobox, type ComboboxOption, type ComboboxAction } from '@/components/ui/combobox'
+import { MessageCircle, Trash2 } from 'lucide-react'
 import { AddRoomDialog } from '@/components/add-room-dialog'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import type { DatabaseRoom } from '@/lib/types/database'
+import { deleteRoomAction } from '@/lib/actions/room-actions'
+import { toast } from 'sonner'
 
 interface RoomSelectorProps {
   selectedRoom: string
@@ -12,6 +15,7 @@ interface RoomSelectorProps {
   disabled?: boolean
   showAddRoom?: boolean
   initialRooms?: DatabaseRoom[]
+  currentUserId?: string // User ID to check permissions
 }
 
 export function RoomSelector({
@@ -19,11 +23,18 @@ export function RoomSelector({
   onRoomChange,
   disabled = false,
   showAddRoom = true,
-  initialRooms = []
+  initialRooms = [],
+  currentUserId
 }: RoomSelectorProps) {
   const [rooms, setRooms] = useState<DatabaseRoom[]>(initialRooms)
   const [loading, setLoading] = useState<boolean>(initialRooms.length === 0)
   const [error, setError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<{
+    open: boolean
+    roomId: string | null
+    roomName: string | null
+  }>({ open: false, roomId: null, roomName: null })
 
   // Memoize onRoomChange to prevent useEffect re-runs
   const memoizedOnRoomChange = useCallback(onRoomChange, [onRoomChange])
@@ -78,6 +89,62 @@ export function RoomSelector({
     }
   }, [initialRooms, rooms.length])
 
+  const handleDeleteRoomClick = (roomId: string) => {
+    if (deleting || !currentUserId) return
+    
+    const room = rooms.find(r => r.id === roomId)
+    if (!room) return
+    
+    setConfirmDelete({
+      open: true,
+      roomId,
+      roomName: room.name
+    })
+  }
+
+  const handleDeleteRoomConfirm = async () => {
+    const { roomId } = confirmDelete
+    if (!roomId) return
+
+    setDeleting(roomId)
+    setConfirmDelete({ open: false, roomId: null, roomName: null })
+    
+    try {
+      const result = await deleteRoomAction(roomId)
+      
+      if (result.success) {
+        // Remove the room from the list
+        setRooms((prevRooms) => prevRooms.filter(room => room.id !== roomId))
+        
+        // If the deleted room was selected, switch to another room
+        if (selectedRoom === roomId && rooms.length > 1) {
+          const remainingRooms = rooms.filter(room => room.id !== roomId)
+          if (remainingRooms.length > 0) {
+            const generalRoom = remainingRooms.find(room => room.name === 'general')
+            const fallbackRoom = generalRoom || remainingRooms[0]
+            onRoomChange(fallbackRoom.id)
+          }
+        }
+        
+        toast.success('Room deleted successfully', {
+          description: `"${confirmDelete.roomName}" has been deleted along with all its messages.`
+        })
+      } else {
+        console.error('Failed to delete room:', result.error)
+        toast.error('Failed to delete room', {
+          description: result.error || 'An unexpected error occurred while deleting the room.'
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting room:', error)
+      toast.error('Failed to delete room', {
+        description: 'An unexpected error occurred while deleting the room.'
+      })
+    } finally {
+      setDeleting(null)
+    }
+  }
+
   const handleRoomCreated = async (newRoom: DatabaseRoom) => {
     // Add the new room to the list and select it
     setRooms((prevRooms) => {
@@ -116,13 +183,29 @@ export function RoomSelector({
   }
 
   // Convert rooms to combobox options
-  const comboboxOptions: ComboboxOption[] = rooms.map((room) => ({
-    value: room.id,
-    label: `# ${room.name}`,
-    description: room.description
-      ? truncateDescription(room.description)
-      : undefined
-  }))
+  const comboboxOptions: ComboboxOption[] = rooms.map((room) => {
+    const actions: ComboboxAction[] = []
+    
+    // Add delete action if user has permission and it's not the currently selected room
+    if (currentUserId && room.created_by === currentUserId && room.id !== selectedRoom) {
+      actions.push({
+        icon: Trash2,
+        label: 'Delete room',
+        onClick: handleDeleteRoomClick,
+        disabled: (roomId) => deleting === roomId || roomId === selectedRoom,
+        variant: 'destructive'
+      })
+    }
+    
+    return {
+      value: room.id,
+      label: `# ${room.name}`,
+      description: room.description
+        ? truncateDescription(room.description)
+        : undefined,
+      actions: actions.length > 0 ? actions : undefined
+    }
+  })
 
   return (
     <div className="flex items-center gap-2 w-full">
@@ -144,6 +227,26 @@ export function RoomSelector({
           existingRooms={rooms}
         />
       )}
+      
+      <ConfirmationDialog
+        open={confirmDelete.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmDelete({ open: false, roomId: null, roomName: null })
+          }
+        }}
+        title="Delete Room"
+        description={
+          confirmDelete.roomName
+            ? `Are you sure you want to delete "${confirmDelete.roomName}"? This action cannot be undone and will delete all messages in the room.`
+            : 'Are you sure you want to delete this room?'
+        }
+        confirmText="Delete Room"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={handleDeleteRoomConfirm}
+        loading={deleting === confirmDelete.roomId}
+      />
     </div>
   )
 }

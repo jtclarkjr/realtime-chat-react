@@ -130,6 +130,7 @@ export function HomeClient({
                 onRoomChange={handleRoomChange}
                 disabled={false}
                 initialRooms={initialRooms}
+                currentUserId={user.id}
               />
             </div>
           </div>

@@ -1,7 +1,8 @@
 import {
   getRooms,
   createRoom as createRoomInDB,
-  getRoomById as getRoomByIdFromDB
+  getRoomById as getRoomByIdFromDB,
+  deleteRoom as deleteRoomFromDB
 } from '@/lib/supabase/rooms'
 import type { DatabaseRoom, DatabaseRoomInsert } from '@/lib/types/database'
 import {
@@ -282,6 +283,45 @@ export class RoomCacheService {
     } catch (error) {
       console.error('Error checking reconciliation need:', error)
       return true
+    }
+  }
+
+  /**
+   * Delete a room and update cache
+   */
+  async deleteRoom(roomId: string): Promise<boolean> {
+    try {
+      // Delete room from database (RLS will handle authorization)
+      const success = await deleteRoomFromDB(roomId)
+
+      if (success) {
+        // Invalidate all room caches
+        await this.invalidateRoomCache(roomId)
+        
+        // Also invalidate any message cache for this room
+        // This ensures Redis doesn't have stale message data
+        // Note: We'll try to delete specific known keys instead of using pattern matching
+        // since some Redis clients may not support the keys() method
+        try {
+          // Delete known cache keys for this room
+          const keysToDelete = [
+            `chat:latest_message:${roomId}`,
+            // Add other specific keys as needed
+          ]
+          
+          for (const key of keysToDelete) {
+            await this.redis.del(key)
+          }
+        } catch (keyError) {
+          console.warn('Could not clean up message cache keys:', keyError)
+          // Continue with room deletion even if cache cleanup fails
+        }
+      }
+
+      return success
+    } catch (error) {
+      console.error('Error in deleteRoom cache service:', error)
+      throw error
     }
   }
 

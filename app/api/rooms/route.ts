@@ -17,7 +17,7 @@ export const GET = withAuth(async () => {
   }
 })
 
-export const POST = withAuth(async (request: NextRequest) => {
+export const POST = withAuth(async (request: NextRequest, auth) => {
   try {
     const body = await request.json()
     const { name, description } = body
@@ -32,7 +32,8 @@ export const POST = withAuth(async (request: NextRequest) => {
     // Use the cache service which handles database creation and cache invalidation
     const room = await roomCacheService.createRoom({
       name: name.trim(),
-      description: description || null
+      description: description || null,
+      created_by: auth.user.id
     })
 
     return NextResponse.json({ room })
@@ -49,6 +50,46 @@ export const POST = withAuth(async (request: NextRequest) => {
     }
 
     console.error('Unexpected error creating room:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+})
+
+export const DELETE = withAuth(async (request: NextRequest, auth) => {
+  try {
+    const { searchParams } = new URL(request.url)
+    const roomId = searchParams.get('id')
+
+    if (!roomId || typeof roomId !== 'string') {
+      return NextResponse.json(
+        { error: 'Room ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Use the cache service which handles database deletion and cache invalidation
+    const success = await roomCacheService.deleteRoom(roomId)
+
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Room not found or unauthorized to delete' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    // Handle specific database errors
+    if (error instanceof Error && error.message.includes('unauthorized')) {
+      return NextResponse.json(
+        { error: 'Unauthorized to delete this room' },
+        { status: 403 }
+      )
+    }
+
+    console.error('Unexpected error deleting room:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

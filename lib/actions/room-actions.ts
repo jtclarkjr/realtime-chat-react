@@ -2,8 +2,10 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { unstable_cache } from 'next/cache'
+import { headers } from 'next/headers'
 import { roomCacheService } from '@/lib/services/room-cache-service'
 import { ensureDefaultRooms } from '@/lib/supabase/rooms'
+import { createClient } from '@/lib/supabase/server'
 import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import { ChatService } from '@/lib/services/chat-service'
 
@@ -87,9 +89,29 @@ export async function createRoomAction(
       }
     }
 
+    // Get authenticated user
+    const headersList = await headers()
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+    const request = new Request(baseUrl, {
+      headers: Object.fromEntries(headersList.entries())
+    })
+    const { supabase } = createClient(request)
+    const {
+      data: { user },
+      error: authError
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return {
+        success: false,
+        error: 'Authentication required'
+      }
+    }
+
     const room = await roomCacheService.createRoom({
       name: name.trim(),
-      description: description || null
+      description: description || null,
+      created_by: user.id
     })
 
     // Revalidate the home page to refresh SSR data
@@ -187,6 +209,77 @@ export async function getRoomDataWithMessages(
     return {
       room: null,
       messages: []
+    }
+  }
+}
+
+/**
+ * Server action to delete a room
+ */
+export async function deleteRoomAction(
+  roomId: string
+): Promise<{
+  success: boolean
+  error?: string
+}> {
+  try {
+    if (!roomId || typeof roomId !== 'string') {
+      return {
+        success: false,
+        error: 'Room ID is required'
+      }
+    }
+
+    // Get authenticated user
+    const headersList = await headers()
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+    const request = new Request(baseUrl, {
+      headers: Object.fromEntries(headersList.entries())
+    })
+    const { supabase } = createClient(request)
+    const {
+      data: { user },
+      error: authError
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return {
+        success: false,
+        error: 'Authentication required'
+      }
+    }
+
+    const success = await roomCacheService.deleteRoom(roomId)
+
+    if (!success) {
+      return {
+        success: false,
+        error: 'Room not found or unauthorized to delete'
+      }
+    }
+
+    // Revalidate the home page to refresh SSR data
+    revalidatePath('/')
+    // Also revalidate any pages that might cache room data
+    revalidateTag('rooms')
+
+    return {
+      success: true
+    }
+  } catch (error) {
+    console.error('Error deleting room:', error)
+
+    // Handle specific errors
+    if (error instanceof Error && error.message.includes('unauthorized')) {
+      return {
+        success: false,
+        error: 'Unauthorized to delete this room'
+      }
+    }
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete room'
     }
   }
 }

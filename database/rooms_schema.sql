@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS rooms (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name VARCHAR(255) NOT NULL UNIQUE,
   description TEXT,
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -20,8 +21,8 @@ ON rooms FOR SELECT
 TO public 
 USING (true);
 
--- Create policy to allow authenticated users to insert rooms (optional for future use)
--- CREATE POLICY "Allow authenticated users to insert rooms" 
--- ON rooms FOR INSERT 
--- TO authenticated 
--- WITH CHECK (true);
+-- Create policy to allow authenticated users to insert rooms
+CREATE POLICY "Allow authenticated users to insert rooms" 
+ON rooms FOR INSERT 
+TO authenticated 
+WITH CHECK (auth.uid() = created_by);
