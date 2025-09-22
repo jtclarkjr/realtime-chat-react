@@ -58,9 +58,9 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
             {room.name}
           </h1>
           <Button
+            variant={'ghost'}
             onClick={handleLeaveRoom}
             disabled={isLeaving}
-            className="text-xs sm:text-sm text-gray-800 bg-white hover:text-white hover:bg-gray-700 transition-all duration-200 px-2 py-1 rounded border border-gray-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             Leave
           </Button>
@@ -72,12 +72,12 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
           roomId={room.id}
           username={user?.user_metadata?.full_name || 'Anonymous User'}
           userId={userId}
-          messages={initialMessages.map((msg) => ({
-            ...msg,
-            roomId: msg.channelId, // Convert channelId to roomId for consistency
+          messages={initialMessages.map((message) => ({
+            ...message,
+            roomId: message.channelId, // Convert channelId to roomId for consistency
             user: {
-              id: msg.user.id,
-              name: msg.user.name
+              id: message.user.id,
+              name: message.user.name
             }
           }))}
         />
