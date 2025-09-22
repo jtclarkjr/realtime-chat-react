@@ -30,6 +30,8 @@ export function Spinner({
         variantClasses[variant],
         className
       )}
+      role="status"
+      aria-label="Loading"
     />
   )
 }

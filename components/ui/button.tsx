@@ -49,6 +49,8 @@ function Button({
   variant,
   size,
   asChild = false,
+  disabled,
+  children,
   ...props
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
@@ -60,8 +62,14 @@ function Button({
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled}
+      aria-disabled={disabled}
+      role={asChild ? undefined : 'button'}
+      tabIndex={disabled ? -1 : undefined}
       {...props}
-    />
+    >
+      {children}
+    </Comp>
   )
 }
 

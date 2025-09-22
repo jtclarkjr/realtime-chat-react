@@ -38,6 +38,7 @@ export const AIBadge = ({
             'h-3 w-3 transition-transform duration-200',
             isActive && 'scale-110'
           )}
+          aria-hidden="true"
         />
         <span>AI</span>
       </button>
@@ -64,9 +65,9 @@ export const AIBadge = ({
           }
         >
           {isPrivate ? (
-            <EyeOff className="h-3 w-3" />
+            <EyeOff className="h-3 w-3" aria-hidden="true" />
           ) : (
-            <Eye className="h-3 w-3" />
+            <Eye className="h-3 w-3" aria-hidden="true" />
           )}
         </button>
       )}

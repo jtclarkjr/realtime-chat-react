@@ -228,6 +228,9 @@ export const RealtimeChat = ({
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-4"
+        role="log"
+        aria-label="Chat messages"
+        aria-live="polite"
       >
         {loading && initialMessages.length === 0 ? (
           <div className="text-center text-sm text-muted-foreground py-8">
@@ -272,6 +275,8 @@ export const RealtimeChat = ({
       <form
         onSubmit={handleSendMessage}
         className="flex w-full gap-2 sm:gap-3 border-t border-border p-3 sm:p-4 bg-background/50 backdrop-blur-sm"
+        role="form"
+        aria-label="Send message"
       >
         <div className="flex-1 relative">
           <Input
@@ -287,6 +292,8 @@ export const RealtimeChat = ({
             autoComplete="off"
             autoCapitalize="sentences"
             autoFocus={!loading && !isAILoading}
+            aria-label="Type your message"
+            aria-describedby="ai-status"
           />
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
             <AIBadge
@@ -302,8 +309,9 @@ export const RealtimeChat = ({
             className="aspect-square h-12 w-12 sm:h-10 sm:w-10 rounded-full animate-in fade-in slide-in-from-right-4 duration-300 bg-primary hover:bg-primary/90 active:scale-95"
             type="submit"
             disabled={loading || !isConnected}
+            aria-label="Send message"
           >
-            <Send className="h-5 w-5 sm:h-4 sm:w-4" />
+            <Send className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
           </Button>
         )}
       </form>

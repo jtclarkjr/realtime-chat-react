@@ -34,7 +34,11 @@ export const ChatMessageItem = ({
   }
 
   return (
-    <div className={`flex mb-3 sm:mb-4 ${getMessageAlignment()}`}>
+    <div
+      className={`flex mb-3 sm:mb-4 ${getMessageAlignment()}`}
+      role="article"
+      aria-label={`Message from ${message.user.name}`}
+    >
       <div
         className={cn(
           'max-w-[85%] sm:max-w-[75%] md:max-w-[60%] w-fit flex flex-col gap-1',
@@ -50,7 +54,9 @@ export const ChatMessageItem = ({
             })}
           >
             <div className="flex items-center gap-1.5">
-              {isAIMessage && <Bot className="h-3 w-3 text-blue-500" />}
+              {isAIMessage && (
+                <Bot className="h-3 w-3 text-blue-500" aria-hidden="true" />
+              )}
               <span
                 className={cn('font-medium text-xs sm:text-sm', {
                   'text-primary': isOwnMessage,
@@ -74,18 +80,28 @@ export const ChatMessageItem = ({
                       : 'Private message - only visible to you'
                   }
                 >
-                  <EyeOff className="h-2.5 w-2.5" />
+                  <EyeOff className="h-2.5 w-2.5" aria-hidden="true" />
                   <span className="text-xs font-medium">Private</span>
                 </div>
               )}
             </div>
-            <span className="text-foreground/50 text-xs">
+            <time
+              className="text-foreground/50 text-xs"
+              dateTime={message.createdAt}
+              aria-label={`Sent at ${new Date(
+                message.createdAt
+              ).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+              })}`}
+            >
               {new Date(message.createdAt).toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: true
               })}
-            </span>
+            </time>
           </div>
         )}
         <div
@@ -105,10 +121,14 @@ export const ChatMessageItem = ({
             }
           )}
         >
-          <div className="whitespace-pre-wrap leading-relaxed">
+          <div
+            className="whitespace-pre-wrap leading-relaxed"
+            role="text"
+            aria-live={isStreaming ? 'polite' : undefined}
+          >
             {isStreaming ? (
               <div className="flex items-center gap-2">
-                <div className="flex space-x-1">
+                <div className="flex space-x-1" aria-hidden="true">
                   {[...Array(3)].map((_, i) => (
                     <div
                       key={i}

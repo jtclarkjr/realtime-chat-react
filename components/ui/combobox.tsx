@@ -91,6 +91,10 @@ function Combobox({
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-haspopup="listbox"
+            aria-label={
+              selectedOption ? `Selected: ${selectedOption.label}` : placeholder
+            }
             className={cn(
               'w-full justify-between h-auto min-h-9 px-3 py-2',
               !selectedOption && 'text-muted-foreground',
@@ -107,7 +111,10 @@ function Combobox({
                 <span className="truncate">{placeholder}</span>
               )}
             </div>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            <ChevronsUpDown
+              className="ml-2 h-4 w-4 shrink-0 opacity-50"
+              aria-hidden="true"
+            />
           </Button>
         </PopoverTrigger>
         <PopoverContent
@@ -117,11 +124,12 @@ function Combobox({
           )}
           align="start"
         >
-          <Command shouldFilter={false}>
+          <Command shouldFilter={false} role="listbox">
             <CommandInput
               placeholder={searchPlaceholder}
               value={searchValue}
               onValueChange={setSearchValue}
+              aria-label={searchPlaceholder}
             />
             <CommandList>
               <CommandEmpty>{emptyMessage}</CommandEmpty>
@@ -131,6 +139,8 @@ function Combobox({
                     key={option.value}
                     value={option.value}
                     onSelect={handleSelect}
+                    role="option"
+                    aria-selected={value === option.value}
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="flex flex-col items-start min-w-0 flex-1">
@@ -146,6 +156,7 @@ function Combobox({
                           'ml-2 h-4 w-4 shrink-0',
                           value === option.value ? 'opacity-100' : 'opacity-0'
                         )}
+                        aria-hidden="true"
                       />
                     </div>
                   </CommandItem>
