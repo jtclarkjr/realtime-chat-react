@@ -7,17 +7,18 @@ interface MessageStatusIndicatorProps {
   message: ChatMessage
 }
 
-const getStatusTitle = (message: ChatMessage): string => {
-  if (message.isRetrying || message.isPending) return 'Sending...'
-  if (message.isQueued) return 'Queued for sending when connection is restored'
-  return ''
-}
-
 export const MessageStatusIndicator = ({
   message
 }: MessageStatusIndicatorProps) => {
   if (!message.isQueued && !message.isPending && !message.isRetrying) {
     return null
+  }
+
+  const getStatusTitle = (message: ChatMessage): string => {
+    if (message.isRetrying || message.isPending) return 'Sending...'
+    if (message.isQueued)
+      return 'Queued for sending when connection is restored'
+    return ''
   }
 
   return (
