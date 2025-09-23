@@ -57,6 +57,12 @@ export interface ChatMessage {
   isQueued?: boolean
   isPending?: boolean
   retryAttempts?: number
+  // Optimistic message fields
+  isOptimistic?: boolean
+  isOptimisticConfirmed?: boolean
+  optimisticTimestamp?: number
+  serverId?: string
+  serverTimestamp?: string
 }
 
 // Response types

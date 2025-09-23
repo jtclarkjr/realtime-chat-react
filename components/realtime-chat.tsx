@@ -230,8 +230,8 @@ export const RealtimeChat = ({
 
   return (
     <div className="flex flex-col h-full w-full bg-background text-foreground antialiased">
-      {/* Connection and Queue Status Bar */}
-      {(!isConnected || queueStatus.pending > 0 || queueStatus.failed > 0) && (
+      {/* Connection and Queue Status Bar (offline) */}
+      {!isConnected && (
         <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b border-border text-xs">
           <div className="flex items-center gap-2">
             {isConnected ? (
