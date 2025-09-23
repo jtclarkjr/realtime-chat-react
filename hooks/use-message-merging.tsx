@@ -6,21 +6,21 @@ import type { ChatMessage } from '@/lib/types/database'
 interface UseMessageMergingProps {
   initialMessages: ChatMessage[]
   realtimeMessages: ChatMessage[]
-  streamingMessage: ChatMessage | null
+  streamingMessages: ChatMessage[]
   userId: string
 }
 
 export function useMessageMerging({
   initialMessages,
   realtimeMessages,
-  streamingMessage,
+  streamingMessages,
   userId
 }: UseMessageMergingProps) {
   const allMessages = useMemo(() => {
     const mergedMessages = [...initialMessages, ...realtimeMessages]
 
-    // Handle streaming message and potential duplicates
-    if (streamingMessage) {
+    // Handle streaming messages and potential duplicates
+    streamingMessages.forEach(streamingMessage => {
       // Check if there's already a broadcast message with the same ID
       const existingBroadcastMessage = mergedMessages.find(
         (msg) => msg.id === streamingMessage.id && msg !== streamingMessage
@@ -33,23 +33,26 @@ export function useMessageMerging({
         // Either no broadcast yet, or this is a private message (which won't have broadcasts)
         mergedMessages.push(streamingMessage)
       }
-    }
+    })
 
     // Remove duplicates based on message id and filter out invalid messages
     const uniqueMessages = mergedMessages.filter((message, index, self) => {
+      if (!message) return false
+      if (!message.id) return false
       // Filter out messages without content or invalid structure
+      const isStreamingMessage = streamingMessages.some(sm => sm === message)
       if (
         !message ||
         !message.id ||
-        (!message.content?.trim() && message !== streamingMessage) || // Allow empty content for streaming messages
+        (!message.content?.trim() && !isStreamingMessage) || // Allow empty content for streaming messages
         !message.user?.name
       ) {
         return false
       }
 
       // Filter out private messages that don't belong to current user
-      // Private messages should only be visible to the user who requested them
-      if (message.isPrivate && message.requesterId !== userId) {
+      // Private messages should only be visible to the user who requested them OR the user who sent them
+      if (message.isPrivate && message.requesterId !== userId && message.user?.id !== userId) {
         return false
       }
 
@@ -58,15 +61,15 @@ export function useMessageMerging({
       if (duplicateIndex !== index) {
         // This is a duplicate - prefer broadcast messages over streaming
         const firstOccurrence = self[duplicateIndex]
-        const isStreamingMessage =
-          message.isStreaming || message === streamingMessage
-        const isFirstStreaming =
-          firstOccurrence?.isStreaming || firstOccurrence === streamingMessage
+        const currentIsStreaming =
+          message.isStreaming || streamingMessages.some(sm => sm === message)
+        const firstIsStreaming =
+          firstOccurrence?.isStreaming || streamingMessages.some(sm => sm === firstOccurrence)
 
-        if (isStreamingMessage && !isFirstStreaming) {
+        if (currentIsStreaming && !firstIsStreaming) {
           return false // Remove streaming message in favor of broadcast
         }
-        if (isFirstStreaming && !isStreamingMessage) {
+        if (firstIsStreaming && !currentIsStreaming) {
           return true // Keep broadcast message over streaming
         }
       }
@@ -82,7 +85,7 @@ export function useMessageMerging({
     })
 
     return sortedMessages
-  }, [initialMessages, realtimeMessages, streamingMessage, userId])
+  }, [initialMessages, realtimeMessages, streamingMessages, userId])
 
   return allMessages
 }

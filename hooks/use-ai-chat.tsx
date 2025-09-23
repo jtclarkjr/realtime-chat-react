@@ -95,9 +95,9 @@ export function useAIChat({
                 const data = JSON.parse(line.slice(6))
 
                 if (data.type === 'start') {
-                  // Initialize streaming message with temporary ID
+                  // Initialize streaming message with server's database ID
                   streamingMessage = {
-                    id: data.messageId, // This is the temporary ID
+                    id: data.messageId, // Use the database ID from the start
                     content: '',
                     user: data.user,
                     createdAt: new Date().toISOString(),
@@ -109,7 +109,7 @@ export function useAIChat({
                   }
                   onStreamingMessage(streamingMessage)
                 } else if (data.type === 'content' && streamingMessage) {
-                  // Update streaming message content
+                  // Update streaming message content (same ID)
                   streamingMessage = {
                     id: streamingMessage.id,
                     user: streamingMessage.user,
@@ -123,36 +123,22 @@ export function useAIChat({
                   }
                   onStreamingMessage(streamingMessage)
                 } else if (data.type === 'complete' && streamingMessage) {
-                  // Update the streaming message with final database info
-                  // Don't clear it yet - let the broadcast message replace it
-                  streamingMessage = {
-                    id: data.messageId, // Use database ID
-                    user: streamingMessage.user,
-                    roomId: streamingMessage.roomId,
-                    isAI: streamingMessage.isAI,
-                    isPrivate: streamingMessage.isPrivate,
-                    requesterId: streamingMessage.requesterId,
-                    content: data.fullContent,
-                    createdAt: data.createdAt
-                  }
-                  onStreamingMessage(streamingMessage) // Update with final content
-
+                  // Create the final completed message (same ID as streaming)
                   const finalMessage: ChatMessage = {
-                    id: data.messageId,
+                    id: streamingMessage.id, // Keep the same ID
                     user: streamingMessage.user,
                     roomId: streamingMessage.roomId,
                     isAI: streamingMessage.isAI,
                     isPrivate: streamingMessage.isPrivate,
                     requesterId: streamingMessage.requesterId,
                     content: data.fullContent,
-                    createdAt: data.createdAt
+                    createdAt: data.createdAt || streamingMessage.createdAt,
+                    isStreaming: false // Mark as completed
                   }
                   onCompleteMessage(finalMessage)
 
-                  // For private messages, don't clear the streaming reference since no broadcast will replace it
-                  if (!streamingMessage.isPrivate) {
-                    streamingMessage = null
-                  }
+                  // Clear streaming reference
+                  streamingMessage = null
                 } else if (data.type === 'error') {
                   console.error('Streaming error:', data.error)
                   throw new Error(data.error)

@@ -4,6 +4,7 @@ import { useChatScroll } from '@/hooks/use-chat-scroll'
 import { useRealtimeChat } from '@/hooks/use-realtime-chat'
 import { useAIChat } from '@/hooks/use-ai-chat'
 import { useMessageMerging } from '@/hooks/use-message-merging'
+import { useStreamingMessages } from '@/hooks/use-streaming-messages'
 import { ConnectionStatusBar, ChatMessageList, ChatInput } from '@/components/chat'
 import type { ChatMessage } from '@/lib/types/database'
 import { useCallback, useEffect, useState } from 'react'
@@ -60,59 +61,51 @@ export const RealtimeChat = ({
     userId,
     isConnected,
     onStreamingMessage: (message) => {
-      setStreamingMessage(message)
+      addOrUpdateStreamingMessage(message)
     },
     onCompleteMessage: (completedMessage) => {
-      // For private messages, keep the completed message permanently since no broadcast will replace it
-      if (completedMessage.isPrivate) {
-        // Remove the isStreaming flag and keep the message
-        const finalPrivateMessage = { ...completedMessage, isStreaming: false }
-        setStreamingMessage(finalPrivateMessage)
-      } else {
-        // For public messages, update and wait for broadcast replacement
-        setStreamingMessage(completedMessage)
-
-        // Set a timeout to clear it in case broadcast fails (only for public messages)
-        setTimeout(() => {
-          setStreamingMessage((current) => {
-            // Only clear if the message hasn't been replaced by broadcast
-            if (current && current.id === completedMessage.id) {
-              return null
-            }
-            return current
-          })
-        }, 2000) // Give broadcast 2 seconds to arrive
-      }
+      // Always update the streaming message with completed content
+      const finalMessage = { ...completedMessage, isStreaming: false }
+      addOrUpdateStreamingMessage(finalMessage)
+      
+      // For public messages, the broadcast will eventually replace this
+      // For private messages, this stays permanently
     }
   })
 
   const [newMessage, setNewMessage] = useState<string>('')
-  const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(
-    null
-  )
+  const {
+    streamingMessages,
+    addOrUpdateStreamingMessage,
+    clearStreamingMessage
+  } = useStreamingMessages()
 
-  // Merge realtime messages with initial messages and streaming message
+  // Merge realtime messages with initial messages and streaming messages
   const allMessages = useMessageMerging({
     initialMessages,
     realtimeMessages,
-    streamingMessage,
+    streamingMessages,
     userId
   })
 
   // Handle clearing streaming messages when broadcast arrives
   useEffect(() => {
-    if (streamingMessage && !streamingMessage.isPrivate) {
-      // Check if there's already a broadcast message with the same ID
-      const existingBroadcastMessage = realtimeMessages.find(
-        (msg) => msg.id === streamingMessage.id
-      )
-      
-      if (existingBroadcastMessage) {
-        // Public message: broadcast exists, clear streaming message
-        setTimeout(() => setStreamingMessage(null), 0)
+    streamingMessages.forEach(streamingMessage => {
+      if (!streamingMessage.isPrivate && streamingMessage.isAI) {
+        // For AI messages, check by content and timing since IDs might not match
+        const existingBroadcastMessage = realtimeMessages.find((msg) => 
+          msg.isAI && 
+          msg.content === streamingMessage.content &&
+          msg.content && msg.content.trim().length > 0 && // Only match non-empty content
+          !msg.isStreaming
+        )
+        
+        if (existingBroadcastMessage) {
+          clearStreamingMessage(streamingMessage.id)
+        }
       }
-    }
-  }, [streamingMessage, realtimeMessages])
+    })
+  }, [realtimeMessages, streamingMessages, clearStreamingMessage])
 
   useEffect(() => {
     if (onMessage) {
@@ -126,11 +119,11 @@ export const RealtimeChat = ({
   }, [allMessages, scrollToBottom])
 
   useEffect(() => {
-    // Scroll to bottom when streaming message updates
-    if (streamingMessage) {
+    // Scroll to bottom when streaming messages update
+    if (streamingMessages.length > 0) {
       scrollToBottom()
     }
-  }, [streamingMessage, scrollToBottom])
+  }, [streamingMessages, scrollToBottom])
 
   const handleSendMessage = useCallback(
     async (e: React.FormEvent) => {
@@ -143,7 +136,7 @@ export const RealtimeChat = ({
 
       if (isAIEnabled) {
         // First send the user's message (private if AI is in private mode)
-        sendMessage(messageContent, isAIPrivate)
+        await sendMessage(messageContent, isAIPrivate)
         // Then send to AI for response with recent messages as context
         await sendAIMessage(messageContent, allMessages.slice(-10))
       } else {

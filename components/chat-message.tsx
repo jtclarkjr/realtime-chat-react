@@ -31,8 +31,8 @@ export const ChatMessageItem = ({
     (isPrivateMessage && message.requesterId === currentUserId)
 
   // Don't render private messages that don't belong to current user
-  // Private messages should ONLY be visible to the user who requested them
-  if (isPrivateMessage && message.requesterId !== currentUserId) {
+  // Private messages should ONLY be visible to the user who requested them OR the user who sent them
+  if (isPrivateMessage && message.requesterId !== currentUserId && message.user.id !== currentUserId) {
     return null
   }
 
