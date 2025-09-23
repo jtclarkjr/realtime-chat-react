@@ -7,6 +7,12 @@ interface MessageStatusIndicatorProps {
   message: ChatMessage
 }
 
+function getStatusTitle(message: ChatMessage): string {
+  if (message.isRetrying || message.isPending) return 'Sending...'
+  if (message.isQueued) return 'Queued for sending when connection is restored'
+  return ''
+}
+
 export const MessageStatusIndicator = ({
   message
 }: MessageStatusIndicatorProps) => {
@@ -17,15 +23,7 @@ export const MessageStatusIndicator = ({
   return (
     <div
       className="flex items-center justify-center w-6 h-6 rounded-full bg-background border border-border shadow-sm"
-      title={
-        message.isRetrying
-          ? 'Sending...'
-          : message.isQueued
-            ? 'Queued for sending when connection is restored'
-            : message.isPending
-              ? 'Sending...'
-              : ''
-      }
+      title={getStatusTitle(message)}
     >
       {message.isRetrying || message.isPending ? (
         <Loader2 className="h-3 w-3 animate-spin text-yellow-600" />
