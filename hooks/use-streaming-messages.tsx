@@ -8,16 +8,19 @@ export function useStreamingMessages() {
     Map<string, ChatMessage>
   >(new Map())
 
-  const addOrUpdateStreamingMessage = useCallback((message: ChatMessage) => {
-    setStreamingMessages((prev) => {
-      const newMap = new Map(prev)
-      // Always update/replace the message with the same ID
-      newMap.set(message.id, message)
-      return newMap
-    })
-  }, [])
+  const addOrUpdateStreamingMessage = useCallback(
+    (message: ChatMessage): void => {
+      setStreamingMessages((prev) => {
+        const newMap = new Map(prev)
+        // Always update/replace the message with the same ID
+        newMap.set(message.id, message)
+        return newMap
+      })
+    },
+    []
+  )
 
-  const removeStreamingMessage = useCallback((messageId: string) => {
+  const removeStreamingMessage = useCallback((messageId: string): void => {
     setStreamingMessages((prev) => {
       const newMap = new Map(prev)
       newMap.delete(messageId)
@@ -25,7 +28,7 @@ export function useStreamingMessages() {
     })
   }, [])
 
-  const clearStreamingMessage = useCallback((messageId: string) => {
+  const clearStreamingMessage = useCallback((messageId: string): void => {
     // Use setTimeout to avoid React state update conflicts
     setTimeout(() => {
       setStreamingMessages((prev) => {
@@ -36,7 +39,7 @@ export function useStreamingMessages() {
     }, 0)
   }, [])
 
-  const getStreamingMessagesArray = useCallback(() => {
+  const getStreamingMessagesArray = useCallback((): ChatMessage[] => {
     return Array.from(streamingMessages.values())
   }, [streamingMessages])
 

@@ -34,7 +34,7 @@ export function useRealtimeChat({
 
   // Handle incoming real-time messages (broadcast messages)
   const handleIncomingMessage = useCallback(
-    (receivedMessage: ChatMessage) => {
+    (receivedMessage: ChatMessage): void => {
       // Clean message states (broadcast = confirmed sent)
       const cleanedMessage = {
         ...receivedMessage,

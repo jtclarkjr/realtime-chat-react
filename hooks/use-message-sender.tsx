@@ -85,7 +85,11 @@ export function useMessageSender({
 
   // Send message when online (direct to server)
   const sendOnlineMessage = useCallback(
-    async (content: string, isPrivate = false, messageId?: string) => {
+    async (
+      content: string,
+      isPrivate = false,
+      messageId?: string
+    ): Promise<string | null> => {
       const optimisticId = messageId || crypto.randomUUID()
       const message: ChatMessage = {
         id: optimisticId,
@@ -200,7 +204,11 @@ export function useMessageSender({
 
   // Queue message when offline
   const sendOfflineMessage = useCallback(
-    async (content: string, isPrivate = false, messageId?: string) => {
+    async (
+      content: string,
+      isPrivate = false,
+      messageId?: string
+    ): Promise<string | null> => {
       const message: ChatMessage = {
         id: messageId || crypto.randomUUID(),
         content: content.trim(),
@@ -229,7 +237,11 @@ export function useMessageSender({
 
   // Route to appropriate sending method based on connectivity
   const sendMessage = useCallback(
-    async (content: string, isPrivate = false, messageId?: string) => {
+    async (
+      content: string,
+      isPrivate = false,
+      messageId?: string
+    ): Promise<string | null> => {
       if (!content.trim()) return null
 
       return isConnected
@@ -240,7 +252,7 @@ export function useMessageSender({
   )
 
   const retryMessage = useCallback(
-    async (messageId: string) => {
+    async (messageId: string): Promise<boolean> => {
       return await messageQueue.retryMessage(messageId)
     },
     [messageQueue]

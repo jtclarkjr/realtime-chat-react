@@ -69,7 +69,7 @@ export function useOptimisticMessageSender({
 
   // Create unified message sender function (online optimistic + offline queue)
   const sendMessage = useCallback(
-    async (content: string, isPrivate = false) => {
+    async (content: string, isPrivate = false): Promise<string | null> => {
       if (!content.trim()) return null
 
       // If offline, delegate to queue-based sender

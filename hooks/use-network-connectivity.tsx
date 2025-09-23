@@ -26,7 +26,7 @@ export function useNetworkConnectivity(): NetworkConnectivityState {
 
     let wasOffline = !navigator.onLine
 
-    const handleOnline = () => {
+    const handleOnline = (): void => {
       setConnectivityState((prev) => ({
         isOnline: true,
         wasOffline: prev.wasOffline || wasOffline,
@@ -35,7 +35,7 @@ export function useNetworkConnectivity(): NetworkConnectivityState {
       wasOffline = false
     }
 
-    const handleOffline = () => {
+    const handleOffline = (): void => {
       setConnectivityState(() => ({
         isOnline: false,
         wasOffline: true,
@@ -49,7 +49,7 @@ export function useNetworkConnectivity(): NetworkConnectivityState {
     window.addEventListener('offline', handleOffline)
 
     // Also listen for visibility changes to check connectivity when tab becomes visible
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = (): void => {
       if (!document.hidden) {
         const currentOnlineStatus = navigator.onLine
         if (currentOnlineStatus !== connectivityState.isOnline) {

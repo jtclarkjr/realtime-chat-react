@@ -44,7 +44,7 @@ export function RoomSelector({
   // Memoize onRoomChange to prevent useEffect re-runs
   const memoizedOnRoomChange = useCallback(onRoomChange, [onRoomChange])
 
-  const loadRooms = async () => {
+  const loadRooms = async (): Promise<DatabaseRoom[]> => {
     try {
       setLoading(true)
       setError(null)
@@ -94,7 +94,7 @@ export function RoomSelector({
     }
   }, [initialRooms, rooms.length])
 
-  const handleDeleteRoomClick = (roomId: string) => {
+  const handleDeleteRoomClick = (roomId: string): void => {
     if (deleting || !currentUserId) return
 
     const room = rooms.find((r) => r.id === roomId)
@@ -107,7 +107,7 @@ export function RoomSelector({
     })
   }
 
-  const handleDeleteRoomConfirm = async () => {
+  const handleDeleteRoomConfirm = async (): Promise<void> => {
     const { roomId } = confirmDelete
     if (!roomId) return
 
@@ -162,7 +162,7 @@ export function RoomSelector({
     }
   }
 
-  const handleRoomCreated = async (newRoom: DatabaseRoom) => {
+  const handleRoomCreated = async (newRoom: DatabaseRoom): Promise<void> => {
     // Add the new room to the list and select it
     setRooms((prevRooms) => {
       // Check if room already exists to avoid duplicates
@@ -176,7 +176,10 @@ export function RoomSelector({
     onRoomChange(newRoom.id)
   }
 
-  const truncateDescription = (description: string, maxLength: number = 30) => {
+  const truncateDescription = (
+    description: string,
+    maxLength: number = 30
+  ): string => {
     if (description.length <= maxLength) return description
     return description.substring(0, maxLength) + '...'
   }

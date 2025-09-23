@@ -35,7 +35,9 @@ export function useMissedMessages({
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchMissedMessages = useCallback(async () => {
+  const fetchMissedMessages = useCallback(async (): Promise<
+    void | (() => void)
+  > => {
     if (!enabled) {
       setLoading(false)
       return

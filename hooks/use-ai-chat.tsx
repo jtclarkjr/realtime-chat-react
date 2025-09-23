@@ -35,7 +35,10 @@ export function useAIChat({
   const [isAILoading, setIsAILoading] = useState<boolean>(false)
 
   const sendAIMessage = useCallback(
-    async (content: string, previousMessages: ChatMessage[] = []) => {
+    async (
+      content: string,
+      previousMessages: ChatMessage[] = []
+    ): Promise<void> => {
       if (!isConnected || !content.trim() || isAILoading) return
 
       setIsAILoading(true)

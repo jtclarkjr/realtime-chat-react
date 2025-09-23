@@ -41,7 +41,7 @@ export const ChatMessageItem = ({
     return null
   }
 
-  const getMessageAlignment = () => {
+  const getMessageAlignment = (): string => {
     if (isOwnMessage) return 'justify-end'
     return 'justify-start'
   }

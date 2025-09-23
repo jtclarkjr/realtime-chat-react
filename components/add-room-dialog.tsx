@@ -34,14 +34,14 @@ export function AddRoomDialog({
   const [error, setError] = useState<string | null>(null)
 
   // Check if room name already exists (case-insensitive)
-  const roomNameExists = (name: string) => {
+  const roomNameExists = (name: string): boolean => {
     return existingRooms.some(
       (room) => room.name.toLowerCase() === name.trim().toLowerCase()
     )
   }
 
   // Real-time validation
-  const validateRoomName = (name: string) => {
+  const validateRoomName = (name: string): string | null => {
     const trimmedName = name.trim()
     if (!trimmedName) {
       return 'Room name is required'
@@ -58,7 +58,7 @@ export function AddRoomDialog({
     return null
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     e.stopPropagation() // Prevent bubbling to parent form
 
@@ -112,7 +112,7 @@ export function AddRoomDialog({
     }
   }
 
-  const handleOpenChange = (newOpen: boolean) => {
+  const handleOpenChange = (newOpen: boolean): void => {
     setOpen(newOpen)
     if (!newOpen) {
       // Reset form when closing

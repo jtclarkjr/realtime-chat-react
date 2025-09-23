@@ -65,7 +65,7 @@ export function useMessageQueue({
       message: ChatMessage,
       originalContent: string,
       isPrivate: boolean = false
-    ) => {
+    ): QueuedMessage => {
       const queuedMessage: QueuedMessage = {
         ...message,
         originalContent,
@@ -85,12 +85,12 @@ export function useMessageQueue({
   )
 
   // Remove message from queue
-  const removeFromQueue = useCallback((messageId: string) => {
+  const removeFromQueue = useCallback((messageId: string): void => {
     setQueuedMessages((prev) => prev.filter((msg) => msg.id !== messageId))
   }, [])
 
   // Process queue when connection is restored
-  const processQueue = useCallback(async () => {
+  const processQueue = useCallback(async (): Promise<void> => {
     if (!isConnected || processingRef.current || queuedMessages.length === 0) {
       return
     }
@@ -199,7 +199,12 @@ export function useMessageQueue({
   }, [isConnected, processQueue, queuedMessages])
 
   // Get current queue status
-  const getQueueStatus = useCallback(() => {
+  const getQueueStatus = useCallback((): {
+    totalQueued: number
+    pending: number
+    failed: number
+    isProcessing: boolean
+  } => {
     const pending = queuedMessages.filter(
       (msg) => msg.isQueued || msg.isPending || msg.isRetrying
     )
@@ -215,7 +220,7 @@ export function useMessageQueue({
 
   // Retry a specific failed message
   const retryMessage = useCallback(
-    async (messageId: string) => {
+    async (messageId: string): Promise<boolean> => {
       const message = queuedMessages.find(
         (msg) => msg.id === messageId && msg.isFailed
       )
@@ -281,7 +286,7 @@ export function useMessageQueue({
   )
 
   // Clear all failed messages
-  const clearFailedMessages = useCallback(() => {
+  const clearFailedMessages = useCallback((): void => {
     setQueuedMessages((prev) => prev.filter((msg) => !msg.isFailed))
   }, [])
 

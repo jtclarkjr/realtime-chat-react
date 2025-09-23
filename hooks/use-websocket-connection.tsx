@@ -27,7 +27,7 @@ export function useWebSocketConnection({
   const [isConnected, setIsConnected] = useState<boolean>(false)
   const supabase = createClient()
 
-  const setupChannel = useCallback(() => {
+  const setupChannel = useCallback((): (() => void) | null => {
     if (!enabled) return null
 
     let reconnectTimeout: NodeJS.Timeout
@@ -113,7 +113,7 @@ export function useWebSocketConnection({
     }
   }, [supabase, roomId, userId, onMessage, enabled])
 
-  const reconnect = useCallback(() => {
+  const reconnect = useCallback((): void => {
     setupChannel()
   }, [setupChannel])
 
