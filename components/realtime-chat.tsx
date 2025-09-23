@@ -9,7 +9,7 @@ import type { ChatMessage } from '@/lib/types/database'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AIBadge } from '@/components/ui/ai-badge'
-import { Send } from 'lucide-react'
+import { Send, Wifi, WifiOff, Clock, AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -24,10 +24,13 @@ interface RealtimeChatProps {
 function getPlaceholderText(
   loading: boolean,
   isAILoading: boolean,
-  isAIEnabled: boolean
+  isAIEnabled: boolean,
+  isConnected: boolean
 ): string {
   if (loading) return 'Connecting...'
   if (isAILoading) return 'AI is responding...'
+  if (!isConnected && !loading)
+    return isAIEnabled ? 'Ask AI (offline)...' : 'Type message (offline)...'
   if (isAIEnabled) return 'Ask AI assistant...'
   return 'Type a message...'
 }
@@ -52,8 +55,11 @@ export const RealtimeChat = ({
   const {
     messages: realtimeMessages,
     sendMessage,
+    retryMessage,
     isConnected,
-    loading
+    loading,
+    queueStatus,
+    clearFailedMessages
   } = useRealtimeChat({
     roomId,
     username,
@@ -194,8 +200,8 @@ export const RealtimeChat = ({
   const handleSendMessage = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-      // Prevent sending if loading or no connection
-      if (!newMessage.trim() || loading || !isConnected || isAILoading) return
+      // Prevent sending if loading (but allow offline sending - will be queued)
+      if (!newMessage.trim() || loading || isAILoading) return
 
       const messageContent = newMessage.trim()
       setNewMessage('')
@@ -212,7 +218,6 @@ export const RealtimeChat = ({
     },
     [
       newMessage,
-      isConnected,
       sendMessage,
       sendAIMessage,
       loading,
@@ -225,6 +230,45 @@ export const RealtimeChat = ({
 
   return (
     <div className="flex flex-col h-full w-full bg-background text-foreground antialiased">
+      {/* Connection and Queue Status Bar */}
+      {(!isConnected || queueStatus.pending > 0 || queueStatus.failed > 0) && (
+        <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b border-border text-xs">
+          <div className="flex items-center gap-2">
+            {isConnected ? (
+              <Wifi className="h-3 w-3 text-green-500" />
+            ) : (
+              <WifiOff className="h-3 w-3 text-orange-500" />
+            )}
+            <span
+              className={isConnected ? 'text-green-600' : 'text-orange-600'}
+            >
+              {isConnected ? 'Connected' : 'Offline'}
+            </span>
+          </div>
+          {(queueStatus.pending > 0 || queueStatus.failed > 0) && (
+            <div className="flex items-center gap-3">
+              {queueStatus.pending > 0 && (
+                <div className="flex items-center gap-1 text-orange-600">
+                  <Clock className="h-3 w-3" />
+                  <span>{queueStatus.pending} queued</span>
+                </div>
+              )}
+              {queueStatus.failed > 0 && (
+                <div className="flex items-center gap-1 text-red-600">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span>{queueStatus.failed} failed</span>
+                  <button
+                    onClick={clearFailedMessages}
+                    className="ml-1 px-1 py-0.5 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-4"
@@ -264,6 +308,7 @@ export const RealtimeChat = ({
                     isOwnMessage={message.user.name === username}
                     showHeader={showHeader}
                     currentUserId={userId}
+                    onRetry={retryMessage}
                   />
                 </motion.div>
               )
@@ -287,7 +332,12 @@ export const RealtimeChat = ({
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={getPlaceholderText(loading, isAILoading, isAIEnabled)}
+            placeholder={getPlaceholderText(
+              loading,
+              isAILoading,
+              isAIEnabled,
+              isConnected
+            )}
             disabled={loading || isAILoading}
             autoComplete="off"
             autoCapitalize="sentences"
@@ -304,12 +354,24 @@ export const RealtimeChat = ({
             />
           </div>
         </div>
-        {!loading && isConnected && newMessage.trim() && (
+        {!loading && newMessage.trim() && (
           <Button
-            className="aspect-square h-12 w-12 sm:h-10 sm:w-10 rounded-full animate-in fade-in slide-in-from-right-4 duration-300 bg-primary hover:bg-primary/90 active:scale-95"
+            className={cn(
+              'aspect-square h-12 w-12 sm:h-10 sm:w-10 rounded-full animate-in fade-in slide-in-from-right-4 duration-300 active:scale-95',
+              isConnected
+                ? 'bg-primary hover:bg-primary/90'
+                : 'bg-orange-500 hover:bg-orange-600'
+            )}
             type="submit"
-            disabled={loading || !isConnected}
-            aria-label="Send message"
+            disabled={loading}
+            aria-label={
+              isConnected ? 'Send message' : 'Queue message (offline)'
+            }
+            title={
+              isConnected
+                ? 'Send message'
+                : "You're offline - message will be queued and sent when connection is restored"
+            }
           >
             <Send className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
           </Button>

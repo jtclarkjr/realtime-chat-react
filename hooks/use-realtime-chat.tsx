@@ -1,8 +1,10 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { ApiMessage, ChatMessage } from '@/lib/types/database'
+import { useMessageQueue } from './use-message-queue'
+import { useNetworkConnectivity } from './use-network-connectivity'
 
 interface UseRealtimeChatProps {
   roomId: string
@@ -30,8 +32,54 @@ export function useRealtimeChat({
 }: UseRealtimeChatProps) {
   const supabase = createClient()
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [isConnected, setIsConnected] = useState<boolean>(false)
+  const [isWebSocketConnected, setIsWebSocketConnected] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(true)
+  
+  // Network connectivity detection
+  const networkState = useNetworkConnectivity()
+  
+  // Combined connectivity: both network and WebSocket must be connected
+  const isConnected = networkState.isOnline && isWebSocketConnected
+
+  // Message queue processing function
+  const processQueuedMessage = useCallback(async (queuedMessage: ChatMessage & { originalContent: string; isPrivate: boolean }): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          roomId: roomId,
+          userId,
+          username,
+          content: queuedMessage.originalContent,
+          isPrivate: queuedMessage.isPrivate
+        })
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        // Remove the queued message from the main messages array since it will come back via broadcast
+        setMessages((current) => 
+          current.filter(msg => msg.id !== queuedMessage.id)
+        )
+      }
+      
+      return result.success
+    } catch (error) {
+      console.error('Error processing queued message:', error)
+      return false
+    }
+  }, [roomId, userId, username])
+
+  // Initialize message queue
+  const messageQueue = useMessageQueue({
+    roomId,
+    userId,
+    isConnected,
+    onProcessMessage: processQueuedMessage
+  })
 
   // Fetch missed messages on mount
   useEffect(() => {
@@ -142,7 +190,18 @@ export function useRealtimeChat({
                 return current
               }
 
-              return [...current, receivedMessage]
+              // Also remove any pending/queued messages from the same user with the same content
+              // This handles cases where a queued message was successfully sent
+              const filteredMessages = current.filter(msg => {
+                if (msg.user.id === receivedMessage.user.id && 
+                    msg.content === receivedMessage.content &&
+                    (msg.isPending || msg.isQueued || msg.isRetrying)) {
+                  return false
+                }
+                return true
+              })
+
+              return [...filteredMessages, receivedMessage]
             })
 
             // Mark message as received (async, don't wait)
@@ -167,7 +226,7 @@ export function useRealtimeChat({
             payload.type === 'error'
           ) {
             console.error('Channel error:', payload)
-            setIsConnected(false)
+            setIsWebSocketConnected(false)
             // Attempt to reconnect after error
             if (!isCleanedUp) {
               clearTimeout(reconnectTimeout)
@@ -180,7 +239,7 @@ export function useRealtimeChat({
         })
         .subscribe((status, error) => {
           if (status === 'SUBSCRIBED') {
-            setIsConnected(true)
+            setIsWebSocketConnected(true)
 
             // Start heartbeat to keep connection alive
             clearInterval(heartbeatInterval)
@@ -189,7 +248,7 @@ export function useRealtimeChat({
               newChannel.track({ online: true, userId, timestamp: Date.now() })
             }, 30000) // Send heartbeat every 30 seconds
           } else if (status === 'CHANNEL_ERROR') {
-            setIsConnected(false)
+            setIsWebSocketConnected(false)
             if (error) {
               console.error('Channel subscription error:', error)
             }
@@ -202,9 +261,9 @@ export function useRealtimeChat({
               }, 3000)
             }
           } else if (status === 'TIMED_OUT') {
-            setIsConnected(false)
+            setIsWebSocketConnected(false)
           } else if (status === 'CLOSED') {
-            setIsConnected(false)
+            setIsWebSocketConnected(false)
           }
         })
 
@@ -221,16 +280,16 @@ export function useRealtimeChat({
       if (channel) {
         supabase.removeChannel(channel)
       }
-      setIsConnected(false)
+      setIsWebSocketConnected(false)
     }
   }, [roomId, supabase, loading, userId])
 
   const sendMessage = useCallback(
-    async (content: string, isPrivate = false) => {
-      if (!isConnected || !content.trim()) return
+    async (content: string, isPrivate = false, messageId?: string) => {
+      if (!content.trim()) return null
 
       const message: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: messageId || crypto.randomUUID(),
         content: content.trim(),
         user: {
           id: userId,
@@ -240,11 +299,39 @@ export function useRealtimeChat({
         roomId: roomId,
         isAI: false,
         isPrivate,
-        requesterId: isPrivate ? userId : undefined
+        requesterId: isPrivate ? userId : undefined,
+        isPending: true
+      }
+
+      // Add message locally immediately with pending state
+      setMessages((current) => {
+        // If this is a retry, update the existing message
+        if (messageId) {
+          return current.map(msg => 
+            msg.id === messageId 
+              ? { ...msg, isPending: true, isFailed: false, isRetrying: true, isQueued: false }
+              : msg
+          )
+        }
+        // Otherwise add new message
+        return [...current, message]
+      })
+
+      // If not connected, immediately queue the message
+      if (!isConnected) {
+        const queuedMessage = messageQueue.queueMessage(message, content.trim(), isPrivate)
+        setMessages((current) => 
+          current.map(msg => 
+            msg.id === message.id
+              ? { ...queuedMessage }
+              : msg
+          )
+        )
+        return message.id
       }
 
       try {
-        // Save to database via API (API will handle broadcasting)
+        // Try to send message immediately
         const response = await fetch('/api/messages/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -261,26 +348,102 @@ export function useRealtimeChat({
         const result = await response.json()
 
         if (result.success) {
-          // Add message locally immediately for sender using the backend message ID
+          // Success - update message with backend ID
           if (result.message?.id) {
             const messageWithBackendId = {
               ...message,
-              id: result.message.id // Use backend ID to match broadcast
+              id: result.message.id,
+              isPending: false,
+              isFailed: false,
+              isRetrying: false
             }
 
             setMessages((current) => {
-              return [...current, messageWithBackendId]
+              if (messageId) {
+                return current.map(msg => 
+                  msg.id === messageId 
+                    ? { ...messageWithBackendId, id: result.message.id }
+                    : msg
+                )
+              }
+              return current.map(msg => 
+                msg.id === message.id 
+                  ? messageWithBackendId
+                  : msg
+              )
             })
           }
+          return result.message.id
         } else {
+          // Failed - queue the message for retry when connection is restored
           console.error('Failed to save message to database:', result.error)
+          const queuedMessage = messageQueue.queueMessage(message, content.trim(), isPrivate)
+          setMessages((current) => 
+            current.map(msg => 
+              msg.id === (messageId || message.id)
+                ? { ...queuedMessage }
+                : msg
+            )
+          )
+          return null
         }
       } catch (error) {
         console.error('Error saving message to database:', error)
+        // Network error - queue the message
+        const queuedMessage = messageQueue.queueMessage(message, content.trim(), isPrivate)
+        setMessages((current) => 
+          current.map(msg => 
+            msg.id === (messageId || message.id)
+              ? { ...queuedMessage }
+              : msg
+          )
+        )
+        return null
       }
     },
-    [isConnected, roomId, userId, username]
+    [isConnected, roomId, userId, username, messageQueue]
   )
+
+  const retryMessage = useCallback(
+    async (messageId: string) => {
+      return await messageQueue.retryMessage(messageId)
+    },
+    [messageQueue]
+  )
+
+  // Merge regular messages with queued messages
+  const allMessages = useMemo(() => {
+    const combinedMessages = [...messages, ...messageQueue.queuedMessages]
+    
+    // Remove duplicates and sort by creation date
+    const uniqueMessages = combinedMessages.reduce((acc, message) => {
+      const existingIndex = acc.findIndex(msg => msg.id === message.id)
+      if (existingIndex >= 0) {
+        // Prefer messages that are not queued/pending over queued ones
+        const existingMessage = acc[existingIndex]
+        const shouldReplaceExisting = (
+          // Replace if new message is successfully sent (not queued/pending/retrying)
+          (!message.isQueued && !message.isPending && !message.isRetrying && !message.isFailed) ||
+          // Or if existing message is failed but new one isn't
+          (existingMessage.isFailed && !message.isFailed) ||
+          // Or if new message has more recent state
+          (message.createdAt && existingMessage.createdAt && 
+           new Date(message.createdAt).getTime() > new Date(existingMessage.createdAt).getTime())
+        )
+        
+        if (shouldReplaceExisting) {
+          acc[existingIndex] = message
+        }
+      } else {
+        acc.push(message)
+      }
+      return acc
+    }, [] as ChatMessage[])
+
+    return uniqueMessages.sort((a, b) => 
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    )
+  }, [messages, messageQueue.queuedMessages])
 
   // Cleanup effect when user leaves
   useEffect(() => {
@@ -289,5 +452,13 @@ export function useRealtimeChat({
     }
   }, [userId, username, roomId, messages.length])
 
-  return { messages, sendMessage, isConnected, loading }
+  return { 
+    messages: allMessages, 
+    sendMessage, 
+    retryMessage, 
+    isConnected, 
+    loading,
+    queueStatus: messageQueue.getQueueStatus(),
+    clearFailedMessages: messageQueue.clearFailedMessages
+  }
 }

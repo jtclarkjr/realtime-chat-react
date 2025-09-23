@@ -52,6 +52,11 @@ export interface ChatMessage {
   isStreaming?: boolean
   isPrivate?: boolean
   requesterId?: string // ID of user who requested the AI response (for private messages)
+  isFailed?: boolean
+  isRetrying?: boolean
+  isQueued?: boolean
+  isPending?: boolean
+  retryAttempts?: number
 }
 
 // Response types
