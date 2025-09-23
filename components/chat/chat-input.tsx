@@ -1,24 +1,11 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { AIBadge } from '@/components/ui/ai-badge'
 import { Send } from 'lucide-react'
-
-function getPlaceholderText(
-  loading: boolean,
-  isAILoading: boolean,
-  isAIEnabled: boolean,
-  isConnected: boolean
-): string {
-  if (loading) return 'Connecting...'
-  if (isAILoading) return 'AI is responding...'
-  if (!isConnected && !loading)
-    return isAIEnabled ? 'Ask AI (offline)...' : 'Type message (offline)...'
-  if (isAIEnabled) return 'Ask AI assistant...'
-  return 'Type a message...'
-}
 
 interface ChatInputProps {
   newMessage: string
@@ -45,6 +32,34 @@ export const ChatInput = ({
   setIsAIPrivate,
   isAILoading
 }: ChatInputProps) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const autoResize = () => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      textarea.style.height = textarea.scrollHeight + 'px'
+    }
+  }
+
+  useEffect(() => {
+    autoResize()
+  }, [newMessage])
+
+  const getPlaceholderText = (
+    loading: boolean,
+    isAILoading: boolean,
+    isAIEnabled: boolean,
+    isConnected: boolean
+  ): string => {
+    if (loading) return 'Connecting...'
+    if (isAILoading) return 'AI is responding...'
+    if (!isConnected && !loading)
+      return isAIEnabled ? 'Ask AI (offline)...' : 'Type message (offline)...'
+    if (isAIEnabled) return 'Ask AI assistant...'
+    return 'Type a message...'
+  }
+
   return (
     <form
       onSubmit={onSendMessage}
@@ -52,15 +67,31 @@ export const ChatInput = ({
       role="form"
       aria-label="Send message"
     >
-      <div className="flex-1 relative">
-        <Input
-          className={cn(
-            'w-full rounded-full bg-background text-base sm:text-sm pl-4 pr-16 py-3 sm:py-2 transition-all duration-300 border-2 focus:border-primary',
-            (loading || isAILoading) && 'opacity-50 cursor-not-allowed'
-          )}
-          type="text"
+      <div
+        className={cn(
+          'flex-1 flex items-center gap-2 rounded-2xl border bg-background transition-all duration-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 px-4 py-3 sm:py-2',
+          (loading || isAILoading) && 'opacity-50 cursor-not-allowed'
+        )}
+      >
+        <Textarea
+          ref={textareaRef}
+          className="flex-1 border-0 bg-transparent shadow-none px-0 py-1 min-h-0 h-auto resize-none max-h-40 overflow-y-scroll scrollbar-none leading-relaxed focus-visible:ring-0 focus-visible:border-transparent"
           value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+          onChange={(e) => {
+            setNewMessage(e.target.value)
+            autoResize()
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              if (newMessage.trim()) {
+                const form = e.currentTarget.closest('form')
+                if (form) {
+                  form.requestSubmit()
+                }
+              }
+            }
+          }}
           placeholder={getPlaceholderText(
             loading,
             isAILoading,
@@ -73,8 +104,9 @@ export const ChatInput = ({
           autoFocus={!loading && !isAILoading}
           aria-label="Type your message"
           aria-describedby="ai-status"
+          rows={1}
         />
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+        <div className="flex-shrink-0">
           <AIBadge
             isActive={isAIEnabled}
             onToggle={() => setIsAIEnabled(!isAIEnabled)}
