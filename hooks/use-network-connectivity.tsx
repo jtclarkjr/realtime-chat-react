@@ -13,11 +13,12 @@ interface NetworkConnectivityState {
  * Combines navigator.onLine with online/offline event listeners
  */
 export function useNetworkConnectivity(): NetworkConnectivityState {
-  const [connectivityState, setConnectivityState] = useState<NetworkConnectivityState>(() => ({
-    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
-    wasOffline: false,
-    lastConnectionChange: Date.now()
-  }))
+  const [connectivityState, setConnectivityState] =
+    useState<NetworkConnectivityState>(() => ({
+      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+      wasOffline: false,
+      lastConnectionChange: Date.now()
+    }))
 
   useEffect(() => {
     // Only run in browser environment
@@ -26,7 +27,7 @@ export function useNetworkConnectivity(): NetworkConnectivityState {
     let wasOffline = !navigator.onLine
 
     const handleOnline = () => {
-      setConnectivityState(prev => ({
+      setConnectivityState((prev) => ({
         isOnline: true,
         wasOffline: prev.wasOffline || wasOffline,
         lastConnectionChange: Date.now()
@@ -52,7 +53,7 @@ export function useNetworkConnectivity(): NetworkConnectivityState {
       if (!document.hidden) {
         const currentOnlineStatus = navigator.onLine
         if (currentOnlineStatus !== connectivityState.isOnline) {
-          setConnectivityState(prev => ({
+          setConnectivityState((prev) => ({
             isOnline: currentOnlineStatus,
             wasOffline: prev.wasOffline || !currentOnlineStatus,
             lastConnectionChange: Date.now()

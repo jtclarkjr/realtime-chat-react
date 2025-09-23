@@ -25,7 +25,10 @@ export const MessageBubble = ({
         'py-3 px-4 rounded-2xl text-sm sm:text-base w-fit break-words shadow-sm transition-all duration-200 hover:shadow-md relative',
         {
           'bg-primary text-primary-foreground rounded-br-md':
-            isOwnMessage && !isPrivateForCurrentUser && !message.isQueued && !message.isPending,
+            isOwnMessage &&
+            !isPrivateForCurrentUser &&
+            !message.isQueued &&
+            !message.isPending,
           'bg-yellow-100 dark:bg-yellow-900/30 text-foreground rounded-br-md border border-yellow-300 dark:border-yellow-700 opacity-80':
             isOwnMessage && (message.isQueued || message.isPending),
           'bg-orange-100 dark:bg-orange-900/30 text-foreground border border-orange-200 dark:border-orange-800/50':
@@ -44,11 +47,7 @@ export const MessageBubble = ({
         role="text"
         aria-live={isStreaming ? 'polite' : undefined}
       >
-        {isStreaming ? (
-          <StreamingIndicator />
-        ) : (
-          message.content
-        )}
+        {isStreaming ? <StreamingIndicator /> : message.content}
       </div>
     </div>
   )

@@ -93,9 +93,7 @@ export const ChatInput = ({
           )}
           type="submit"
           disabled={loading}
-          aria-label={
-            isConnected ? 'Send message' : 'Queue message (offline)'
-          }
+          aria-label={isConnected ? 'Send message' : 'Queue message (offline)'}
           title={
             isConnected
               ? 'Send message'

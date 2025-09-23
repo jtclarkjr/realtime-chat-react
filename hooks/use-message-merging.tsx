@@ -20,7 +20,7 @@ export function useMessageMerging({
     const mergedMessages = [...initialMessages, ...realtimeMessages]
 
     // Handle streaming messages and potential duplicates
-    streamingMessages.forEach(streamingMessage => {
+    streamingMessages.forEach((streamingMessage) => {
       // Check if there's already a broadcast message with the same ID
       const existingBroadcastMessage = mergedMessages.find(
         (msg) => msg.id === streamingMessage.id && msg !== streamingMessage
@@ -40,7 +40,7 @@ export function useMessageMerging({
       if (!message) return false
       if (!message.id) return false
       // Filter out messages without content or invalid structure
-      const isStreamingMessage = streamingMessages.some(sm => sm === message)
+      const isStreamingMessage = streamingMessages.some((sm) => sm === message)
       if (
         !message ||
         !message.id ||
@@ -52,7 +52,11 @@ export function useMessageMerging({
 
       // Filter out private messages that don't belong to current user
       // Private messages should only be visible to the user who requested them OR the user who sent them
-      if (message.isPrivate && message.requesterId !== userId && message.user?.id !== userId) {
+      if (
+        message.isPrivate &&
+        message.requesterId !== userId &&
+        message.user?.id !== userId
+      ) {
         return false
       }
 
@@ -62,9 +66,10 @@ export function useMessageMerging({
         // This is a duplicate - prefer broadcast messages over streaming
         const firstOccurrence = self[duplicateIndex]
         const currentIsStreaming =
-          message.isStreaming || streamingMessages.some(sm => sm === message)
+          message.isStreaming || streamingMessages.some((sm) => sm === message)
         const firstIsStreaming =
-          firstOccurrence?.isStreaming || streamingMessages.some(sm => sm === firstOccurrence)
+          firstOccurrence?.isStreaming ||
+          streamingMessages.some((sm) => sm === firstOccurrence)
 
         if (currentIsStreaming && !firstIsStreaming) {
           return false // Remove streaming message in favor of broadcast

@@ -13,7 +13,11 @@ interface UseMessageSenderProps {
 }
 
 interface UseMessageSenderReturn {
-  sendMessage: (content: string, isPrivate?: boolean, messageId?: string) => Promise<string | null>
+  sendMessage: (
+    content: string,
+    isPrivate?: boolean,
+    messageId?: string
+  ) => Promise<string | null>
   retryMessage: (messageId: string) => Promise<boolean>
   queueStatus: {
     totalQueued: number
@@ -31,38 +35,45 @@ export function useMessageSender({
   isConnected,
   onMessageUpdate
 }: UseMessageSenderProps): UseMessageSenderReturn {
-  
   // Process queued messages when connection is restored
-  const processQueuedMessage = useCallback(async (queuedMessage: ChatMessage & { originalContent: string; isPrivate: boolean }): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/messages/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          roomId: roomId,
-          userId,
-          username,
-          content: queuedMessage.originalContent,
-          isPrivate: queuedMessage.isPrivate
-        })
-      })
-
-      const result = await response.json()
-      
-      if (result.success) {
-        // Remove queued message (broadcast will add final version)
-        onMessageUpdate((current) => 
-          current.filter(msg => msg.id !== queuedMessage.id)
-        )
+  const processQueuedMessage = useCallback(
+    async (
+      queuedMessage: ChatMessage & {
+        originalContent: string
+        isPrivate: boolean
       }
-      
-      return result.success
-    } catch (error) {
-      console.error('Error processing queued message:', error)
-      return false
-    }
-  }, [roomId, userId, username, onMessageUpdate])
+    ): Promise<boolean> => {
+      try {
+        const response = await fetch('/api/messages/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            roomId: roomId,
+            userId,
+            username,
+            content: queuedMessage.originalContent,
+            isPrivate: queuedMessage.isPrivate
+          })
+        })
+
+        const result = await response.json()
+
+        if (result.success) {
+          // Remove queued message (broadcast will add final version)
+          onMessageUpdate((current) =>
+            current.filter((msg) => msg.id !== queuedMessage.id)
+          )
+        }
+
+        return result.success
+      } catch (error) {
+        console.error('Error processing queued message:', error)
+        return false
+      }
+    },
+    [roomId, userId, username, onMessageUpdate]
+  )
 
   // Message queue for offline scenarios
   const messageQueue = useMessageQueue({
@@ -102,16 +113,16 @@ export function useMessageSender({
         isOptimistic: true,
         optimisticTimestamp: Date.now()
       }
-      
+
       onMessageUpdate((current) => {
         if (messageId) {
-          return current.map(msg => 
+          return current.map((msg) =>
             msg.id === messageId ? optimisticMessage : msg
           )
         }
         return [...current, optimisticMessage]
       })
-      
+
       try {
         const response = await fetch('/api/messages/send', {
           method: 'POST',
@@ -132,14 +143,16 @@ export function useMessageSender({
         if (result.success) {
           // Instead of updating the message ID, mark it as confirmed
           // The broadcast message will replace this optimistic one
-          onMessageUpdate((current) => 
-            current.map(msg => 
-              (msg.id === optimisticId || msg.id === messageId) && msg.isOptimistic
-                ? { 
-                    ...msg, 
+          onMessageUpdate((current) =>
+            current.map((msg) =>
+              (msg.id === optimisticId || msg.id === messageId) &&
+              msg.isOptimistic
+                ? {
+                    ...msg,
                     isOptimisticConfirmed: true,
                     serverId: result.message.id,
-                    serverTimestamp: result.message.created_at || new Date().toISOString()
+                    serverTimestamp:
+                      result.message.created_at || new Date().toISOString()
                   }
                 : msg
             )
@@ -147,15 +160,17 @@ export function useMessageSender({
           return result.message.id
         } else {
           // Show failed message on error
-          const failedMessage = { 
-            ...message, 
-            isPending: false, 
-            isFailed: true, 
-            isOptimistic: false 
+          const failedMessage = {
+            ...message,
+            isPending: false,
+            isFailed: true,
+            isOptimistic: false
           }
           onMessageUpdate((current) => {
             if (messageId) {
-              return current.map(msg => msg.id === messageId ? failedMessage : msg)
+              return current.map((msg) =>
+                msg.id === messageId ? failedMessage : msg
+              )
             }
             return [...current, failedMessage]
           })
@@ -163,15 +178,17 @@ export function useMessageSender({
         }
       } catch (error) {
         console.error('Network error sending message:', error)
-        const failedMessage = { 
-          ...message, 
-          isPending: false, 
-          isFailed: true, 
-          isOptimistic: false 
+        const failedMessage = {
+          ...message,
+          isPending: false,
+          isFailed: true,
+          isOptimistic: false
         }
         onMessageUpdate((current) => {
           if (messageId) {
-            return current.map(msg => msg.id === messageId ? failedMessage : msg)
+            return current.map((msg) =>
+              msg.id === messageId ? failedMessage : msg
+            )
           }
           return [...current, failedMessage]
         })
@@ -199,8 +216,11 @@ export function useMessageSender({
         isPending: false
       }
 
-      
-      const queuedMessage = messageQueue.queueMessage(message, content.trim(), isPrivate)
+      const queuedMessage = messageQueue.queueMessage(
+        message,
+        content.trim(),
+        isPrivate
+      )
       onMessageUpdate((current) => [...current, queuedMessage])
       return message.id
     },
@@ -211,8 +231,8 @@ export function useMessageSender({
   const sendMessage = useCallback(
     async (content: string, isPrivate = false, messageId?: string) => {
       if (!content.trim()) return null
-      
-      return isConnected 
+
+      return isConnected
         ? sendOnlineMessage(content, isPrivate, messageId)
         : sendOfflineMessage(content, isPrivate, messageId)
     },
@@ -229,7 +249,7 @@ export function useMessageSender({
   return {
     sendMessage,
     retryMessage,
-    queueStatus: isConnected 
+    queueStatus: isConnected
       ? { totalQueued: 0, pending: 0, failed: 0, isProcessing: false }
       : messageQueue.getQueueStatus(),
     clearFailedMessages: messageQueue.clearFailedMessages

@@ -27,12 +27,17 @@ export const ChatMessageItem = ({
   const isStreaming =
     isAIMessage && (message.isStreaming || !message.content.trim()) // AI message with no content or marked as streaming
   const isPrivateMessage = message.isPrivate
-  const isPrivateForCurrentUser = !!
-    (isPrivateMessage && message.requesterId === currentUserId)
+  const isPrivateForCurrentUser = !!(
+    isPrivateMessage && message.requesterId === currentUserId
+  )
 
   // Don't render private messages that don't belong to current user
   // Private messages should ONLY be visible to the user who requested them OR the user who sent them
-  if (isPrivateMessage && message.requesterId !== currentUserId && message.user.id !== currentUserId) {
+  if (
+    isPrivateMessage &&
+    message.requesterId !== currentUserId &&
+    message.user.id !== currentUserId
+  ) {
     return null
   }
 
@@ -71,7 +76,7 @@ export const ChatMessageItem = ({
               isRetrying={message.isRetrying || false}
               onRetry={onRetry}
             />
-            
+
             <div className="flex items-center gap-2">
               <FailedMessageBubble content={message.content} />
             </div>
@@ -86,11 +91,9 @@ export const ChatMessageItem = ({
               isPrivateForCurrentUser={isPrivateForCurrentUser}
               isStreaming={isStreaming}
             />
-            
+
             {/* Status indicators for user's own messages */}
-            {isOwnMessage && (
-              <MessageStatusIndicator message={message} />
-            )}
+            {isOwnMessage && <MessageStatusIndicator message={message} />}
           </div>
         )}
       </div>

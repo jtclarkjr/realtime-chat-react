@@ -14,10 +14,7 @@ export const FailedMessageBubble = ({ content }: FailedMessageBubbleProps) => {
         'bg-red-100 dark:bg-red-900/30 text-foreground rounded-br-md border border-red-300 dark:border-red-700 opacity-75'
       )}
     >
-      <div
-        className="whitespace-pre-wrap leading-relaxed"
-        role="text"
-      >
+      <div className="whitespace-pre-wrap leading-relaxed" role="text">
         {content}
       </div>
     </div>

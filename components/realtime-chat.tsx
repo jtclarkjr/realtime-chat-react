@@ -5,7 +5,11 @@ import { useRealtimeChat } from '@/hooks/use-realtime-chat'
 import { useAIChat } from '@/hooks/use-ai-chat'
 import { useMessageMerging } from '@/hooks/use-message-merging'
 import { useStreamingMessages } from '@/hooks/use-streaming-messages'
-import { ConnectionStatusBar, ChatMessageList, ChatInput } from '@/components/chat'
+import {
+  ConnectionStatusBar,
+  ChatMessageList,
+  ChatInput
+} from '@/components/chat'
 import type { ChatMessage } from '@/lib/types/database'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -16,7 +20,6 @@ interface RealtimeChatProps {
   onMessage?: (messages: ChatMessage[]) => void
   messages?: ChatMessage[]
 }
-
 
 /**
  * Realtime chat component
@@ -67,7 +70,7 @@ export const RealtimeChat = ({
       // Always update the streaming message with completed content
       const finalMessage = { ...completedMessage, isStreaming: false }
       addOrUpdateStreamingMessage(finalMessage)
-      
+
       // For public messages, the broadcast will eventually replace this
       // For private messages, this stays permanently
     }
@@ -90,16 +93,18 @@ export const RealtimeChat = ({
 
   // Handle clearing streaming messages when broadcast arrives
   useEffect(() => {
-    streamingMessages.forEach(streamingMessage => {
+    streamingMessages.forEach((streamingMessage) => {
       if (!streamingMessage.isPrivate && streamingMessage.isAI) {
         // For AI messages, check by content and timing since IDs might not match
-        const existingBroadcastMessage = realtimeMessages.find((msg) => 
-          msg.isAI && 
-          msg.content === streamingMessage.content &&
-          msg.content && msg.content.trim().length > 0 && // Only match non-empty content
-          !msg.isStreaming
+        const existingBroadcastMessage = realtimeMessages.find(
+          (msg) =>
+            msg.isAI &&
+            msg.content === streamingMessage.content &&
+            msg.content &&
+            msg.content.trim().length > 0 && // Only match non-empty content
+            !msg.isStreaming
         )
-        
+
         if (existingBroadcastMessage) {
           clearStreamingMessage(streamingMessage.id)
         }
@@ -163,7 +168,7 @@ export const RealtimeChat = ({
         queueStatus={queueStatus}
         onClearFailedMessages={clearFailedMessages}
       />
-      
+
       <ChatMessageList
         ref={containerRef}
         messages={allMessages}
@@ -174,7 +179,7 @@ export const RealtimeChat = ({
         initialMessagesLength={initialMessages.length}
         onRetry={retryMessage}
       />
-      
+
       <ChatInput
         newMessage={newMessage}
         setNewMessage={setNewMessage}

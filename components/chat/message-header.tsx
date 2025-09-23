@@ -30,8 +30,7 @@ export const MessageHeader = ({
         <span
           className={cn('font-medium text-xs sm:text-sm', {
             'text-primary': isOwnMessage,
-            'text-blue-600 dark:text-blue-400':
-              isAIMessage && !isOwnMessage,
+            'text-blue-600 dark:text-blue-400': isAIMessage && !isOwnMessage,
             'text-muted-foreground': !isOwnMessage && !isAIMessage
           })}
         >
@@ -58,13 +57,14 @@ export const MessageHeader = ({
       <time
         className="text-foreground/50 text-xs"
         dateTime={message.createdAt}
-        aria-label={`Sent at ${new Date(
-          message.createdAt
-        ).toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        })}`}
+        aria-label={`Sent at ${new Date(message.createdAt).toLocaleTimeString(
+          'en-US',
+          {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }
+        )}`}
       >
         {new Date(message.createdAt).toLocaleTimeString('en-US', {
           hour: '2-digit',

@@ -10,7 +10,9 @@ interface UseOptimisticMessageSenderProps {
   username: string
   isConnected: boolean
   confirmedMessages: ChatMessage[]
-  onConfirmedMessageUpdate: (updater: (messages: ChatMessage[]) => ChatMessage[]) => void
+  onConfirmedMessageUpdate: (
+    updater: (messages: ChatMessage[]) => ChatMessage[]
+  ) => void
 }
 
 interface UseOptimisticMessageSenderReturn {
@@ -34,15 +36,16 @@ export function useOptimisticMessageSender({
   confirmedMessages,
   onConfirmedMessageUpdate
 }: UseOptimisticMessageSenderProps): UseOptimisticMessageSenderReturn {
-  
   // Use React's useOptimistic for seamless optimistic updates
   const [optimisticMessages, addOptimisticMessage] = useOptimistic(
     confirmedMessages,
     (currentMessages: ChatMessage[], newMessage: ChatMessage) => {
       // Check if message already exists to avoid duplicates
-      const existingIndex = currentMessages.findIndex(msg => msg.id === newMessage.id)
+      const existingIndex = currentMessages.findIndex(
+        (msg) => msg.id === newMessage.id
+      )
       if (existingIndex >= 0) {
-        return currentMessages.map((msg, index) => 
+        return currentMessages.map((msg, index) =>
           index === existingIndex ? newMessage : msg
         )
       }
@@ -68,12 +71,12 @@ export function useOptimisticMessageSender({
   const sendMessage = useCallback(
     async (content: string, isPrivate = false) => {
       if (!content.trim()) return null
-      
+
       // If offline, delegate to queue-based sender
       if (!isConnected) {
         return await sendMessageWithQueue(content, isPrivate)
       }
-      
+
       // Online: use optimistic updates
       const optimisticMessage: ChatMessage = {
         id: crypto.randomUUID(),
@@ -91,12 +94,12 @@ export function useOptimisticMessageSender({
         isOptimistic: true,
         optimisticTimestamp: Date.now()
       }
-      
+
       // Add optimistic message immediately within transition
       startTransition(() => {
         addOptimisticMessage(optimisticMessage)
       })
-      
+
       try {
         // Send to server
         const response = await fetch('/api/messages/send', {
@@ -113,7 +116,7 @@ export function useOptimisticMessageSender({
         })
 
         const result = await response.json()
-        
+
         if (!result.success) {
           // If failed, add failed message to confirmed messages
           const failedMessage = {
@@ -121,7 +124,7 @@ export function useOptimisticMessageSender({
             isFailed: true,
             isOptimistic: false
           }
-          onConfirmedMessageUpdate(current => [...current, failedMessage])
+          onConfirmedMessageUpdate((current) => [...current, failedMessage])
         } else {
           // Success case - for private messages, we won't get a broadcast, so keep optimistic
           if (optimisticMessage.isPrivate) {
@@ -131,13 +134,15 @@ export function useOptimisticMessageSender({
               id: result.message?.id || optimisticMessage.id,
               isOptimistic: false
             }
-            onConfirmedMessageUpdate(current => [...current, confirmedPrivateMessage])
+            onConfirmedMessageUpdate((current) => [
+              ...current,
+              confirmedPrivateMessage
+            ])
           }
           // For public messages, broadcast will replace the optimistic one
         }
-        
+
         return result.success ? result.message?.id : null
-        
       } catch (error) {
         console.error('Network error sending message:', error)
         // Add failed message to confirmed messages
@@ -146,11 +151,19 @@ export function useOptimisticMessageSender({
           isFailed: true,
           isOptimistic: false
         }
-        onConfirmedMessageUpdate(current => [...current, failedMessage])
+        onConfirmedMessageUpdate((current) => [...current, failedMessage])
         return null
       }
     },
-    [roomId, userId, username, isConnected, addOptimisticMessage, sendMessageWithQueue, onConfirmedMessageUpdate]
+    [
+      roomId,
+      userId,
+      username,
+      isConnected,
+      addOptimisticMessage,
+      sendMessageWithQueue,
+      onConfirmedMessageUpdate
+    ]
   )
 
   return {

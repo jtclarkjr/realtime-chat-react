@@ -33,7 +33,9 @@ export function useMessageQueue({
   // Load queued messages from localStorage on mount
   useEffect(() => {
     try {
-      const storedQueue = localStorage.getItem(`${QUEUE_STORAGE_KEY}_${roomId}_${userId}`)
+      const storedQueue = localStorage.getItem(
+        `${QUEUE_STORAGE_KEY}_${roomId}_${userId}`
+      )
       if (storedQueue) {
         const parsed = JSON.parse(storedQueue)
         setQueuedMessages(parsed)
@@ -58,26 +60,33 @@ export function useMessageQueue({
   }, [queuedMessages, roomId, userId])
 
   // Add message to queue
-  const queueMessage = useCallback((message: ChatMessage, originalContent: string, isPrivate: boolean = false) => {
-    const queuedMessage: QueuedMessage = {
-      ...message,
-      originalContent,
-      isPrivate,
-      attempts: 0,
-      queuedAt: Date.now(),
-      isQueued: true,
-      isPending: false,
-      isFailed: false,
-      isRetrying: false
-    }
+  const queueMessage = useCallback(
+    (
+      message: ChatMessage,
+      originalContent: string,
+      isPrivate: boolean = false
+    ) => {
+      const queuedMessage: QueuedMessage = {
+        ...message,
+        originalContent,
+        isPrivate,
+        attempts: 0,
+        queuedAt: Date.now(),
+        isQueued: true,
+        isPending: false,
+        isFailed: false,
+        isRetrying: false
+      }
 
-    setQueuedMessages(prev => [...prev, queuedMessage])
-    return queuedMessage
-  }, [])
+      setQueuedMessages((prev) => [...prev, queuedMessage])
+      return queuedMessage
+    },
+    []
+  )
 
   // Remove message from queue
   const removeFromQueue = useCallback((messageId: string) => {
-    setQueuedMessages(prev => prev.filter(msg => msg.id !== messageId))
+    setQueuedMessages((prev) => prev.filter((msg) => msg.id !== messageId))
   }, [])
 
   // Process queue when connection is restored
@@ -94,8 +103,8 @@ export function useMessageQueue({
       for (const queuedMessage of queuedMessages) {
         try {
           // Update message state to show it's being retried
-          setQueuedMessages(prev =>
-            prev.map(msg =>
+          setQueuedMessages((prev) =>
+            prev.map((msg) =>
               msg.id === queuedMessage.id
                 ? { ...msg, isRetrying: true, isQueued: false, isPending: true }
                 : msg
@@ -106,38 +115,40 @@ export function useMessageQueue({
 
           if (success) {
             // Remove from queue on success
-            setQueuedMessages(prev => prev.filter(msg => msg.id !== queuedMessage.id))
+            setQueuedMessages((prev) =>
+              prev.filter((msg) => msg.id !== queuedMessage.id)
+            )
           } else {
             // Increment attempt counter
             const newAttempts = queuedMessage.attempts + 1
-            
+
             if (newAttempts >= MAX_RETRY_ATTEMPTS) {
               // Mark as failed after max attempts
-              setQueuedMessages(prev =>
-                prev.map(msg =>
+              setQueuedMessages((prev) =>
+                prev.map((msg) =>
                   msg.id === queuedMessage.id
-                    ? { 
-                        ...msg, 
-                        isFailed: true, 
-                        isRetrying: false, 
-                        isQueued: false, 
+                    ? {
+                        ...msg,
+                        isFailed: true,
+                        isRetrying: false,
+                        isQueued: false,
                         isPending: false,
-                        attempts: newAttempts 
+                        attempts: newAttempts
                       }
                     : msg
                 )
               )
             } else {
               // Queue for another attempt
-              setQueuedMessages(prev =>
-                prev.map(msg =>
+              setQueuedMessages((prev) =>
+                prev.map((msg) =>
                   msg.id === queuedMessage.id
-                    ? { 
-                        ...msg, 
-                        isQueued: true, 
-                        isRetrying: false, 
+                    ? {
+                        ...msg,
+                        isQueued: true,
+                        isRetrying: false,
                         isPending: false,
-                        attempts: newAttempts 
+                        attempts: newAttempts
                       }
                     : msg
                 )
@@ -147,14 +158,14 @@ export function useMessageQueue({
         } catch (error) {
           console.error('Error processing queued message:', error)
           // Mark this specific message as failed
-          setQueuedMessages(prev =>
-            prev.map(msg =>
+          setQueuedMessages((prev) =>
+            prev.map((msg) =>
               msg.id === queuedMessage.id
-                ? { 
-                    ...msg, 
-                    isFailed: true, 
-                    isRetrying: false, 
-                    isQueued: false, 
+                ? {
+                    ...msg,
+                    isFailed: true,
+                    isRetrying: false,
+                    isQueued: false,
                     isPending: false,
                     attempts: queuedMessage.attempts + 1
                   }
@@ -164,7 +175,7 @@ export function useMessageQueue({
         }
 
         // Small delay between processing messages
-        await new Promise(resolve => setTimeout(resolve, 500))
+        await new Promise((resolve) => setTimeout(resolve, 500))
       }
     } finally {
       setIsProcessingQueue(false)
@@ -174,21 +185,26 @@ export function useMessageQueue({
 
   // Auto-process queue when connection is restored
   useEffect(() => {
-    if (isConnected && queuedMessages.some(msg => msg.isQueued && !msg.isFailed)) {
+    if (
+      isConnected &&
+      queuedMessages.some((msg) => msg.isQueued && !msg.isFailed)
+    ) {
       // Add a small delay to allow WebSocket to stabilize after network reconnection
       const timeoutId = setTimeout(() => {
         processQueue()
       }, 1000)
-      
+
       return () => clearTimeout(timeoutId)
     }
   }, [isConnected, processQueue, queuedMessages])
 
   // Get current queue status
   const getQueueStatus = useCallback(() => {
-    const pending = queuedMessages.filter(msg => msg.isQueued || msg.isPending || msg.isRetrying)
-    const failed = queuedMessages.filter(msg => msg.isFailed)
-    
+    const pending = queuedMessages.filter(
+      (msg) => msg.isQueued || msg.isPending || msg.isRetrying
+    )
+    const failed = queuedMessages.filter((msg) => msg.isFailed)
+
     return {
       totalQueued: queuedMessages.length,
       pending: pending.length,
@@ -198,40 +214,60 @@ export function useMessageQueue({
   }, [queuedMessages, isProcessingQueue])
 
   // Retry a specific failed message
-  const retryMessage = useCallback(async (messageId: string) => {
-    const message = queuedMessages.find(msg => msg.id === messageId && msg.isFailed)
-    if (!message || !isConnected) return false
-
-    // Reset message state for retry
-    setQueuedMessages(prev =>
-      prev.map(msg =>
-        msg.id === messageId
-          ? { 
-              ...msg, 
-              isFailed: false, 
-              isRetrying: true, 
-              isQueued: false, 
-              isPending: true
-            }
-          : msg
+  const retryMessage = useCallback(
+    async (messageId: string) => {
+      const message = queuedMessages.find(
+        (msg) => msg.id === messageId && msg.isFailed
       )
-    )
+      if (!message || !isConnected) return false
 
-    try {
-      const success = await onProcessMessage(message)
-      
-      if (success) {
-        removeFromQueue(messageId)
-        return true
-      } else {
-        // Mark as failed again
-        setQueuedMessages(prev =>
-          prev.map(msg =>
+      // Reset message state for retry
+      setQueuedMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId
+            ? {
+                ...msg,
+                isFailed: false,
+                isRetrying: true,
+                isQueued: false,
+                isPending: true
+              }
+            : msg
+        )
+      )
+
+      try {
+        const success = await onProcessMessage(message)
+
+        if (success) {
+          removeFromQueue(messageId)
+          return true
+        } else {
+          // Mark as failed again
+          setQueuedMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId
+                ? {
+                    ...msg,
+                    isFailed: true,
+                    isRetrying: false,
+                    isPending: false,
+                    attempts: message.attempts + 1
+                  }
+                : msg
+            )
+          )
+          return false
+        }
+      } catch (error) {
+        console.error('Error retrying message:', error)
+        setQueuedMessages((prev) =>
+          prev.map((msg) =>
             msg.id === messageId
-              ? { 
-                  ...msg, 
-                  isFailed: true, 
-                  isRetrying: false, 
+              ? {
+                  ...msg,
+                  isFailed: true,
+                  isRetrying: false,
                   isPending: false,
                   attempts: message.attempts + 1
                 }
@@ -240,28 +276,13 @@ export function useMessageQueue({
         )
         return false
       }
-    } catch (error) {
-      console.error('Error retrying message:', error)
-      setQueuedMessages(prev =>
-        prev.map(msg =>
-          msg.id === messageId
-            ? { 
-                ...msg, 
-                isFailed: true, 
-                isRetrying: false, 
-                isPending: false,
-                attempts: message.attempts + 1
-              }
-            : msg
-        )
-      )
-      return false
-    }
-  }, [queuedMessages, isConnected, onProcessMessage, removeFromQueue])
+    },
+    [queuedMessages, isConnected, onProcessMessage, removeFromQueue]
+  )
 
   // Clear all failed messages
   const clearFailedMessages = useCallback(() => {
-    setQueuedMessages(prev => prev.filter(msg => !msg.isFailed))
+    setQueuedMessages((prev) => prev.filter((msg) => !msg.isFailed))
   }, [])
 
   return {

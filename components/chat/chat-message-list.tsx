@@ -16,7 +16,18 @@ interface ChatMessageListProps {
 }
 
 export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
-  ({ messages, loading, isConnected, username, userId, initialMessagesLength, onRetry }, ref) => {
+  (
+    {
+      messages,
+      loading,
+      isConnected,
+      username,
+      userId,
+      initialMessagesLength,
+      onRetry
+    },
+    ref
+  ) => {
     return (
       <div
         ref={ref}

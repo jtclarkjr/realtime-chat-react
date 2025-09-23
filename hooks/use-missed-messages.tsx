@@ -100,7 +100,9 @@ export function useMissedMessages({
     } catch (err) {
       if (!isCancelled) {
         if (err instanceof Error && err.name === 'AbortError') {
-          console.warn('Missed messages fetch timed out, continuing with real-time only')
+          console.warn(
+            'Missed messages fetch timed out, continuing with real-time only'
+          )
           setError('Request timed out')
         } else {
           const errorMsg = err instanceof Error ? err.message : 'Unknown error'
