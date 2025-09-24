@@ -69,13 +69,13 @@ export const ChatInput = ({
     >
       <div
         className={cn(
-          'flex-1 flex items-center gap-2 rounded-2xl border bg-background transition-all duration-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 px-4 py-3 sm:py-2',
+          'flex-1 flex items-center gap-2 rounded-2xl border border-border/50 bg-background dark:bg-transparent transition-all duration-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 px-4 py-3 sm:py-2',
           (loading || isAILoading) && 'opacity-50 cursor-not-allowed'
         )}
       >
         <Textarea
           ref={textareaRef}
-          className="flex-1 border-0 bg-transparent shadow-none px-0 py-1 min-h-0 h-auto resize-none max-h-40 overflow-y-scroll scrollbar-none leading-relaxed focus-visible:ring-0 focus-visible:border-transparent"
+          className="flex-1 border-0 bg-transparent shadow-none px-0 py-1 min-h-0 h-auto resize-none max-h-40 overflow-y-scroll scrollbar-none leading-relaxed focus-visible:ring-0 focus-visible:border-transparent dark:bg-transparent"
           value={newMessage}
           onChange={(e) => {
             setNewMessage(e.target.value)

@@ -43,7 +43,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
   }
 
   return (
-    <section className="border bg-background md:max-w-5xl md:mx-auto">
+    <section className="border-l border-r bg-background md:max-w-5xl md:mx-auto">
       <RoomClient room={room} initialMessages={messages} user={user} />
     </section>
   )
