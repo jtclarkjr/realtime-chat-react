@@ -1,3 +1,4 @@
+import DOMPurify from 'isomorphic-dompurify'
 import { getServiceClient } from '@/lib/supabase/service-client'
 import {
   markMessageReceived,
@@ -42,6 +43,9 @@ export class ChatService {
    * Send a message and persist it to database
    */
   async sendMessage(request: SendMessageRequest): Promise<ChatMessageWithDB> {
+    // Sanitize content before saving to database
+    const sanitizedContent = DOMPurify.sanitize(request.content)
+    
     // Save to database (id will be auto-generated)
     const { data: message, error } = await this.supabase
       .from('messages')
@@ -49,7 +53,7 @@ export class ChatService {
         room_id: request.roomId,
         user_id: request.userId,
         username: request.username,
-        content: request.content,
+        content: sanitizedContent,
         is_ai_message: false,
         is_private: request.isPrivate || false
       })
@@ -73,6 +77,9 @@ export class ChatService {
   async sendAIMessage(
     request: SendAIMessageRequest
   ): Promise<ChatMessageWithDB> {
+    // Sanitize AI content before saving to database
+    const sanitizedContent = DOMPurify.sanitize(request.content)
+    
     // Save AI message to database
     const { data: message, error } = await this.supabase
       .from('messages')
@@ -82,7 +89,7 @@ export class ChatService {
           ? request.requesterId || 'ai-assistant'
           : 'ai-assistant',
         username: 'AI Assistant',
-        content: request.content,
+        content: sanitizedContent,
         is_ai_message: true,
         is_private: request.isPrivate || false
       })

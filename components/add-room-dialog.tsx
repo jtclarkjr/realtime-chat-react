@@ -1,5 +1,6 @@
 'use client'
 
+import DOMPurify from 'isomorphic-dompurify'
 import { useState } from 'react'
 import {
   Dialog,
@@ -74,9 +75,15 @@ export function AddRoomDialog({
       setError(null)
 
       // Use server action instead of API call
+      // Sanitize inputs before sending to server
+      const sanitizedRoomName = DOMPurify.sanitize(roomName.trim())
+      const sanitizedDescription = description.trim()
+        ? DOMPurify.sanitize(description.trim())
+        : undefined
+
       const result = await createRoomAction(
-        roomName.trim(),
-        description.trim() || undefined
+        sanitizedRoomName,
+        sanitizedDescription
       )
 
       if (!result.success) {
@@ -154,8 +161,7 @@ export function AddRoomDialog({
               placeholder="e.g., general, random, team-chat"
               value={roomName}
               onChange={(e) => {
-                const newValue = e.target.value
-                setRoomName(newValue)
+                setRoomName(e.target.value)
                 // Clear any previous API errors when user starts typing
                 // Validation errors are shown under the input field, not in bottom error area
                 setError(null)
