@@ -19,23 +19,23 @@ sequenceDiagram
     %% Login Flow
     User->>App: Access protected page
     App-->>User: Redirect to /login
-    
+
     User->>App: Click GitHub/Discord login
     App->>Supabase: Sign in with OAuth
     Supabase->>OAuth: Redirect to provider
     OAuth-->>User: Request permissions
-    
+
     User->>OAuth: Grant permissions
     OAuth->>App: Redirect with auth code
     App->>Supabase: Exchange code for session
     Supabase-->>App: Return user session + profile
-    
+
     App->>App: Set auth cookies
     App-->>User: Redirect to protected page
-    
+
     %% Session Management
     Note over App,Supabase: Auto-refresh tokens
-    
+
     %% Logout Flow
     User->>App: Click logout
     App->>Supabase: Sign out

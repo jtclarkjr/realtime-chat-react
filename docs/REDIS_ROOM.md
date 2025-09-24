@@ -49,7 +49,7 @@ sequenceDiagram
 
     %% Load Rooms
     User->>Redis: Request rooms
-    
+
     alt Cache Hit
         Redis-->>User: Show rooms (fast)
     else Cache Miss

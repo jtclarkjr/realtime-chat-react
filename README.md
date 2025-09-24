@@ -41,7 +41,7 @@ Features instant messaging, message persistence, and reconnection handling.
 
 ## Prerequisites
 
-- Node.js 22+
+- Node.js 22+ (vercel does not support Node 24 currently)
 - Bun package manager
 - Docker and Docker Compose (for local Redis development)
 - Supabase account and project
@@ -302,15 +302,18 @@ src/
 │   │   ├── messages/     # Message handling
 │   │   └── rooms/        # Room management
 │   ├── api-docs/         # Swagger UI documentation page
+│   ├── auth/             # Auth pages
+│   ├── login/            # login page
+│   ├── rooms/[id]        # Room page
 │   ├── layout.tsx        # Root layout
 │   └── page.tsx         # Main chat interface
 ├── components/            # React components
-│   ├── ui/               # Reusable UI components
-│   ├── chat-message.tsx  # Individual message component
-│   └── realtime-chat.tsx # Main chat component
+│   ├── chat/               # Chat/chatroom related micro components
+│   ├── ui/                 # Reusable UI components
+│   ├── chat-message.tsx    # Main individual message component
+│   └── realtime-chat.tsx   # Main chat room component
+├── database/              # Database related schema, SQL, etc
 ├── hooks/                 # Custom React hooks
-│   ├── use-chat-scroll.tsx    # Auto-scroll functionality
-│   └── use-realtime-chat.tsx  # Real-time chat logic
 ├── lib/                   # Utility libraries
 │   ├── redis/            # Redis client and utilities
 │   ├── services/         # Business logic services
@@ -322,29 +325,6 @@ src/
 ```
 
 ## Key Components
-
-### RealtimeChat
-
-Main chat component handling message display, sending, real-time updates, and AI
-integration.
-
-### useRealtimeChat Hook
-
-Custom hook managing:
-
-- WebSocket connections
-- Message state
-- Missed message recovery
-- Real-time subscriptions
-
-### useAIChat Hook
-
-AI assistant integration hook managing:
-
-- AI message streaming
-- Privacy controls (public/private responses)
-- Context-aware conversations
-- Anthropic Claude API integration
 
 ### Redis/Vercel KV Integration
 
