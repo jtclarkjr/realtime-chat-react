@@ -40,7 +40,9 @@ export class ChatService {
       // Add privacy and AI information
       isAI: dbMessage.is_ai_message || false,
       isPrivate: dbMessage.is_private || false,
-      requesterId: dbMessage.is_private ? (dbMessage.requester_id || dbMessage.user_id) : undefined
+      requesterId: dbMessage.is_private
+        ? dbMessage.requester_id || dbMessage.user_id
+        : undefined
     }
   }
 
@@ -49,7 +51,12 @@ export class ChatService {
    */
   async sendMessage(request: SendMessageRequest): Promise<ChatMessageWithDB> {
     // Validate required fields
-    if (!request.roomId || !request.userId || !request.username || !request.content?.trim()) {
+    if (
+      !request.roomId ||
+      !request.userId ||
+      !request.username ||
+      !request.content?.trim()
+    ) {
       throw new Error('Missing required fields for message')
     }
 
@@ -205,7 +212,9 @@ export class ChatService {
         .select('*')
         .eq('room_id', roomId)
         .gt('created_at', lastMessageTimestamp)
-        .or(`is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`)
+        .or(
+          `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
+        )
         .order('created_at', { ascending: true })
 
       if (error) {

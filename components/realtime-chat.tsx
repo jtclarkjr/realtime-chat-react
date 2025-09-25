@@ -5,10 +5,12 @@ import { useRealtimeChat } from '@/hooks/use-realtime-chat'
 import { useAIChat } from '@/hooks/use-ai-chat'
 import { useMessageMerging } from '@/hooks/use-message-merging'
 import { useStreamingMessages } from '@/hooks/use-streaming-messages'
+import { useSmartAutoScroll } from '@/hooks/use-smart-auto-scroll'
 import {
   ConnectionStatusBar,
   ChatMessageList,
-  ChatInput
+  ChatInput,
+  NewMessagesBadge
 } from '@/components/chat'
 import type { ChatMessage } from '@/lib/types/database'
 import { useCallback, useEffect, useState } from 'react'
@@ -94,6 +96,18 @@ export const RealtimeChat = ({
     userId
   })
 
+  // Smart auto-scroll that only scrolls when appropriate
+  const {
+    handleUserScroll,
+    userHasScrolledUp,
+    unreadMessageCount,
+    scrollToBottomAndClearUnread
+  } = useSmartAutoScroll({
+    messages: allMessages,
+    containerRef,
+    scrollToBottom
+  })
+
   // Handle clearing streaming messages when broadcast arrives
   useEffect(() => {
     streamingMessages.forEach((streamingMessage) => {
@@ -120,18 +134,6 @@ export const RealtimeChat = ({
       onMessage(allMessages)
     }
   }, [allMessages, onMessage])
-
-  useEffect(() => {
-    // Scroll to bottom whenever messages change
-    scrollToBottom()
-  }, [allMessages, scrollToBottom])
-
-  useEffect(() => {
-    // Scroll to bottom when streaming messages update
-    if (streamingMessages.length > 0) {
-      scrollToBottom()
-    }
-  }, [streamingMessages, scrollToBottom])
 
   const handleSendMessage = useCallback(
     async (e: React.FormEvent) => {
@@ -181,6 +183,13 @@ export const RealtimeChat = ({
         userId={userId}
         initialMessagesLength={initialMessages.length}
         onRetry={retryMessage}
+        onUserScroll={handleUserScroll}
+      />
+
+      <NewMessagesBadge
+        isVisible={userHasScrolledUp}
+        newMessageCount={unreadMessageCount}
+        onScrollToBottom={scrollToBottomAndClearUnread}
       />
 
       <ChatInput
