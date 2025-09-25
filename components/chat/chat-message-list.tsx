@@ -3,6 +3,8 @@
 import { forwardRef } from 'react'
 import { motion } from 'framer-motion'
 import { ChatMessageItem } from '@/components/chat-message'
+import { ScrollDateIndicator } from '@/components/chat'
+import { useScrollDateDetection } from '@/hooks/use-scroll-date-detection'
 import type { ChatMessage } from '@/lib/types/database'
 
 interface ChatMessageListProps {
@@ -28,14 +30,18 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
     },
     ref
   ) => {
+    const { scrollDate, isScrolling, handleScroll } = useScrollDateDetection({ messages })
     return (
-      <div
-        ref={ref}
-        className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-4"
-        role="log"
-        aria-label="Chat messages"
-        aria-live="polite"
-      >
+      <>
+        <ScrollDateIndicator date={scrollDate} isVisible={isScrolling} />
+        <div
+          ref={ref}
+          className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-4"
+          role="log"
+          aria-label="Chat messages"
+          aria-live="polite"
+          onScroll={handleScroll}
+        >
         {loading && initialMessagesLength === 0 ? (
           <div className="text-center text-sm text-muted-foreground py-8">
             <div>Connecting to chat...</div>
@@ -55,6 +61,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
               return (
                 <motion.div
                   key={message.id}
+                  data-message-id={message.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{
@@ -75,7 +82,8 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
             })}
           </div>
         )}
-      </div>
+        </div>
+      </>
     )
   }
 )
