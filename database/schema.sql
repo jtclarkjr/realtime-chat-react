@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS messages (
   content TEXT NOT NULL,
   is_ai_message BOOLEAN DEFAULT false,
   is_private BOOLEAN DEFAULT false,
+  requester_id UUID,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -32,6 +33,14 @@ ON messages(room_id, is_private, user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_messages_private_user
 ON messages(is_private, user_id)
 WHERE is_private = true;
+
+-- Create index for private messages by requester (for AI responses)
+CREATE INDEX IF NOT EXISTS idx_messages_private_requester
+ON messages(is_private, requester_id, room_id, created_at DESC)
+WHERE is_private = true;
+
+-- Add comment to explain the requester_id column
+COMMENT ON COLUMN messages.requester_id IS 'ID of the user who requested this message. Used for private AI responses to identify who can see the message. For regular messages, this is typically NULL or same as user_id.';
 
 -- Enable Row Level Security
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;

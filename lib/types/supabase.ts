@@ -19,6 +19,7 @@ export interface Database {
           created_at: string
           is_ai_message: boolean
           is_private: boolean
+          requester_id: string | null
         }
         Insert: {
           id?: string
@@ -29,6 +30,7 @@ export interface Database {
           created_at?: string
           is_ai_message?: boolean
           is_private?: boolean
+          requester_id?: string | null
         }
         Update: {
           id?: string
@@ -39,6 +41,7 @@ export interface Database {
           created_at?: string
           is_ai_message?: boolean
           is_private?: boolean
+          requester_id?: string | null
         }
         Relationships: [
           {

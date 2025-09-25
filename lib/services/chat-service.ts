@@ -40,7 +40,7 @@ export class ChatService {
       // Add privacy and AI information
       isAI: dbMessage.is_ai_message || false,
       isPrivate: dbMessage.is_private || false,
-      requesterId: dbMessage.is_private ? dbMessage.user_id : undefined
+      requesterId: dbMessage.is_private ? (dbMessage.requester_id || dbMessage.user_id) : undefined
     }
   }
 
@@ -109,7 +109,8 @@ export class ChatService {
       username: 'AI Assistant',
       content: sanitizedContent,
       is_ai_message: true,
-      is_private: request.isPrivate || false
+      is_private: request.isPrivate || false,
+      requester_id: request.isPrivate ? request.requesterId : null
     }
 
     const { data: message, error } = await this.supabase
@@ -148,7 +149,7 @@ export class ChatService {
           .select('*')
           .eq('room_id', roomId)
           .or(
-            `is_private.eq.false,and(is_private.eq.true,user_id.eq.${userId})`
+            `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
           )
           .order('created_at', { ascending: false })
           .limit(50)
@@ -204,7 +205,7 @@ export class ChatService {
         .select('*')
         .eq('room_id', roomId)
         .gt('created_at', lastMessageTimestamp)
-        .or(`is_private.eq.false,and(is_private.eq.true,user_id.eq.${userId})`)
+        .or(`is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`)
         .order('created_at', { ascending: true })
 
       if (error) {
@@ -241,7 +242,7 @@ export class ChatService {
           .select('*')
           .eq('room_id', roomId)
           .or(
-            `is_private.eq.false,and(is_private.eq.true,user_id.eq.${userId})`
+            `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
           )
           .order('created_at', { ascending: false })
           .limit(20) // Get last 20 messages for context
@@ -332,7 +333,7 @@ export class ChatService {
       // If userId is provided, filter private messages
       if (userId) {
         query = query.or(
-          `is_private.eq.false,and(is_private.eq.true,user_id.eq.${userId})`
+          `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
         )
       } else {
         // If no userId, only show public messages
