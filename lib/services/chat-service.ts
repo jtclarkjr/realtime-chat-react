@@ -45,7 +45,7 @@ export class ChatService {
   async sendMessage(request: SendMessageRequest): Promise<ChatMessageWithDB> {
     // Sanitize content before saving to database
     const sanitizedContent = DOMPurify.sanitize(request.content)
-    
+
     // Save to database (id will be auto-generated)
     const { data: message, error } = await this.supabase
       .from('messages')
@@ -79,7 +79,7 @@ export class ChatService {
   ): Promise<ChatMessageWithDB> {
     // Sanitize AI content before saving to database
     const sanitizedContent = DOMPurify.sanitize(request.content)
-    
+
     // Save AI message to database
     const { data: message, error } = await this.supabase
       .from('messages')

@@ -122,15 +122,22 @@ export function RoomSelector({
         setRooms((prevRooms) => prevRooms.filter((room) => room.id !== roomId))
 
         // If the deleted room was selected, switch to another room
-        if (selectedRoom === roomId && rooms.length > 1) {
+        const wasSelectedRoomDeleted = selectedRoom === roomId
+        const hasOtherRoomsAvailable = rooms.length > 1
+
+        if (wasSelectedRoomDeleted && hasOtherRoomsAvailable) {
+          // Find all rooms except the deleted one
           const remainingRooms = rooms.filter((room) => room.id !== roomId)
-          if (remainingRooms.length > 0) {
-            const generalRoom = remainingRooms.find(
-              (room) => room.name === 'general'
-            )
-            const fallbackRoom = generalRoom || remainingRooms[0]
-            onRoomChange(fallbackRoom.id)
-          }
+
+          // Prefer 'general' room as fallback, otherwise use the first available room
+          const generalRoom = remainingRooms.find(
+            (room) => room.name === 'general'
+          )
+          const [firstRoom] = remainingRooms
+          const fallbackRoom = generalRoom || firstRoom
+
+          // Switch to the fallback room
+          onRoomChange(fallbackRoom.id)
         }
 
         toast.success('Room deleted successfully', {
