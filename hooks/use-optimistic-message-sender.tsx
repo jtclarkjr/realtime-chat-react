@@ -8,6 +8,7 @@ interface UseOptimisticMessageSenderProps {
   roomId: string
   userId: string
   username: string
+  userAvatarUrl?: string
   isConnected: boolean
   confirmedMessages: ChatMessage[]
   onConfirmedMessageUpdate: (
@@ -32,6 +33,7 @@ export function useOptimisticMessageSender({
   roomId,
   userId,
   username,
+  userAvatarUrl,
   isConnected,
   confirmedMessages,
   onConfirmedMessageUpdate
@@ -63,6 +65,7 @@ export function useOptimisticMessageSender({
     roomId,
     userId,
     username,
+    userAvatarUrl,
     isConnected,
     onMessageUpdate: onConfirmedMessageUpdate
   })
@@ -83,7 +86,8 @@ export function useOptimisticMessageSender({
         content: content.trim(),
         user: {
           id: userId,
-          name: username
+          name: username,
+          avatar_url: userAvatarUrl
         },
         createdAt: new Date().toISOString(),
         roomId: roomId,
@@ -159,6 +163,7 @@ export function useOptimisticMessageSender({
       roomId,
       userId,
       username,
+      userAvatarUrl,
       isConnected,
       addOptimisticMessage,
       sendMessageWithQueue,

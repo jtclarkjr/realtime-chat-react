@@ -11,12 +11,14 @@ interface UseRealtimeChatProps {
   roomId: string
   username: string
   userId: string
+  userAvatarUrl?: string
 }
 
 export function useRealtimeChat({
   roomId,
   username,
-  userId
+  userId,
+  userAvatarUrl
 }: UseRealtimeChatProps) {
   const [confirmedMessages, setConfirmedMessages] = useState<ChatMessage[]>([])
 
@@ -96,6 +98,7 @@ export function useRealtimeChat({
     roomId,
     userId,
     username,
+    userAvatarUrl,
     isConnected,
     confirmedMessages,
     onConfirmedMessageUpdate: setConfirmedMessages

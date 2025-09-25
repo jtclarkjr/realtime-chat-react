@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ChatService } from '@/lib/services/chat-service'
+import { userService } from '@/lib/services/user-service'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
 import type { SendMessageRequest } from '@/lib/types/database'
 
@@ -36,10 +37,21 @@ export const POST = withAuth(
 
       // Only broadcast non-private messages via Supabase Realtime
       if (!body.isPrivate) {
+        // Get sender's avatar for the broadcast
+        const senderProfile = await userService.getUserProfile(body.userId)
+
+        const broadcastMessage = {
+          ...message,
+          user: {
+            ...message.user,
+            avatar_url: senderProfile?.avatar_url || undefined
+          }
+        }
+
         await supabase.channel(body.roomId).send({
           type: 'broadcast',
           event: 'message',
-          payload: message
+          payload: broadcastMessage
         })
       }
 

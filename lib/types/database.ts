@@ -18,6 +18,7 @@ export interface ApiMessage {
   user: {
     id: string
     name: string
+    avatar_url?: string
   }
   createdAt: string
   channelId: string
@@ -30,6 +31,7 @@ export interface ChatMessageWithDB {
   user: {
     id: string
     name: string
+    avatar_url?: string
   }
   createdAt: string
   channelId: string
@@ -45,6 +47,7 @@ export interface ChatMessage {
   user: {
     id?: string
     name: string
+    avatar_url?: string
   }
   createdAt: string
   roomId?: string

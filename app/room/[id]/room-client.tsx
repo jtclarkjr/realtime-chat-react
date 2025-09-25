@@ -72,12 +72,14 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
           roomId={room.id}
           username={user?.user_metadata?.full_name || 'Anonymous User'}
           userId={userId}
+          userAvatarUrl={user?.user_metadata?.avatar_url}
           messages={initialMessages.map((message) => ({
             ...message,
             roomId: message.channelId, // Convert channelId to roomId for consistency
             user: {
               id: message.user.id,
-              name: message.user.name
+              name: message.user.name,
+              avatar_url: message.user.avatar_url
             }
           }))}
         />

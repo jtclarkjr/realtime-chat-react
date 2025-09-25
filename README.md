@@ -60,6 +60,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # AI Assistant Configuration (Anthropic Claude)
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
+AI_USER_ID=your_ai_user_id_here
 
 # Authentication Configuration
 NEXT_PUBLIC_AUTH_CALLBACK_URL=http://localhost:3000/auth/callback
@@ -173,52 +174,93 @@ Add your Anthropic API key to `.env.local`:
 ```bash
 # AI Assistant Configuration
 ANTHROPIC_API_KEY=your_actual_api_key_here
+AI_USER_ID=your_ai_user_id_here
 ```
+
+### AI Assistant User Setup
+
+**Important**: Since the database uses foreign key constraints to `auth.users`,
+the AI Assistant needs a valid Supabase Auth user account.
+
+#### Method 1: Using Setup API (Automated)
+
+1. **Create the AI user** by calling the setup endpoint:
+
+```bash
+curl -X POST http://localhost:3000/api/setup/ai-user
+```
+
+2. **Copy the returned AI user ID** from the response
+
+3. **Add the AI user ID to your environment variables** in `.env.local`:
+
+```bash
+# Add this to your .env.local file
+AI_USER_ID=
+```
+
+4. **Remove the setup endpoint** (for security):
+
+```bash
+rm -rf app/api/setup
+```
+
+#### Method 2: Using Supabase Dashboard (Manual)
+
+1. **Go to your Supabase Dashboard** → **Authentication** → **Users**
+
+2. **Click "Add user"** and fill in:
+   - **Email**: `ai-assistant@examplesupabaseurl.com` (replace)
+   - **Password**: Generate a random password (AI won't login with it)
+   - **Auto Confirm User**: Check this box
+
+3. **Click "Create user"**
+
+4. **Copy the User UUID** from the created user
+
+5. **Add user metadata** (optional but recommended):
+   - Click on the created user
+   - Go to **Raw User Meta Data** section
+   - Add this JSON:
+
+   ```json
+   {
+     "full_name": "AI Assistant",
+     "is_ai_user": true
+   }
+   ```
+
+6. **Add the AI user ID to your environment variables** in `.env.local`:
+
+```bash
+# Add this to your .env.local file
+AI_USER_ID=
+```
+
+#### What this does:
+
+- Creates a dedicated AI Assistant user in Supabase Auth
+- Provides a valid user ID for database foreign key constraints
+- Ensures AI messages are properly stored and retrieved
+- The AI user has metadata: `{ full_name: 'AI Assistant', is_ai_user: true }`
+
+#### Production Setup:
+
+For production deployment:
+
+1. Run the setup endpoint on your production URL
+2. Add the `AI_USER_ID` environment variable to your Vercel project settings
+3. Deploy the updated code
+4. Remove the setup endpoint from production
 
 ## Database Setup
 
 Set up the following tables in your Supabase database:
 
-```sql
--- Messages table (updated schema with AI support)
-CREATE TABLE messages (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  content TEXT NOT NULL,
-  room_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  username TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  is_ai_message BOOLEAN DEFAULT false NOT NULL,
-  is_private BOOLEAN DEFAULT false NOT NULL
-);
+`/database/schema.sql`
 
--- Add index for efficient private message queries
-CREATE INDEX IF NOT EXISTS idx_messages_private_user
-ON messages(is_private, user_id)
-WHERE is_private = true;
+`/migrations`
 
--- Enable RLS
-ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-
--- Create policies
-CREATE POLICY "Anyone can read messages" ON messages FOR SELECT USING (true);
-CREATE POLICY "Anyone can insert messages" ON messages FOR INSERT WITH CHECK (true);
-
--- Rooms table
-CREATE TABLE rooms (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  description TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Enable RLS for rooms
-ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
-
--- Room policies
-CREATE POLICY "Anyone can read rooms" ON rooms FOR SELECT USING (true);
-CREATE POLICY "Anyone can create rooms" ON rooms FOR INSERT WITH CHECK (true);
-```
 
 ## Installation
 
