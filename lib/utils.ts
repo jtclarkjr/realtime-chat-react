@@ -11,7 +11,7 @@ export function cn(...inputs: ClassValue[]): string {
 export function isDifferentDay(date1: string, date2: string): boolean {
   const d1 = new Date(date1)
   const d2 = new Date(date2)
-  
+
   return (
     d1.getFullYear() !== d2.getFullYear() ||
     d1.getMonth() !== d2.getMonth() ||
@@ -22,10 +22,13 @@ export function isDifferentDay(date1: string, date2: string): boolean {
 /**
  * Check if a date separator should be shown between two messages
  */
-export function shouldShowDateSeparator(currentMessage: { createdAt: string }, previousMessage: { createdAt: string } | null): boolean {
+export function shouldShowDateSeparator(
+  currentMessage: { createdAt: string },
+  previousMessage: { createdAt: string } | null
+): boolean {
   if (!previousMessage) {
     return true // Always show separator for first message
   }
-  
+
   return isDifferentDay(currentMessage.createdAt, previousMessage.createdAt)
 }

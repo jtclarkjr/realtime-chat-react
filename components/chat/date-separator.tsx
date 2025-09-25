@@ -12,9 +12,21 @@ export const DateSeparator = ({ date }: DateSeparatorProps) => {
     yesterday.setDate(today.getDate() - 1)
 
     // Reset time components for proper date comparison
-    const messageDateOnly = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate())
-    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+    const messageDateOnly = new Date(
+      messageDate.getFullYear(),
+      messageDate.getMonth(),
+      messageDate.getDate()
+    )
+    const todayOnly = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    )
+    const yesterdayOnly = new Date(
+      yesterday.getFullYear(),
+      yesterday.getMonth(),
+      yesterday.getDate()
+    )
 
     if (messageDateOnly.getTime() === todayOnly.getTime()) {
       return 'Today'

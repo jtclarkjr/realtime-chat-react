@@ -7,7 +7,10 @@ interface ScrollDateIndicatorProps {
   isVisible: boolean
 }
 
-export const ScrollDateIndicator = ({ date, isVisible }: ScrollDateIndicatorProps) => {
+export const ScrollDateIndicator = ({
+  date,
+  isVisible
+}: ScrollDateIndicatorProps) => {
   const formatDate = (dateString: string): string => {
     const messageDate = new Date(dateString)
     const today = new Date()
@@ -15,9 +18,21 @@ export const ScrollDateIndicator = ({ date, isVisible }: ScrollDateIndicatorProp
     yesterday.setDate(today.getDate() - 1)
 
     // Reset time components for proper date comparison
-    const messageDateOnly = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate())
-    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+    const messageDateOnly = new Date(
+      messageDate.getFullYear(),
+      messageDate.getMonth(),
+      messageDate.getDate()
+    )
+    const todayOnly = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    )
+    const yesterdayOnly = new Date(
+      yesterday.getFullYear(),
+      yesterday.getMonth(),
+      yesterday.getDate()
+    )
 
     if (messageDateOnly.getTime() === todayOnly.getTime()) {
       return 'Today'
