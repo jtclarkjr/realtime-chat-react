@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { Bot, EyeOff } from 'lucide-react'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import type { ChatMessage } from '@/lib/types/database'
 
 interface MessageHeaderProps {
@@ -19,23 +20,31 @@ export const MessageHeader = ({
 }: MessageHeaderProps) => {
   return (
     <div
-      className={cn('flex items-center gap-2 text-xs px-3 mb-1', {
+      className={cn('flex items-center gap-2 text-xs mb-1', {
         'justify-end flex-row-reverse': isOwnMessage
       })}
     >
-      <div className="flex items-center gap-1.5">
-        {isAIMessage && (
-          <Bot className="h-3 w-3 text-blue-500" aria-hidden="true" />
-        )}
-        <span
-          className={cn('font-medium text-xs sm:text-sm', {
-            'text-primary': isOwnMessage,
-            'text-blue-600 dark:text-blue-400': isAIMessage && !isOwnMessage,
-            'text-muted-foreground': !isOwnMessage && !isAIMessage
-          })}
-        >
-          {message.user.name}
-        </span>
+      <div className="flex items-center gap-2">
+        <UserAvatar
+          src={message.user.avatar_url}
+          alt={message.user.name}
+          size="sm"
+          show={!isAIMessage && !isOwnMessage}
+        />
+        <div className="flex items-center gap-1.5">
+          {isAIMessage && (
+            <Bot className="h-3 w-3 text-blue-500" aria-hidden="true" />
+          )}
+          <span
+            className={cn('font-medium text-xs sm:text-sm', {
+              'text-primary': isOwnMessage,
+              'text-blue-600 dark:text-blue-400': isAIMessage && !isOwnMessage,
+              'text-muted-foreground': !isOwnMessage && !isAIMessage
+            })}
+          >
+            {message.user.name}
+          </span>
+        </div>
         {isPrivateForCurrentUser && (
           <div
             className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ${

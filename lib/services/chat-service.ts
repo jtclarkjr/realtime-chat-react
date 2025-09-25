@@ -1,5 +1,7 @@
 import DOMPurify from 'isomorphic-dompurify'
 import { getServiceClient } from '@/lib/supabase/service-client'
+import { userService } from './user-service'
+import { AI_USER_ID } from './ai-user-setup'
 import {
   markMessageReceived,
   trackLatestMessage,
@@ -8,6 +10,7 @@ import {
 } from '@/lib/redis'
 import type {
   DatabaseMessage,
+  DatabaseMessageInsert,
   ChatMessageWithDB,
   MissedMessagesResponse,
   SendMessageRequest,
@@ -21,14 +24,16 @@ export class ChatService {
    * Transform database message to chat message format
    */
   private transformDatabaseMessage(
-    dbMessage: DatabaseMessage
+    dbMessage: DatabaseMessage,
+    userAvatar?: string | null
   ): ChatMessageWithDB {
     return {
       id: dbMessage.id,
       content: dbMessage.content,
       user: {
         id: dbMessage.user_id,
-        name: dbMessage.username
+        name: dbMessage.username,
+        avatar_url: userAvatar || undefined
       },
       createdAt: dbMessage.created_at,
       channelId: dbMessage.room_id,
@@ -43,20 +48,27 @@ export class ChatService {
    * Send a message and persist it to database
    */
   async sendMessage(request: SendMessageRequest): Promise<ChatMessageWithDB> {
+    // Validate required fields
+    if (!request.roomId || !request.userId || !request.username || !request.content?.trim()) {
+      throw new Error('Missing required fields for message')
+    }
+
     // Sanitize content before saving to database
     const sanitizedContent = DOMPurify.sanitize(request.content)
 
     // Save to database (id will be auto-generated)
+    const messageInsert: DatabaseMessageInsert = {
+      room_id: request.roomId,
+      user_id: request.userId,
+      username: request.username,
+      content: sanitizedContent,
+      is_ai_message: false,
+      is_private: request.isPrivate || false
+    }
+
     const { data: message, error } = await this.supabase
       .from('messages')
-      .insert({
-        room_id: request.roomId,
-        user_id: request.userId,
-        username: request.username,
-        content: sanitizedContent,
-        is_ai_message: false,
-        is_private: request.isPrivate || false
-      })
+      .insert(messageInsert)
       .select()
       .single()
 
@@ -77,22 +89,32 @@ export class ChatService {
   async sendAIMessage(
     request: SendAIMessageRequest
   ): Promise<ChatMessageWithDB> {
+    // Validate required fields
+    if (!request.roomId || !request.content?.trim()) {
+      throw new Error('Missing required fields for AI message')
+    }
+
+    // Ensure AI_USER_ID is available
+    if (!AI_USER_ID) {
+      throw new Error('AI_USER_ID is not configured')
+    }
+
     // Sanitize AI content before saving to database
     const sanitizedContent = DOMPurify.sanitize(request.content)
 
     // Save AI message to database
+    const aiMessageInsert: DatabaseMessageInsert = {
+      room_id: request.roomId,
+      user_id: AI_USER_ID,
+      username: 'AI Assistant',
+      content: sanitizedContent,
+      is_ai_message: true,
+      is_private: request.isPrivate || false
+    }
+
     const { data: message, error } = await this.supabase
       .from('messages')
-      .insert({
-        room_id: request.roomId,
-        user_id: request.isPrivate
-          ? request.requesterId || 'ai-assistant'
-          : 'ai-assistant',
-        username: 'AI Assistant',
-        content: sanitizedContent,
-        is_ai_message: true,
-        is_private: request.isPrivate || false
-      })
+      .insert(aiMessageInsert)
       .select()
       .single()
 
@@ -144,10 +166,25 @@ export class ChatService {
           await markMessageReceived(userId, roomId, latestMessage.id)
         }
 
+        // Get unique user IDs for avatar fetching (exclude AI messages)
+        const userIds = [
+          ...new Set(
+            (recentMessages || [])
+              .filter((msg) => !msg.is_ai_message)
+              .map((msg) => msg.user_id)
+          )
+        ]
+
+        // Fetch user profiles for avatars
+        const userProfiles = await userService.getUserProfiles(userIds)
+
         // Transform and reverse to get chronological order
         const transformedMessages = (recentMessages || [])
           .reverse()
-          .map((msg: DatabaseMessage) => this.transformDatabaseMessage(msg))
+          .map((msg: DatabaseMessage) => {
+            const userProfile = userProfiles.get(msg.user_id)
+            return this.transformDatabaseMessage(msg, userProfile?.avatar_url)
+          })
 
         return {
           type:
@@ -175,8 +212,23 @@ export class ChatService {
         return { type: 'caught_up', messages: [], count: 0 }
       }
 
+      // Get unique user IDs for avatar fetching (exclude AI messages)
+      const userIds = [
+        ...new Set(
+          (missedMessages || [])
+            .filter((msg) => !msg.is_ai_message)
+            .map((msg) => msg.user_id)
+        )
+      ]
+
+      // Fetch user profiles for avatars
+      const userProfiles = await userService.getUserProfiles(userIds)
+
       const transformedMessages = (missedMessages || []).map(
-        (msg: DatabaseMessage) => this.transformDatabaseMessage(msg)
+        (msg: DatabaseMessage) => {
+          const userProfile = userProfiles.get(msg.user_id)
+          return this.transformDatabaseMessage(msg, userProfile?.avatar_url)
+        }
       )
 
       // Mark user as caught up
@@ -195,9 +247,25 @@ export class ChatService {
           .limit(20) // Get last 20 messages for context
 
         if (!recentError && recentMessages && recentMessages.length > 0) {
+          // Get unique user IDs for avatar fetching (exclude AI messages)
+          const recentUserIds = [
+            ...new Set(
+              recentMessages
+                .filter((msg) => !msg.is_ai_message)
+                .map((msg) => msg.user_id)
+            )
+          ]
+
+          // Fetch user profiles for avatars
+          const recentUserProfiles =
+            await userService.getUserProfiles(recentUserIds)
+
           const recentTransformed = recentMessages
             .reverse()
-            .map((msg: DatabaseMessage) => this.transformDatabaseMessage(msg))
+            .map((msg: DatabaseMessage) => {
+              const userProfile = recentUserProfiles.get(msg.user_id)
+              return this.transformDatabaseMessage(msg, userProfile?.avatar_url)
+            })
 
           return {
             type: 'recent_messages',
@@ -280,9 +348,22 @@ export class ChatService {
         return []
       }
 
-      return (messages || [])
-        .reverse()
-        .map((msg: DatabaseMessage) => this.transformDatabaseMessage(msg))
+      // Get unique user IDs for avatar fetching (exclude AI messages)
+      const userIds = [
+        ...new Set(
+          (messages || [])
+            .filter((msg) => !msg.is_ai_message)
+            .map((msg) => msg.user_id)
+        )
+      ]
+
+      // Fetch user profiles for avatars
+      const userProfiles = await userService.getUserProfiles(userIds)
+
+      return (messages || []).reverse().map((msg: DatabaseMessage) => {
+        const userProfile = userProfiles.get(msg.user_id)
+        return this.transformDatabaseMessage(msg, userProfile?.avatar_url)
+      })
     } catch (error) {
       console.error('Error getting recent messages:', error)
       return []

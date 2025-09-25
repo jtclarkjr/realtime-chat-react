@@ -17,6 +17,7 @@ interface RealtimeChatProps {
   roomId: string
   username: string
   userId: string
+  userAvatarUrl?: string
   onMessage?: (messages: ChatMessage[]) => void
   messages?: ChatMessage[]
 }
@@ -33,6 +34,7 @@ export const RealtimeChat = ({
   roomId,
   username,
   userId,
+  userAvatarUrl,
   onMessage,
   messages: initialMessages = []
 }: RealtimeChatProps) => {
@@ -49,7 +51,8 @@ export const RealtimeChat = ({
   } = useRealtimeChat({
     roomId,
     username,
-    userId
+    userId,
+    userAvatarUrl
   })
 
   const {

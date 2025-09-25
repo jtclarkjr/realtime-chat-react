@@ -8,6 +8,7 @@ interface UseMessageSenderProps {
   roomId: string
   userId: string
   username: string
+  userAvatarUrl?: string
   isConnected: boolean
   onMessageUpdate: (updater: (messages: ChatMessage[]) => ChatMessage[]) => void
 }
@@ -32,6 +33,7 @@ export function useMessageSender({
   roomId,
   userId,
   username,
+  userAvatarUrl,
   isConnected,
   onMessageUpdate
 }: UseMessageSenderProps): UseMessageSenderReturn {
@@ -96,7 +98,8 @@ export function useMessageSender({
         content: content.trim(),
         user: {
           id: userId,
-          name: username
+          name: username,
+          avatar_url: userAvatarUrl
         },
         createdAt: new Date().toISOString(),
         roomId: roomId,
@@ -199,7 +202,7 @@ export function useMessageSender({
         return null
       }
     },
-    [roomId, userId, username, onMessageUpdate]
+    [roomId, userId, username, userAvatarUrl, onMessageUpdate]
   )
 
   // Queue message when offline
@@ -214,7 +217,8 @@ export function useMessageSender({
         content: content.trim(),
         user: {
           id: userId,
-          name: username
+          name: username,
+          avatar_url: userAvatarUrl
         },
         createdAt: new Date().toISOString(),
         roomId: roomId,
@@ -232,7 +236,7 @@ export function useMessageSender({
       onMessageUpdate((current) => [...current, queuedMessage])
       return message.id
     },
-    [messageQueue, onMessageUpdate, roomId, userId, username]
+    [messageQueue, onMessageUpdate, roomId, userId, username, userAvatarUrl]
   )
 
   // Route to appropriate sending method based on connectivity

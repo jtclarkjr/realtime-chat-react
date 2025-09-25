@@ -1,7 +1,7 @@
 'use client'
 
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { RoomSelector } from '@/components/room-selector'
 import { PageTransition } from '@/components/page-transition'
@@ -96,16 +96,11 @@ export function HomeClient({
             <div className="w-full px-4 py-3 text-base border border-border rounded-lg bg-muted/50 text-foreground">
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-3 flex-1">
-                  {user.user_metadata?.avatar_url && (
-                    <Image
-                      src={user.user_metadata.avatar_url}
-                      alt="Profile"
-                      width={32}
-                      height={32}
-                      className="w-8 h-8 rounded-full"
-                      priority
-                    />
-                  )}
+                  <UserAvatar
+                    src={user.user_metadata?.avatar_url}
+                    alt={user.user_metadata?.full_name || 'User avatar'}
+                    size="md"
+                  />
                   <div>
                     <div className="font-medium">
                       {user.user_metadata?.full_name || 'Anonymous User'}
