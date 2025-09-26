@@ -5,12 +5,14 @@ interface UseSmartAutoScrollProps {
   messages: ChatMessage[]
   containerRef: React.RefObject<HTMLDivElement | null>
   scrollToBottom: () => void
+  scrollToBottomInstant?: () => void
 }
 
 export const useSmartAutoScroll = ({
   messages,
   containerRef,
-  scrollToBottom
+  scrollToBottom,
+  scrollToBottomInstant
 }: UseSmartAutoScrollProps) => {
   const previousMessageCountRef = useRef(0)
   const isAutoScrollingRef = useRef(false)
@@ -87,13 +89,14 @@ export const useSmartAutoScroll = ({
   // Reset scroll state when component mounts or messages are initially loaded
   useEffect(() => {
     if (messages.length > 0 && previousMessageCountRef.current === 0) {
-      // Initial load - always scroll to bottom
-      scrollToBottom()
+      // Initial load - use instant scroll
+      const scroll = scrollToBottomInstant || scrollToBottom
+      scroll()
       previousMessageCountRef.current = messages.length
       setUserHasScrolledUp(false)
       setUnreadMessageCount(0)
     }
-  }, [messages.length, scrollToBottom])
+  }, [messages.length, scrollToBottom, scrollToBottomInstant])
 
   return {
     handleUserScroll,

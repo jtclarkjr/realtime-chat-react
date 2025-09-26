@@ -40,7 +40,8 @@ export const RealtimeChat = ({
   onMessage,
   messages: initialMessages = []
 }: RealtimeChatProps) => {
-  const { containerRef, scrollToBottom } = useChatScroll()
+  const { containerRef, scrollToBottom, scrollToBottomInstant } =
+    useChatScroll()
 
   const {
     messages: realtimeMessages,
@@ -105,7 +106,8 @@ export const RealtimeChat = ({
   } = useSmartAutoScroll({
     messages: allMessages,
     containerRef,
-    scrollToBottom
+    scrollToBottom,
+    scrollToBottomInstant
   })
 
   // Handle clearing streaming messages when broadcast arrives
