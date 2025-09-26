@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus } from 'lucide-react'
+import { Plus, Sparkles } from 'lucide-react'
 import { createRoomAction } from '@/lib/actions/room-actions'
 import type { DatabaseRoom } from '@/lib/types/database'
 
@@ -32,6 +32,7 @@ export function AddRoomDialog({
   const [roomName, setRoomName] = useState<string>('')
   const [description, setDescription] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
+  const [generating, setGenerating] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
 
   // Check if room name already exists (case-insensitive)
@@ -91,8 +92,7 @@ export function AddRoomDialog({
       }
 
       // Reset form and close dialog
-      setRoomName('')
-      setDescription('')
+      resetForm()
       setOpen(false)
 
       // Notify parent component if callback exists
@@ -119,13 +119,60 @@ export function AddRoomDialog({
     }
   }
 
+  const resetForm = (): void => {
+    setRoomName('')
+    setDescription('')
+    setGenerating(false)
+    setError(null)
+  }
+
+  const handleCancel = (): void => {
+    resetForm()
+    setOpen(false)
+  }
+
   const handleOpenChange = (newOpen: boolean): void => {
     setOpen(newOpen)
     if (!newOpen) {
-      // Reset form when closing
-      setRoomName('')
-      setDescription('')
+      resetForm()
+    }
+  }
+
+
+  const handleGenerate = async (): Promise<void> => {
+    try {
+      setGenerating(true)
       setError(null)
+
+      const response = await fetch('/api/rooms/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          existingRoomNames: existingRooms.map(room => room.name)
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate suggestion')
+      }
+
+      const data = await response.json()
+      if (data.suggestion) {
+        setRoomName(data.suggestion.name)
+        setDescription(data.suggestion.description)
+      }
+    } catch (err) {
+      console.error('Error generating room suggestion:', err)
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate room suggestion'
+      )
+    } finally {
+      setGenerating(false)
     }
   }
 
@@ -147,9 +194,23 @@ export function AddRoomDialog({
           <DialogTitle>Create New Room</DialogTitle>
           <DialogDescription>
             Create a new chat room. Choose a unique name and optional
-            description.
+            description, or let AI generate suggestions for you.
           </DialogDescription>
         </DialogHeader>
+        <div className="mb-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleGenerate}
+            disabled={loading || generating}
+            className="w-full flex items-center gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <Sparkles className={`h-4 w-4 transition-transform duration-500 ${
+              generating ? 'animate-spin' : ''
+            }`} />
+            {generating ? 'Generating...' : 'Generate with AI'}
+          </Button>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="roomName" className="text-sm font-medium">
@@ -166,7 +227,7 @@ export function AddRoomDialog({
                 // Validation errors are shown under the input field, not in bottom error area
                 setError(null)
               }}
-              disabled={loading}
+              disabled={loading || generating}
               required
               className={`w-full ${
                 roomName.trim() && roomNameExists(roomName)
@@ -190,7 +251,7 @@ export function AddRoomDialog({
               placeholder="Brief description of the room"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              disabled={loading}
+              disabled={loading || generating}
               maxLength={30}
               className="w-full"
             />
@@ -207,14 +268,14 @@ export function AddRoomDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loading}
+              onClick={handleCancel}
+              disabled={loading || generating}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={loading || !roomName.trim() || roomNameExists(roomName)}
+              disabled={loading || generating || !roomName.trim() || roomNameExists(roomName)}
             >
               {loading ? 'Creating...' : 'Create Room'}
             </Button>
