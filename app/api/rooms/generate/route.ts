@@ -35,8 +35,8 @@ export const POST = withAuth(async (request: NextRequest) => {
     // Get existing rooms to avoid duplicates
     const existingRooms = await roomCacheService.getAllRooms()
     const allExistingNames = [
-      ...existingRooms.map(room => room.name.toLowerCase()),
-      ...existingRoomNames.map(name => name.toLowerCase())
+      ...existingRooms.map((room) => room.name.toLowerCase()),
+      ...existingRoomNames.map((name) => name.toLowerCase())
     ]
 
     // Create system prompt for room generation
@@ -57,8 +57,9 @@ Response format: You must respond with valid JSON only, no other text:
 }`
 
     // Create user prompt
-    let userPrompt = 'Generate a creative and unique chat room name with description.'
-    
+    let userPrompt =
+      'Generate a creative and unique chat room name with description.'
+
     if (prompt && prompt.trim()) {
       userPrompt = `Generate a chat room name and description based on this request: "${prompt.trim()}"`
     }
@@ -109,7 +110,7 @@ Response format: You must respond with valid JSON only, no other text:
       suggestion.name = suggestion.name.substring(0, 50) || 'chat-room'
     }
 
-    // Ensure description length constraints  
+    // Ensure description length constraints
     if (suggestion.description.length > 30) {
       suggestion.description = suggestion.description.substring(0, 27) + '...'
     }
@@ -120,7 +121,10 @@ Response format: You must respond with valid JSON only, no other text:
       // Add a number suffix to make it unique
       let counter = 1
       let newName = `${suggestion.name}-${counter}`
-      while (allExistingNames.includes(newName.toLowerCase()) && counter < 100) {
+      while (
+        allExistingNames.includes(newName.toLowerCase()) &&
+        counter < 100
+      ) {
         counter++
         newName = `${suggestion.name}-${counter}`
       }
@@ -133,7 +137,6 @@ Response format: You must respond with valid JSON only, no other text:
         description: suggestion.description
       }
     })
-
   } catch (error) {
     console.error('Error generating room suggestion:', error)
     return NextResponse.json(

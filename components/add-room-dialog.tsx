@@ -138,7 +138,6 @@ export function AddRoomDialog({
     }
   }
 
-
   const handleGenerate = async (): Promise<void> => {
     try {
       setGenerating(true)
@@ -150,7 +149,7 @@ export function AddRoomDialog({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          existingRoomNames: existingRooms.map(room => room.name)
+          existingRoomNames: existingRooms.map((room) => room.name)
         })
       })
 
@@ -205,9 +204,11 @@ export function AddRoomDialog({
             disabled={loading || generating}
             className="w-full flex items-center gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
           >
-            <Sparkles className={`h-4 w-4 transition-transform duration-500 ${
-              generating ? 'animate-spin' : ''
-            }`} />
+            <Sparkles
+              className={`h-4 w-4 transition-transform duration-500 ${
+                generating ? 'animate-spin' : ''
+              }`}
+            />
             {generating ? 'Generating...' : 'Generate with AI'}
           </Button>
         </div>
@@ -275,7 +276,12 @@ export function AddRoomDialog({
             </Button>
             <Button
               type="submit"
-              disabled={loading || generating || !roomName.trim() || roomNameExists(roomName)}
+              disabled={
+                loading ||
+                generating ||
+                !roomName.trim() ||
+                roomNameExists(roomName)
+              }
             >
               {loading ? 'Creating...' : 'Create Room'}
             </Button>
