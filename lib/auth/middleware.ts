@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { User, SupabaseClient } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
+
+type SupabaseClient = ReturnType<typeof createClient>['supabase']
 
 /**
  * Authentication middleware for API routes

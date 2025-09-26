@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import type { User, AuthError } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
 
 export async function signInWithDiscord() {
   const supabase = createClient()
@@ -42,7 +42,7 @@ export async function signInWithApple() {
   return { data, error }
 }
 
-export async function signOut(): Promise<{ error: AuthError | null }> {
+export async function signOut() {
   const supabase = createClient()
   const { error } = await supabase.auth.signOut()
   return { error }
