@@ -69,14 +69,14 @@ export const MessageHeader = ({
         aria-label={`Sent at ${new Date(message.createdAt).toLocaleTimeString(
           'en-US',
           {
-            hour: '2-digit',
+            hour: 'numeric',
             minute: '2-digit',
             hour12: true
           }
         )}`}
       >
         {new Date(message.createdAt).toLocaleTimeString('en-US', {
-          hour: '2-digit',
+          hour: 'numeric',
           minute: '2-digit',
           hour12: true
         })}
