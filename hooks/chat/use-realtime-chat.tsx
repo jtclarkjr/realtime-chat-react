@@ -2,10 +2,8 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import type { ChatMessage } from '@/lib/types/database'
-import { useNetworkConnectivity } from './use-network-connectivity'
-import { useMissedMessages } from './use-missed-messages'
-import { useWebSocketConnection } from './use-websocket-connection'
-import { useOptimisticMessageSender } from './use-optimistic-message-sender'
+import { useNetworkConnectivity, useWebSocketConnection } from '../connection'
+import { useMissedMessages, useOptimisticMessageSender } from '../messages'
 
 interface UseRealtimeChatProps {
   roomId: string
