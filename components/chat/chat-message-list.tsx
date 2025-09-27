@@ -4,7 +4,7 @@ import { forwardRef } from 'react'
 import { motion } from 'framer-motion'
 import { ChatMessageItem } from '@/components/chat-message'
 import { ScrollDateIndicator } from '@/components/chat'
-import { useScrollDateDetection } from '@/hooks/use-scroll-date-detection'
+import { useScrollDateDetection } from '@/hooks/ui'
 import type { ChatMessage } from '@/lib/types/database'
 
 interface ChatMessageListProps {

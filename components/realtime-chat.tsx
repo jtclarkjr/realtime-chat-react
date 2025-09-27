@@ -1,11 +1,15 @@
 'use client'
 
-import { useChatScroll } from '@/hooks/use-chat-scroll'
-import { useRealtimeChat } from '@/hooks/use-realtime-chat'
-import { useAIChat } from '@/hooks/use-ai-chat'
-import { useMessageMerging } from '@/hooks/use-message-merging'
-import { useStreamingMessages } from '@/hooks/use-streaming-messages'
-import { useSmartAutoScroll } from '@/hooks/use-smart-auto-scroll'
+import {
+  useChatScroll,
+  useSmartAutoScroll
+} from '@/hooks/ui'
+import {
+  useRealtimeChat,
+  useAIChat,
+  useStreamingMessages
+} from '@/hooks/chat'
+import { useMessageMerging } from '@/hooks/messages'
 import {
   ConnectionStatusBar,
   ChatMessageList,
