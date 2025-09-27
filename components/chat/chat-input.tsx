@@ -70,7 +70,7 @@ export const ChatInput = ({
       <div
         className={cn(
           'flex-1 flex items-center gap-2 rounded-2xl border border-border/50 bg-background dark:bg-transparent transition-all duration-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 px-4 py-3 sm:py-2',
-          (isAILoading) && 'opacity-50 cursor-not-allowed'
+          isAILoading && 'opacity-50 cursor-not-allowed'
         )} // temp removed loading
       >
         <Textarea
