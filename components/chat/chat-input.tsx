@@ -52,7 +52,7 @@ export const ChatInput = ({
     isAIEnabled: boolean,
     isConnected: boolean
   ): string => {
-    if (loading) return 'Connecting...'
+    // if (loading) return 'Connecting...' temp removed loading
     if (isAILoading) return 'AI is responding...'
     if (!isConnected && !loading)
       return isAIEnabled ? 'Ask AI (offline)...' : 'Type message (offline)...'
@@ -70,8 +70,8 @@ export const ChatInput = ({
       <div
         className={cn(
           'flex-1 flex items-center gap-2 rounded-2xl border border-border/50 bg-background dark:bg-transparent transition-all duration-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 px-4 py-3 sm:py-2',
-          (loading || isAILoading) && 'opacity-50 cursor-not-allowed'
-        )}
+          (isAILoading) && 'opacity-50 cursor-not-allowed'
+        )} // temp removed loading
       >
         <Textarea
           ref={textareaRef}
@@ -98,10 +98,10 @@ export const ChatInput = ({
             isAIEnabled,
             isConnected
           )}
-          disabled={loading || isAILoading}
+          disabled={isAILoading} // temp removed loading
           autoComplete="off"
           autoCapitalize="sentences"
-          autoFocus={!loading && !isAILoading}
+          autoFocus={!isAILoading} // temp removed !loading
           aria-label="Type your message"
           aria-describedby="ai-status"
           rows={1}
