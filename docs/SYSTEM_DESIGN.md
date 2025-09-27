@@ -93,16 +93,8 @@ GET /api/rooms/{roomId}/rejoin?userId={userId}
 
 #### Supabase Database (PostgreSQL)
 
-```sql
--- Primary message storage
-CREATE TABLE messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  content TEXT NOT NULL,
-  channel_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  user_name TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+```
+/database/schema.sql
 ```
 
 **Purpose**: Permanent message storage, source of truth **Features**:
