@@ -407,14 +407,6 @@ bun run docker:debug
 
 Access Redis Commander at [http://localhost:8081](http://localhost:8081)
 
-## Deployment
-
-This application is deployed on Vercel with automatic KV storage integration.
-
-### Database Setup
-
-Run the database setup SQL in your production Supabase instance.
-
 ### Redis/KV Architecture
 
 - **Local Development**: Uses Docker Redis container
