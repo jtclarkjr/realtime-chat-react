@@ -14,7 +14,18 @@ class UpstashRedisAdapter implements RedisLike {
   }
 
   async get(key: string): Promise<string | null> {
-    return await this.client.get(key)
+    const result = await this.client.get(key)
+    // Upstash Redis automatically deserializes JSON, but we need strings
+    // to maintain compatibility with our cache service
+    if (result === null || result === undefined) {
+      return null
+    }
+    // If it's already a string, return it as-is
+    if (typeof result === 'string') {
+      return result
+    }
+    // If it's an object, serialize it back to a string
+    return JSON.stringify(result)
   }
 
   async set(

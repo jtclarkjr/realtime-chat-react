@@ -19,6 +19,9 @@ export function useRealtimeChat({
   userAvatarUrl
 }: UseRealtimeChatProps) {
   const [confirmedMessages, setConfirmedMessages] = useState<ChatMessage[]>([])
+  const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(
+    new Set()
+  )
 
   // Network connectivity detection
   const networkState = useNetworkConnectivity()
@@ -77,11 +80,25 @@ export function useRealtimeChat({
     [roomId, userId]
   )
 
+  // Handle unsent message events
+  const handleMessageUnsent = useCallback((messageId: string): void => {
+    // Track deleted message IDs globally
+    setDeletedMessageIds((prev) => new Set(prev).add(messageId))
+
+    // Update confirmed messages
+    setConfirmedMessages((current) =>
+      current.map((msg) =>
+        msg.id === messageId ? { ...msg, isDeleted: true } : msg
+      )
+    )
+  }, [])
+
   // WebSocket connection for real-time messaging
   useWebSocketConnection({
     roomId,
     userId,
     onMessage: handleIncomingMessage,
+    onMessageUnsent: handleMessageUnsent,
     enabled: true
   })
 
@@ -104,15 +121,51 @@ export function useRealtimeChat({
 
   // Merge missed messages with optimistic messages
   const allMessages = useMemo(() => {
-    const combinedMessages = [...missedMessages, ...optimisticMessages]
+    // Mark missed messages as deleted if they're in the deleted set
+    const updatedMissedMessages = missedMessages.map((msg) =>
+      deletedMessageIds.has(msg.id) ? { ...msg, isDeleted: true } : msg
+    )
+
+    const combinedMessages = [...updatedMissedMessages, ...optimisticMessages]
     const messageMap = new Map<string, ChatMessage>()
 
-    // Simple deduplication by message ID
+    // Deduplication by message ID and content similarity
     combinedMessages.forEach((message) => {
       const existingMessage = messageMap.get(message.id)
 
       if (!existingMessage) {
-        messageMap.set(message.id, message)
+        // Check if this is a broadcast replacing an optimistic message
+        // Look for optimistic messages with same content and recent timestamp (within 5 seconds)
+        if (!message.isOptimistic) {
+          const messageTime = new Date(message.createdAt || 0).getTime()
+          let replacedOptimistic = false
+
+          for (const [existingId, existing] of messageMap.entries()) {
+            if (
+              existing.isOptimistic &&
+              existing.content === message.content &&
+              existing.user.id === message.user.id
+            ) {
+              const existingTime = new Date(existing.createdAt || 0).getTime()
+              const timeDiff = Math.abs(messageTime - existingTime)
+
+              // If within 5 seconds, consider it the same message
+              if (timeDiff < 5000) {
+                // Replace optimistic with broadcast
+                messageMap.delete(existingId)
+                messageMap.set(message.id, message)
+                replacedOptimistic = true
+                break
+              }
+            }
+          }
+
+          if (!replacedOptimistic) {
+            messageMap.set(message.id, message)
+          }
+        } else {
+          messageMap.set(message.id, message)
+        }
       } else {
         // Always prefer confirmed messages over optimistic ones
         if (!message.isOptimistic && existingMessage.isOptimistic) {
@@ -139,7 +192,7 @@ export function useRealtimeChat({
         new Date(a.createdAt || 0).getTime() -
         new Date(b.createdAt || 0).getTime()
     )
-  }, [missedMessages, optimisticMessages])
+  }, [missedMessages, optimisticMessages, deletedMessageIds])
 
   return {
     messages: allMessages,
@@ -148,6 +201,7 @@ export function useRealtimeChat({
     isConnected,
     loading: missedMessagesLoading,
     queueStatus,
-    clearFailedMessages
+    clearFailedMessages,
+    onMessageUpdate: setConfirmedMessages
   }
 }

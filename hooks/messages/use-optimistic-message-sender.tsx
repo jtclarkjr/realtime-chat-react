@@ -130,9 +130,9 @@ export function useOptimisticMessageSender({
           }
           onConfirmedMessageUpdate((current) => [...current, failedMessage])
         } else {
-          // Success case - for private messages, we won't get a broadcast, so keep optimistic
+          // Success - for private messages only, add confirmed message
+          // For public messages, let the broadcast handle it
           if (optimisticMessage.isPrivate) {
-            // For private messages, convert optimistic to confirmed since no broadcast will come
             const confirmedPrivateMessage = {
               ...optimisticMessage,
               id: result.message?.id || optimisticMessage.id,
@@ -143,7 +143,7 @@ export function useOptimisticMessageSender({
               confirmedPrivateMessage
             ])
           }
-          // For public messages, broadcast will replace the optimistic one
+          // For public messages, do nothing - broadcast will arrive and deduplication will handle it
         }
 
         return result.success ? result.message?.id : null

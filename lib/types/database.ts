@@ -38,6 +38,10 @@ export interface ChatMessageWithDB {
   isAI?: boolean
   isPrivate?: boolean
   requesterId?: string
+  isDeleted?: boolean
+  deletedAt?: string
+  deletedBy?: string
+  hasAIResponse?: boolean
 }
 
 // Chat message interface used in components and hooks
@@ -60,7 +64,10 @@ export interface ChatMessage {
   isQueued?: boolean
   isPending?: boolean
   retryAttempts?: number
-  // Optimistic message fields
+  isDeleted?: boolean
+  deletedAt?: string
+  deletedBy?: string
+  hasAIResponse?: boolean
   isOptimistic?: boolean
   isOptimisticConfirmed?: boolean
   optimisticTimestamp?: number
@@ -96,3 +103,5 @@ export interface MarkReceivedRequest {
   roomId: string
   messageId: string
 }
+
+export type UnsendMessageRequest = MarkReceivedRequest

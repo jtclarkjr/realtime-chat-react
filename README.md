@@ -19,6 +19,7 @@ Features instant messaging, message persistence, and reconnection handling.
   - Real-time streaming responses
   - Context-aware conversations
 - **Message persistence** with automatic message history loading
+- **Message unsend capability** for non-AI messages
 - **Redis/Vercel KV caching** for improved performance and message tracking
 - **Reconnection handling** with missed message recovery
 - **Responsive design** with Tailwind CSS
@@ -260,7 +261,6 @@ Set up the following tables in your Supabase database:
 `/database/schema.sql`
 
 `/migrations`
-
 
 ## Installation
 

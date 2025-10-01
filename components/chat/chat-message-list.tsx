@@ -1,7 +1,7 @@
 'use client'
 
 import { forwardRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ChatMessageItem } from '@/components/chat-message'
 import { ScrollDateIndicator } from '@/components/chat'
 import { useScrollDateDetection } from '@/hooks/ui'
@@ -15,6 +15,8 @@ interface ChatMessageListProps {
   userId: string
   initialMessagesLength: number
   onRetry: (messageId: string) => void
+  onUnsend?: (messageId: string) => void
+  isUnsending?: (messageId: string) => boolean
   onUserScroll?: () => void
 }
 
@@ -28,6 +30,8 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
       userId,
       initialMessagesLength,
       onRetry,
+      onUnsend,
+      isUnsending,
       onUserScroll
     },
     ref
@@ -62,35 +66,56 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
             </div>
           ) : null}
           {(initialMessagesLength > 0 || (!loading && isConnected)) && (
-            <div className="space-y-1 sm:space-y-2">
-              {messages.map((message, index) => {
-                const prevMessage = index > 0 ? messages[index - 1] : null
-                const showHeader =
-                  !prevMessage || prevMessage.user.name !== message.user.name
+            <AnimatePresence mode="popLayout" initial={false}>
+              <div className="space-y-1 sm:space-y-2">
+                {messages
+                  .filter((message) => !message.isDeleted)
+                  .map((message, index, filteredMessages) => {
+                    const prevMessage =
+                      index > 0 ? filteredMessages[index - 1] : null
+                    const showHeader =
+                      !prevMessage ||
+                      prevMessage.user.name !== message.user.name
+                    const shouldAnimate = !message.isOptimistic
 
-                return (
-                  <motion.div
-                    key={message.id}
-                    data-message-id={message.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      duration: 0.15,
-                      ease: 'easeOut'
-                    }}
-                    className="transform-gpu"
-                  >
-                    <ChatMessageItem
-                      message={message}
-                      isOwnMessage={message.user.name === username}
-                      showHeader={showHeader}
-                      currentUserId={userId}
-                      onRetry={onRetry}
-                    />
-                  </motion.div>
-                )
-              })}
-            </div>
+                    return shouldAnimate ? (
+                      <motion.div
+                        key={message.id}
+                        data-message-id={message.id}
+                        exit={{
+                          opacity: 0,
+                          height: 0,
+                          marginTop: 0,
+                          marginBottom: 0,
+                          transition: { duration: 0.3, ease: 'easeInOut' }
+                        }}
+                      >
+                        <ChatMessageItem
+                          message={message}
+                          isOwnMessage={message.user.name === username}
+                          showHeader={showHeader}
+                          currentUserId={userId}
+                          onRetry={onRetry}
+                          onUnsend={onUnsend}
+                          isUnsending={isUnsending}
+                        />
+                      </motion.div>
+                    ) : (
+                      <div key={message.id} data-message-id={message.id}>
+                        <ChatMessageItem
+                          message={message}
+                          isOwnMessage={message.user.name === username}
+                          showHeader={showHeader}
+                          currentUserId={userId}
+                          onRetry={onRetry}
+                          onUnsend={onUnsend}
+                          isUnsending={isUnsending}
+                        />
+                      </div>
+                    )
+                  })}
+              </div>
+            </AnimatePresence>
           )}
         </div>
       </>

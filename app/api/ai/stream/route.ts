@@ -14,6 +14,7 @@ interface AIStreamRequest {
   userId: string
   message: string
   isPrivate?: boolean
+  triggerMessageId?: string
   previousMessages?: Array<{
     content: string
     isAi: boolean
@@ -161,6 +162,10 @@ export const POST = async (request: NextRequest) => {
             isPrivate: body.isPrivate || false,
             requesterId: body.userId
           })
+
+          if (body.triggerMessageId) {
+            await chatService.markMessageAsAITrigger(body.triggerMessageId)
+          }
 
           // Send completion with database info
           const completeData = {
