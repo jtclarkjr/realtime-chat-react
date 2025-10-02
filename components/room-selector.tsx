@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { track } from '@vercel/analytics/react'
 import {
   Combobox,
   type ComboboxOption,
@@ -118,6 +119,10 @@ export function RoomSelector({
       const result = await deleteRoomAction(roomId)
 
       if (result.success) {
+        if (currentUserId) {
+          track('event_room_deleted', { roomId, userId: currentUserId })
+        }
+
         // Remove the room from the list
         setRooms((prevRooms) => prevRooms.filter((room) => room.id !== roomId))
 

@@ -11,6 +11,7 @@ import {
 } from '@/components/chat'
 import type { ChatMessage } from '@/lib/types/database'
 import { useCallback, useEffect, useState } from 'react'
+import { track } from '@vercel/analytics/react'
 
 interface RealtimeChatProps {
   roomId: string
@@ -144,6 +145,11 @@ export const RealtimeChat = ({
       setNewMessage('')
 
       if (isAIEnabled) {
+        if (isAIPrivate) {
+          track('event_ai_private_message_sent')
+        } else {
+          track('event_ai_public_message_sent')
+        }
         // First send the user's message (private if AI is in private mode)
         await sendMessage(messageContent, isAIPrivate)
         // Then send to AI for response with recent messages as context

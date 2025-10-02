@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { track } from '@vercel/analytics/react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { DiscordIcon, GitHubIcon, AppleIcon } from '@/components/ui/icons'
@@ -69,6 +70,7 @@ export function LoginClient() {
     provider: 'discord' | 'github' | 'apple',
     signIn: () => Promise<{ error: Error | null }>
   ) => {
+    track('event_login_attempt', { provider })
     try {
       setLoading(provider)
 

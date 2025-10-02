@@ -2,6 +2,7 @@
 
 import DOMPurify from 'isomorphic-dompurify'
 import { useState } from 'react'
+import { track } from '@vercel/analytics/react'
 import {
   Dialog,
   DialogContent,
@@ -139,6 +140,7 @@ export function AddRoomDialog({
   }
 
   const handleGenerate = async (): Promise<void> => {
+    track('event_generate_room_suggestion')
     try {
       setGenerating(true)
       setError(null)
