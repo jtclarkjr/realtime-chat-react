@@ -145,15 +145,16 @@ export const RealtimeChat = ({
       setNewMessage('')
 
       if (isAIEnabled) {
+        // First send the user's message (private if AI is in private mode)
+        await sendMessage(messageContent, isAIPrivate)
+        // Then send to AI for response with recent messages as context
+        await sendAIMessage(messageContent, allMessages.slice(-10))
+
         if (isAIPrivate) {
           track('event_ai_private_message_sent')
         } else {
           track('event_ai_public_message_sent')
         }
-        // First send the user's message (private if AI is in private mode)
-        await sendMessage(messageContent, isAIPrivate)
-        // Then send to AI for response with recent messages as context
-        await sendAIMessage(messageContent, allMessages.slice(-10))
       } else {
         // Send regular message
         sendMessage(messageContent)
