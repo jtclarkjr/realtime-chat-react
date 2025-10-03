@@ -2,6 +2,7 @@ import DOMPurify from 'isomorphic-dompurify'
 import { getServiceClient } from '@/lib/supabase/service-client'
 import { userService } from './user-service'
 import { AI_USER_ID } from './ai-user-setup'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   markMessageReceived,
   trackLatestMessage,
@@ -14,7 +15,8 @@ import type {
   ChatMessageWithDB,
   MissedMessagesResponse,
   SendMessageRequest,
-  SendAIMessageRequest
+  SendAIMessageRequest,
+  UnsendMessageRequest
 } from '@/lib/types/database'
 
 export class ChatService {
@@ -42,7 +44,13 @@ export class ChatService {
       isPrivate: dbMessage.is_private || false,
       requesterId: dbMessage.is_private
         ? dbMessage.requester_id || dbMessage.user_id
-        : undefined
+        : undefined,
+      // Add soft delete information
+      isDeleted: !!dbMessage.deleted_at,
+      deletedAt: dbMessage.deleted_at || undefined,
+      deletedBy: dbMessage.deleted_by || undefined,
+      // Add AI response tracking
+      hasAIResponse: dbMessage.has_ai_response || false
     }
   }
 
@@ -155,6 +163,7 @@ export class ChatService {
           .from('messages')
           .select('*')
           .eq('room_id', roomId)
+          .is('deleted_at', null)
           .or(
             `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
           )
@@ -211,6 +220,7 @@ export class ChatService {
         .from('messages')
         .select('*')
         .eq('room_id', roomId)
+        .is('deleted_at', null)
         .gt('created_at', lastMessageTimestamp)
         .or(
           `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
@@ -250,6 +260,7 @@ export class ChatService {
           .from('messages')
           .select('*')
           .eq('room_id', roomId)
+          .is('deleted_at', null)
           .or(
             `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
           )
@@ -297,6 +308,69 @@ export class ChatService {
   }
 
   /**
+   * Soft delete (unsend) a message using authenticated client
+   * This ensures RLS policies are enforced
+   */
+  async unsendMessage(
+    request: UnsendMessageRequest,
+    authenticatedClient: Pick<SupabaseClient, 'from'>
+  ): Promise<ChatMessageWithDB> {
+    if (!request.messageId || !request.userId || !request.roomId) {
+      throw new Error('Missing required fields for unsend message')
+    }
+
+    // Soft delete by setting deleted_at and deleted_by
+    // Let the database set the timestamp using NOW()
+    const { data: updatedMessage, error: updateError } =
+      await authenticatedClient
+        .from('messages')
+        .update({
+          deleted_at: 'now()', // Database function to set current timestamp
+          deleted_by: request.userId
+        })
+        .eq('id', request.messageId)
+        .eq('room_id', request.roomId)
+        .is('deleted_at', null)
+        .select()
+        .single()
+
+    if (updateError || !updatedMessage) {
+      console.error('Error soft deleting message:', updateError)
+      // Check if it's a permission error (RLS policy blocked the operation)
+      if (
+        updateError?.code === 'PGRST116' ||
+        updateError?.message?.includes('No rows found')
+      ) {
+        throw new Error(
+          'Message not found or you do not have permission to unsend it'
+        )
+      }
+      throw new Error('Failed to unsend message')
+    }
+
+    return this.transformDatabaseMessage(updatedMessage)
+  }
+
+  /**
+   * Mark a message as having triggered an AI response
+   * This prevents the message from being unsent to maintain conversation context
+   */
+  async markMessageAsAITrigger(messageId: string): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('messages')
+        .update({ has_ai_response: true })
+        .eq('id', messageId)
+
+      if (error) {
+        console.error('Error marking message as AI trigger:', error)
+      }
+    } catch (error) {
+      console.error('Error marking message as AI trigger:', error)
+    }
+  }
+
+  /**
    * Mark a message as received by a user
    */
   async markAsReceived(
@@ -338,6 +412,7 @@ export class ChatService {
         .from('messages')
         .select('*')
         .eq('room_id', roomId)
+        .is('deleted_at', null)
 
       // If userId is provided, filter private messages
       if (userId) {

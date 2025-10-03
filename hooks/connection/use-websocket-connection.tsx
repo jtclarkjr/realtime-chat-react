@@ -10,6 +10,7 @@ interface UseWebSocketConnectionProps {
   roomId: string
   userId: string
   onMessage: (message: ChatMessage) => void
+  onMessageUnsent?: (messageId: string) => void
   enabled: boolean
 }
 
@@ -22,6 +23,7 @@ export function useWebSocketConnection({
   roomId,
   userId,
   onMessage,
+  onMessageUnsent,
   enabled = true
 }: UseWebSocketConnectionProps): UseWebSocketConnectionReturn {
   const [isConnected, setIsConnected] = useState<boolean>(false)
@@ -51,6 +53,13 @@ export function useWebSocketConnection({
           receivedMessage.user?.name
         ) {
           onMessage(receivedMessage)
+        }
+      })
+      .on('broadcast', { event: 'message_unsent' }, (payload) => {
+        // Handle message unsend events
+        const { messageId } = payload.payload as { messageId: string }
+        if (messageId && onMessageUnsent) {
+          onMessageUnsent(messageId)
         }
       })
       .on('system', {}, (payload) => {
@@ -111,7 +120,7 @@ export function useWebSocketConnection({
       }
       setIsConnected(false)
     }
-  }, [supabase, roomId, userId, onMessage, enabled])
+  }, [supabase, roomId, userId, onMessage, onMessageUnsent, enabled])
 
   const reconnect = useCallback((): void => {
     setupChannel()

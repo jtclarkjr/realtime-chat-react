@@ -20,6 +20,9 @@ export interface Database {
           is_ai_message: boolean
           is_private: boolean
           requester_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          has_ai_response: boolean
         }
         Insert: {
           id?: string
@@ -31,6 +34,9 @@ export interface Database {
           is_ai_message?: boolean
           is_private?: boolean
           requester_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          has_ai_response?: boolean
         }
         Update: {
           id?: string
@@ -42,6 +48,9 @@ export interface Database {
           is_ai_message?: boolean
           is_private?: boolean
           requester_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          has_ai_response?: boolean
         }
         Relationships: [
           {

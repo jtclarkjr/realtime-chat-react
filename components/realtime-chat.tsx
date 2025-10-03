@@ -2,7 +2,7 @@
 
 import { useChatScroll, useSmartAutoScroll } from '@/hooks/ui'
 import { useRealtimeChat, useAIChat, useStreamingMessages } from '@/hooks/chat'
-import { useMessageMerging } from '@/hooks/messages'
+import { useMessageMerging, useUnsendMessage } from '@/hooks/messages'
 import {
   ConnectionStatusBar,
   ChatMessageList,
@@ -48,12 +48,20 @@ export const RealtimeChat = ({
     isConnected,
     loading,
     queueStatus,
-    clearFailedMessages
+    clearFailedMessages,
+    onMessageUpdate
   } = useRealtimeChat({
     roomId,
     username,
     userId,
     userAvatarUrl
+  })
+
+  // Initialize unsend message
+  const { unsendMessage, isUnsending } = useUnsendMessage({
+    userId,
+    roomId,
+    onMessageUpdate
   })
 
   const {
@@ -146,9 +154,14 @@ export const RealtimeChat = ({
 
       if (isAIEnabled) {
         // First send the user's message (private if AI is in private mode)
-        await sendMessage(messageContent, isAIPrivate)
+        const triggerMessageId = await sendMessage(messageContent, isAIPrivate)
         // Then send to AI for response with recent messages as context
-        await sendAIMessage(messageContent, allMessages.slice(-10))
+        // Pass the trigger message ID so it can be marked as having an AI response
+        await sendAIMessage(
+          messageContent,
+          allMessages.slice(-10),
+          triggerMessageId || undefined
+        )
 
         if (isAIPrivate) {
           track('event_ai_private_message_sent')
@@ -189,6 +202,8 @@ export const RealtimeChat = ({
         userId={userId}
         initialMessagesLength={initialMessages.length}
         onRetry={retryMessage}
+        onUnsend={unsendMessage}
+        isUnsending={isUnsending}
         onUserScroll={handleUserScroll}
       />
 

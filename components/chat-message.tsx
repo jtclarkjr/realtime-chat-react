@@ -14,6 +14,8 @@ interface ChatMessageItemProps {
   showHeader: boolean
   currentUserId?: string
   onRetry?: (messageId: string) => void
+  onUnsend?: (messageId: string) => void
+  isUnsending?: (messageId: string) => boolean
 }
 
 export const ChatMessageItem = ({
@@ -21,7 +23,9 @@ export const ChatMessageItem = ({
   isOwnMessage,
   showHeader,
   currentUserId,
-  onRetry
+  onRetry,
+  onUnsend,
+  isUnsending
 }: ChatMessageItemProps) => {
   const isAIMessage = message.isAI || message.user.name === 'AI Assistant'
   const isStreaming =
@@ -90,6 +94,8 @@ export const ChatMessageItem = ({
               isAIMessage={isAIMessage}
               isPrivateForCurrentUser={isPrivateForCurrentUser}
               isStreaming={isStreaming}
+              onUnsend={onUnsend}
+              isUnsending={isUnsending ? isUnsending(message.id) : false}
             />
 
             {/* Status indicators for user's own messages */}

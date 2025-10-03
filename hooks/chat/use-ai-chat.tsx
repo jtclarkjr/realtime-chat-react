@@ -19,7 +19,8 @@ interface UseAIChatReturn {
   isAILoading: boolean
   sendAIMessage: (
     content: string,
-    previousMessages: ChatMessage[]
+    previousMessages: ChatMessage[],
+    triggerMessageId?: string
   ) => Promise<void>
 }
 
@@ -37,7 +38,8 @@ export function useAIChat({
   const sendAIMessage = useCallback(
     async (
       content: string,
-      previousMessages: ChatMessage[] = []
+      previousMessages: ChatMessage[] = [],
+      triggerMessageId?: string
     ): Promise<void> => {
       if (!isConnected || !content.trim() || isAILoading) return
 
@@ -70,7 +72,8 @@ export function useAIChat({
             userId,
             message: content.trim(),
             previousMessages: messageContext,
-            isPrivate: isAIPrivate
+            isPrivate: isAIPrivate,
+            triggerMessageId
           })
         })
 

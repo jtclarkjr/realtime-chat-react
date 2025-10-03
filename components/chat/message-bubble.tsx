@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { StreamingIndicator } from './streaming-indicator'
+import { MessageOptions } from './message-options'
 import type { ChatMessage } from '@/lib/types/database'
 
 interface MessageBubbleProps {
@@ -10,6 +11,8 @@ interface MessageBubbleProps {
   isAIMessage: boolean
   isPrivateForCurrentUser: boolean
   isStreaming: boolean
+  isUnsending?: boolean
+  onUnsend?: (messageId: string) => void
 }
 
 export const MessageBubble = ({
@@ -17,13 +20,26 @@ export const MessageBubble = ({
   isOwnMessage,
   isAIMessage,
   isPrivateForCurrentUser,
-  isStreaming
+  isStreaming,
+  onUnsend,
+  isUnsending = false
 }: MessageBubbleProps) => {
-  return (
+  const canUnsend =
+    isOwnMessage &&
+    !isAIMessage &&
+    !isStreaming &&
+    !message.isDeleted &&
+    !message.isFailed &&
+    !message.isQueued &&
+    !message.isPending &&
+    !message.hasAIResponse
+
+  const bubbleContent = (
     <div
       className={cn(
         'py-3 px-4 rounded-2xl text-sm sm:text-base w-fit break-words shadow-sm transition-all duration-200 hover:shadow-md relative',
         {
+          'cursor-pointer': canUnsend && onUnsend,
           'bg-primary text-primary-foreground rounded-br-md':
             isOwnMessage &&
             !isPrivateForCurrentUser &&
@@ -51,4 +67,20 @@ export const MessageBubble = ({
       </div>
     </div>
   )
+
+  // Only wrap with MessageOptions if user can potentially unsend
+  if (canUnsend && onUnsend) {
+    return (
+      <MessageOptions
+        messageId={message.id}
+        onUnsend={onUnsend}
+        isUnsending={isUnsending}
+        canUnsend={canUnsend}
+      >
+        {bubbleContent}
+      </MessageOptions>
+    )
+  }
+
+  return bubbleContent
 }
