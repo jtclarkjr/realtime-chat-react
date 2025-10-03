@@ -30,6 +30,10 @@ export function HomeClient({
   const { userId } = useUserStore()
   const { selectedRoomId, setSelectedRoomId } = useRoomStore()
 
+  useEffect(() => {
+    setIsNavigating(false)
+  }, [])
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
