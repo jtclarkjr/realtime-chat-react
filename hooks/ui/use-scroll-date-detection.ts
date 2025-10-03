@@ -23,8 +23,6 @@ export const useScrollDateDetection = ({
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
       const container = e.currentTarget
-      const scrollTop = container.scrollTop
-      const containerHeight = container.clientHeight
 
       // Show scroll indicator when scrolling
       setIsScrolling(true)
@@ -40,27 +38,36 @@ export const useScrollDateDetection = ({
       }, 1000)
       setScrollTimeout(newTimeout)
 
-      // Find the message that's currently in the middle of the viewport
-      const middlePosition = scrollTop + containerHeight / 2
+      // Find the bottommost visible message in the viewport
+      const containerRect = container.getBoundingClientRect()
+      const containerBottom = containerRect.bottom
 
       // Find message elements and determine which date to show
       const messageElements = container.querySelectorAll('[data-message-id]')
       let currentDate: string | null = null
+      let bottomMostMessage: { element: HTMLElement; bottom: number } | null = null
 
       for (let i = 0; i < messageElements.length; i++) {
         const element = messageElements[i] as HTMLElement
         const rect = element.getBoundingClientRect()
-        const containerRect = container.getBoundingClientRect()
-        const elementTop = rect.top - containerRect.top + scrollTop
-        const elementBottom = elementTop + rect.height
-
-        if (elementTop <= middlePosition && elementBottom >= middlePosition) {
-          const messageId = element.getAttribute('data-message-id')
-          const message = messages.find((m) => m.id === messageId)
-          if (message) {
-            currentDate = message.createdAt
+        
+        // Check if message is visible in the viewport
+        const isVisible = rect.top < containerBottom && rect.bottom > containerRect.top
+        
+        if (isVisible) {
+          // Track the message closest to the bottom of the viewport
+          if (!bottomMostMessage || rect.bottom > bottomMostMessage.bottom) {
+            bottomMostMessage = { element, bottom: rect.bottom }
           }
-          break
+        }
+      }
+
+      // Get the date from the bottommost visible message
+      if (bottomMostMessage) {
+        const messageId = bottomMostMessage.element.getAttribute('data-message-id')
+        const message = messages.find((m) => m.id === messageId)
+        if (message) {
+          currentDate = message.createdAt
         }
       }
 
