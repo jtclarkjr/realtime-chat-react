@@ -1,7 +1,6 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { track } from '@vercel/analytics/react'
 import { RealtimeChat } from '@/components/realtime-chat'
 import { Button } from '@/components/ui/button'
 import { PageTransition } from '@/components/page-transition'
@@ -26,7 +25,6 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   // Mark as initialized immediately since we have the user from server
   useEffect(() => {
     setIsInitialized(true)
-    track('event_room_join', { roomId: room.id, userId: user.id })
   }, [])
 
   const handleLeaveRoom = async () => {
