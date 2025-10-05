@@ -60,11 +60,7 @@ export class ChatService {
    */
   async sendMessage(request: SendMessageRequest): Promise<ChatMessageWithDB> {
     // Validate required fields
-    if (
-      !request.roomId ||
-      !request.userId ||
-      !request.content?.trim()
-    ) {
+    if (!request.roomId || !request.userId || !request.content?.trim()) {
       throw new Error('Missing required fields for message')
     }
 
@@ -93,14 +89,18 @@ export class ChatService {
 
     // Get username from auth.users
     const userName = await this.getUserDisplayName(message.user_id)
-    
+
     // Get user avatar if available
     const userProfile = await userService.getUserProfile(message.user_id)
 
     // Track this as the latest message in Redis
     await trackLatestMessage(request.roomId, message.id)
 
-    return this.transformDatabaseMessage(message, userProfile?.avatar_url, userName)
+    return this.transformDatabaseMessage(
+      message,
+      userProfile?.avatar_url,
+      userName
+    )
   }
 
   /**
@@ -167,9 +167,10 @@ export class ChatService {
         // User is new or been away for 30+ days
         // Get recent messages from database (exclude private messages not for this user)
         const { data: recentMessages, error } = await this.supabase
-          .from('messages_with_user_info')
+          .from('messages')
           .select('*')
           .eq('room_id', roomId)
+          .is('deleted_at', null)
           .or(
             `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
           )
@@ -202,12 +203,17 @@ export class ChatService {
         const userProfiles = await userService.getUserProfiles(userIds)
 
         // Transform and reverse to get chronological order
-        const transformedMessages = (recentMessages || [])
-          .reverse()
-          .map((msg: any) => {
+        const transformedMessages = await Promise.all(
+          (recentMessages || []).reverse().map(async (msg: DatabaseMessage) => {
             const userProfile = userProfiles.get(msg.user_id)
-            return this.transformDatabaseMessage(msg, userProfile?.avatar_url, msg.username)
+            const userName = await this.getUserDisplayName(msg.user_id)
+            return this.transformDatabaseMessage(
+              msg,
+              userProfile?.avatar_url,
+              userName
+            )
           })
+        )
 
         return {
           type:
@@ -254,7 +260,11 @@ export class ChatService {
         (missedMessages || []).map(async (msg: DatabaseMessage) => {
           const userProfile = userProfiles.get(msg.user_id)
           const userName = await this.getUserDisplayName(msg.user_id)
-          return this.transformDatabaseMessage(msg, userProfile?.avatar_url, userName)
+          return this.transformDatabaseMessage(
+            msg,
+            userProfile?.avatar_url,
+            userName
+          )
         })
       )
 
@@ -289,13 +299,15 @@ export class ChatService {
             await userService.getUserProfiles(recentUserIds)
 
           const recentTransformed = await Promise.all(
-            recentMessages
-              .reverse()
-              .map(async (msg: DatabaseMessage) => {
-                const userProfile = recentUserProfiles.get(msg.user_id)
-                const userName = await this.getUserDisplayName(msg.user_id)
-                return this.transformDatabaseMessage(msg, userProfile?.avatar_url, userName)
-              })
+            recentMessages.reverse().map(async (msg: DatabaseMessage) => {
+              const userProfile = recentUserProfiles.get(msg.user_id)
+              const userName = await this.getUserDisplayName(msg.user_id)
+              return this.transformDatabaseMessage(
+                msg,
+                userProfile?.avatar_url,
+                userName
+              )
+            })
           )
 
           return {
@@ -403,15 +415,15 @@ export class ChatService {
    */
   private async getUserDisplayName(userId: string): Promise<string> {
     try {
-      // Use the database function with proper permissions
-      const { data, error } = await this.supabase
-        .rpc('get_user_display_name', { user_uuid: userId })
-      
+      const { data, error } = await this.supabase.rpc('get_user_display_name', {
+        user_uuid: userId
+      })
+
       if (error) {
         console.error('Error getting user display name:', error)
         return 'Unknown User'
       }
-      
+
       return data || 'Unknown User'
     } catch (error) {
       console.error('Error getting user display name:', error)
@@ -482,7 +494,11 @@ export class ChatService {
         (messages || []).reverse().map(async (msg: DatabaseMessage) => {
           const userProfile = userProfiles.get(msg.user_id)
           const userName = await this.getUserDisplayName(msg.user_id)
-          return this.transformDatabaseMessage(msg, userProfile?.avatar_url, userName)
+          return this.transformDatabaseMessage(
+            msg,
+            userProfile?.avatar_url,
+            userName
+          )
         })
       )
     } catch (error) {

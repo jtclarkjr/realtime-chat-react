@@ -45,15 +45,17 @@ export const useScrollDateDetection = ({
       // Find message elements and determine which date to show
       const messageElements = container.querySelectorAll('[data-message-id]')
       let currentDate: string | null = null
-      let bottomMostMessage: { element: HTMLElement; bottom: number } | null = null
+      let bottomMostMessage: { element: HTMLElement; bottom: number } | null =
+        null
 
       for (let i = 0; i < messageElements.length; i++) {
         const element = messageElements[i] as HTMLElement
         const rect = element.getBoundingClientRect()
-        
+
         // Check if message is visible in the viewport
-        const isVisible = rect.top < containerBottom && rect.bottom > containerRect.top
-        
+        const isVisible =
+          rect.top < containerBottom && rect.bottom > containerRect.top
+
         if (isVisible) {
           // Track the message closest to the bottom of the viewport
           if (!bottomMostMessage || rect.bottom > bottomMostMessage.bottom) {
@@ -64,7 +66,8 @@ export const useScrollDateDetection = ({
 
       // Get the date from the bottommost visible message
       if (bottomMostMessage) {
-        const messageId = bottomMostMessage.element.getAttribute('data-message-id')
+        const messageId =
+          bottomMostMessage.element.getAttribute('data-message-id')
         const message = messages.find((m) => m.id === messageId)
         if (message) {
           currentDate = message.createdAt

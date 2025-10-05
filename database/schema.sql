@@ -135,29 +135,6 @@ CREATE TRIGGER auto_set_deleted_at
 COMMENT ON FUNCTION set_deleted_at_timestamp() IS 
 'Automatically sets deleted_at to current timestamp when a message is being soft deleted (when deleted_at changes from NULL to any value)';
 
--- Create helpful view for messages with user information
--- This view joins messages with auth.users to get user display information
-CREATE OR REPLACE VIEW messages_with_user_info AS
-SELECT 
-  m.id,
-  m.room_id,
-  m.user_id,
-  COALESCE(au.email, 'Unknown User') as user_email,
-  COALESCE(au.raw_user_meta_data->>'display_name', au.email, 'Anonymous') as username,
-  m.content,
-  m.is_ai_message,
-  m.is_private,
-  m.requester_id,
-  m.created_at,
-  m.deleted_at,
-  m.deleted_by,
-  m.has_ai_response
-FROM messages m
-LEFT JOIN auth.users au ON m.user_id = au.id
-WHERE m.deleted_at IS NULL; -- Only show active messages in the view
-
--- Set security_invoker to ensure the view uses the caller's permissions
-ALTER VIEW messages_with_user_info SET (security_invoker = on);
 
 -- Create helpful function to get user display name
 -- SECURITY DEFINER allows the function to access auth.users with elevated privileges
@@ -182,8 +159,5 @@ GRANT EXECUTE ON FUNCTION get_user_display_name(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_user_display_name(UUID) TO service_role;
 
 -- Add helpful comments
-COMMENT ON VIEW messages_with_user_info IS 
-'Convenient view that joins messages with auth.users to provide user display information. Only shows active (non-deleted) messages.';
-
 COMMENT ON FUNCTION get_user_display_name(UUID) IS 
 'Helper function to get a user display name from auth.users, falling back to email or "Anonymous User" if not found. Uses SECURITY DEFINER for auth.users access.';
