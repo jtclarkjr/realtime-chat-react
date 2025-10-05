@@ -18,7 +18,8 @@
     "dev:docker": "docker-compose up -d && bun dev",
     "redis:cli": "docker exec -it realtime-chat-redis redis-cli",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build && rm -rf public/storybook && mv storybook-static public/storybook"
+    "build-storybook": "storybook build",
+    "build-storybook-local": "storybook build && rm -rf public/storybook && mv storybook-static public/storybook"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.63.1",
