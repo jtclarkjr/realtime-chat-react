@@ -21,6 +21,11 @@ To build a static version of Storybook:
 bun run build-storybook
 ```
 
+To start Storybook in production:
+
+Storybook live demo is deployed to:
+[realtime-chat-storybook.vercel.app](realtime-chat-storybook.vercel.app)
+
 ## Available Stories
 
 The following UI components have comprehensive Storybook stories:
