@@ -260,6 +260,8 @@ Set up the following tables in your Supabase database:
 
 `/database/schema.sql`
 
+`/database/rooms_schema.sql`
+
 `/migrations`
 
 ## Installation
