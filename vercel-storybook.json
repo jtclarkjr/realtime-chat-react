@@ -1,5 +1,0 @@
-{
-  "buildCommand": "bun run build-storybook",
-  "outputDirectory": "storybook-static",
-  "installCommand": "bun install"
-}
