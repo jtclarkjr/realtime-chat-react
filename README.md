@@ -262,8 +262,6 @@ Set up the following tables in your Supabase database:
 
 `/database/rooms_schema.sql`
 
-`/migrations`
-
 ## Installation
 
 1. Clone the repository:
