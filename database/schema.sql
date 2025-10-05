@@ -1,18 +1,17 @@
--- Create messages table for chat with proper schema
+-- Create messages table for chat with proper schema using Supabase auth.users
 -- Run this SQL Query to create the table in your DB
 
 CREATE TABLE IF NOT EXISTS messages (
   id TEXT DEFAULT gen_random_uuid()::text PRIMARY KEY,
   room_id UUID NOT NULL,
-  user_id UUID NOT NULL,
-  username TEXT NOT NULL,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
   is_ai_message BOOLEAN DEFAULT false,
   is_private BOOLEAN DEFAULT false,
-  requester_id UUID,
+  requester_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-  deleted_by UUID DEFAULT NULL,
+  deleted_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   has_ai_response BOOLEAN DEFAULT FALSE
 );
 
@@ -71,29 +70,46 @@ COMMENT ON COLUMN messages.deleted_by IS 'ID of the user who deleted/unsent the 
 COMMENT ON COLUMN messages.has_ai_response IS 'TRUE if this message triggered an AI response. Such messages cannot be unsent to maintain conversation context.';
 
 -- Add database constraint to ensure deleted_by equals user_id (security layer)
-ALTER TABLE messages ADD CONSTRAINT IF NOT EXISTS check_deleted_by_equals_user_id
+ALTER TABLE messages ADD CONSTRAINT check_deleted_by_equals_user_id
   CHECK ((deleted_at IS NULL AND deleted_by IS NULL) OR 
          (deleted_at IS NOT NULL AND deleted_by = user_id));
 
 -- Enable Row Level Security
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
--- Create policies to allow all users to read and insert messages
+-- Create policies for authenticated users with proper security
 -- Updated to handle soft deletes with proper security
-CREATE POLICY "Allow all users to read active messages" ON messages
-  FOR SELECT USING (deleted_at IS NULL);
+CREATE POLICY "Allow authenticated users to read active messages" ON messages
+  FOR SELECT 
+  TO authenticated
+  USING (deleted_at IS NULL);
 
-CREATE POLICY "Allow all users to read their own deleted messages" ON messages
-  FOR SELECT USING (deleted_at IS NOT NULL AND user_id = auth.uid());
+CREATE POLICY "Allow users to read their own deleted messages" ON messages
+  FOR SELECT 
+  TO authenticated
+  USING (deleted_at IS NOT NULL AND user_id = auth.uid());
 
-CREATE POLICY "Allow all users to insert messages" ON messages
-  FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow authenticated users to insert messages" ON messages
+  FOR INSERT 
+  TO authenticated
+  WITH CHECK (user_id = auth.uid());
 
 -- Allow users to soft delete their own messages only
 -- Users cannot unsend messages that triggered AI responses to maintain conversation context
 CREATE POLICY "Allow users to soft delete their own messages" ON messages
-  FOR UPDATE USING (user_id = auth.uid() AND deleted_at IS NULL AND has_ai_response = FALSE)
-  WITH CHECK (user_id = auth.uid() AND deleted_at IS NOT NULL AND deleted_by = auth.uid() AND has_ai_response = FALSE);
+  FOR UPDATE 
+  TO authenticated
+  USING (
+    user_id = auth.uid() AND 
+    deleted_at IS NULL AND 
+    has_ai_response = FALSE
+  )
+  WITH CHECK (
+    user_id = auth.uid() AND 
+    deleted_at IS NOT NULL AND 
+    deleted_by = auth.uid() AND 
+    has_ai_response = FALSE
+  );
 
 -- Database trigger to automatically set deleted_at timestamp
 -- This ensures consistent timestamps set at the database level
@@ -118,3 +134,56 @@ CREATE TRIGGER auto_set_deleted_at
 -- Add comment explaining the trigger function
 COMMENT ON FUNCTION set_deleted_at_timestamp() IS 
 'Automatically sets deleted_at to current timestamp when a message is being soft deleted (when deleted_at changes from NULL to any value)';
+
+-- Create helpful view for messages with user information
+-- This view joins messages with auth.users to get user display information
+CREATE OR REPLACE VIEW messages_with_user_info AS
+SELECT 
+  m.id,
+  m.room_id,
+  m.user_id,
+  COALESCE(au.email, 'Unknown User') as user_email,
+  COALESCE(au.raw_user_meta_data->>'display_name', au.email, 'Anonymous') as username,
+  m.content,
+  m.is_ai_message,
+  m.is_private,
+  m.requester_id,
+  m.created_at,
+  m.deleted_at,
+  m.deleted_by,
+  m.has_ai_response
+FROM messages m
+LEFT JOIN auth.users au ON m.user_id = au.id
+WHERE m.deleted_at IS NULL; -- Only show active messages in the view
+
+-- Set security_invoker to ensure the view uses the caller's permissions
+ALTER VIEW messages_with_user_info SET (security_invoker = on);
+
+-- Create helpful function to get user display name
+-- SECURITY DEFINER allows the function to access auth.users with elevated privileges
+CREATE OR REPLACE FUNCTION get_user_display_name(user_uuid UUID)
+RETURNS TEXT AS $$
+BEGIN
+  RETURN (
+    SELECT COALESCE(
+      raw_user_meta_data->>'display_name',
+      raw_user_meta_data->>'full_name',
+      email,
+      'Anonymous User'
+    )
+    FROM auth.users 
+    WHERE id = user_uuid
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permissions to authenticated users and service role
+GRANT EXECUTE ON FUNCTION get_user_display_name(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_user_display_name(UUID) TO service_role;
+
+-- Add helpful comments
+COMMENT ON VIEW messages_with_user_info IS 
+'Convenient view that joins messages with auth.users to provide user display information. Only shows active (non-deleted) messages.';
+
+COMMENT ON FUNCTION get_user_display_name(UUID) IS 
+'Helper function to get a user display name from auth.users, falling back to email or "Anonymous User" if not found. Uses SECURITY DEFINER for auth.users access.';

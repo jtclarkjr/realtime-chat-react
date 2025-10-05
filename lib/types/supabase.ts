@@ -14,7 +14,6 @@ export interface Database {
           id: string
           room_id: string
           user_id: string
-          username: string
           content: string
           created_at: string
           is_ai_message: boolean
@@ -28,7 +27,6 @@ export interface Database {
           id?: string
           room_id: string
           user_id: string
-          username: string
           content: string
           created_at?: string
           is_ai_message?: boolean
@@ -42,7 +40,6 @@ export interface Database {
           id?: string
           room_id?: string
           user_id?: string
-          username?: string
           content?: string
           created_at?: string
           is_ai_message?: boolean

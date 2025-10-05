@@ -27,14 +27,15 @@ export class ChatService {
    */
   private transformDatabaseMessage(
     dbMessage: DatabaseMessage,
-    userAvatar?: string | null
+    userAvatar?: string | null,
+    userName?: string
   ): ChatMessageWithDB {
     return {
       id: dbMessage.id,
       content: dbMessage.content,
       user: {
         id: dbMessage.user_id,
-        name: dbMessage.username,
+        name: userName || 'Unknown User',
         avatar_url: userAvatar || undefined
       },
       createdAt: dbMessage.created_at,
@@ -62,7 +63,6 @@ export class ChatService {
     if (
       !request.roomId ||
       !request.userId ||
-      !request.username ||
       !request.content?.trim()
     ) {
       throw new Error('Missing required fields for message')
@@ -75,7 +75,6 @@ export class ChatService {
     const messageInsert: DatabaseMessageInsert = {
       room_id: request.roomId,
       user_id: request.userId,
-      username: request.username,
       content: sanitizedContent,
       is_ai_message: false,
       is_private: request.isPrivate || false
@@ -92,10 +91,16 @@ export class ChatService {
       throw new Error('Failed to save message')
     }
 
+    // Get username from auth.users
+    const userName = await this.getUserDisplayName(message.user_id)
+    
+    // Get user avatar if available
+    const userProfile = await userService.getUserProfile(message.user_id)
+
     // Track this as the latest message in Redis
     await trackLatestMessage(request.roomId, message.id)
 
-    return this.transformDatabaseMessage(message)
+    return this.transformDatabaseMessage(message, userProfile?.avatar_url, userName)
   }
 
   /**
@@ -121,7 +126,6 @@ export class ChatService {
     const aiMessageInsert: DatabaseMessageInsert = {
       room_id: request.roomId,
       user_id: AI_USER_ID,
-      username: 'AI Assistant',
       content: sanitizedContent,
       is_ai_message: true,
       is_private: request.isPrivate || false,
@@ -139,10 +143,13 @@ export class ChatService {
       throw new Error('Failed to save AI message')
     }
 
+    // For AI messages, we'll use a fixed display name since AI_USER_ID should have this set
+    const aiUserName = await this.getUserDisplayName(AI_USER_ID)
+
     // Track this as the latest message in Redis
     await trackLatestMessage(request.roomId, message.id)
 
-    return this.transformDatabaseMessage(message)
+    return this.transformDatabaseMessage(message, null, aiUserName)
   }
 
   /**
@@ -160,10 +167,9 @@ export class ChatService {
         // User is new or been away for 30+ days
         // Get recent messages from database (exclude private messages not for this user)
         const { data: recentMessages, error } = await this.supabase
-          .from('messages')
+          .from('messages_with_user_info')
           .select('*')
           .eq('room_id', roomId)
-          .is('deleted_at', null)
           .or(
             `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
           )
@@ -198,9 +204,9 @@ export class ChatService {
         // Transform and reverse to get chronological order
         const transformedMessages = (recentMessages || [])
           .reverse()
-          .map((msg: DatabaseMessage) => {
+          .map((msg: any) => {
             const userProfile = userProfiles.get(msg.user_id)
-            return this.transformDatabaseMessage(msg, userProfile?.avatar_url)
+            return this.transformDatabaseMessage(msg, userProfile?.avatar_url, msg.username)
           })
 
         return {
@@ -244,11 +250,12 @@ export class ChatService {
       // Fetch user profiles for avatars
       const userProfiles = await userService.getUserProfiles(userIds)
 
-      const transformedMessages = (missedMessages || []).map(
-        (msg: DatabaseMessage) => {
+      const transformedMessages = await Promise.all(
+        (missedMessages || []).map(async (msg: DatabaseMessage) => {
           const userProfile = userProfiles.get(msg.user_id)
-          return this.transformDatabaseMessage(msg, userProfile?.avatar_url)
-        }
+          const userName = await this.getUserDisplayName(msg.user_id)
+          return this.transformDatabaseMessage(msg, userProfile?.avatar_url, userName)
+        })
       )
 
       // Mark user as caught up
@@ -281,12 +288,15 @@ export class ChatService {
           const recentUserProfiles =
             await userService.getUserProfiles(recentUserIds)
 
-          const recentTransformed = recentMessages
-            .reverse()
-            .map((msg: DatabaseMessage) => {
-              const userProfile = recentUserProfiles.get(msg.user_id)
-              return this.transformDatabaseMessage(msg, userProfile?.avatar_url)
-            })
+          const recentTransformed = await Promise.all(
+            recentMessages
+              .reverse()
+              .map(async (msg: DatabaseMessage) => {
+                const userProfile = recentUserProfiles.get(msg.user_id)
+                const userName = await this.getUserDisplayName(msg.user_id)
+                return this.transformDatabaseMessage(msg, userProfile?.avatar_url, userName)
+              })
+          )
 
           return {
             type: 'recent_messages',
@@ -348,7 +358,9 @@ export class ChatService {
       throw new Error('Failed to unsend message')
     }
 
-    return this.transformDatabaseMessage(updatedMessage)
+    // Get username for the unsent message
+    const userName = await this.getUserDisplayName(updatedMessage.user_id)
+    return this.transformDatabaseMessage(updatedMessage, null, userName)
   }
 
   /**
@@ -383,6 +395,27 @@ export class ChatService {
     } catch (error) {
       console.error('Error marking message as received:', error)
       // Don't throw - this is not critical for user experience
+    }
+  }
+
+  /**
+   * Get user display name from auth.users using database function
+   */
+  private async getUserDisplayName(userId: string): Promise<string> {
+    try {
+      // Use the database function with proper permissions
+      const { data, error } = await this.supabase
+        .rpc('get_user_display_name', { user_uuid: userId })
+      
+      if (error) {
+        console.error('Error getting user display name:', error)
+        return 'Unknown User'
+      }
+      
+      return data || 'Unknown User'
+    } catch (error) {
+      console.error('Error getting user display name:', error)
+      return 'Unknown User'
     }
   }
 
@@ -445,10 +478,13 @@ export class ChatService {
       // Fetch user profiles for avatars
       const userProfiles = await userService.getUserProfiles(userIds)
 
-      return (messages || []).reverse().map((msg: DatabaseMessage) => {
-        const userProfile = userProfiles.get(msg.user_id)
-        return this.transformDatabaseMessage(msg, userProfile?.avatar_url)
-      })
+      return await Promise.all(
+        (messages || []).reverse().map(async (msg: DatabaseMessage) => {
+          const userProfile = userProfiles.get(msg.user_id)
+          const userName = await this.getUserDisplayName(msg.user_id)
+          return this.transformDatabaseMessage(msg, userProfile?.avatar_url, userName)
+        })
+      )
     } catch (error) {
       console.error('Error getting recent messages:', error)
       return []
