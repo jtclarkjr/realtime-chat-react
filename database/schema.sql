@@ -138,8 +138,10 @@ COMMENT ON FUNCTION set_deleted_at_timestamp() IS
 
 -- Create helpful function to get user display name
 -- SECURITY DEFINER allows the function to access auth.users with elevated privileges
+-- SET search_path prevents search path injection attacks
 CREATE OR REPLACE FUNCTION get_user_display_name(user_uuid UUID)
 RETURNS TEXT AS $$
+SET search_path = auth, pg_catalog;
 BEGIN
   RETURN (
     SELECT COALESCE(
