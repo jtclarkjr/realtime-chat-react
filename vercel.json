@@ -1,0 +1,25 @@
+{
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
+  "rewrites": [
+    {
+      "source": "/storybook",
+      "destination": "/storybook/index.html"
+    },
+    {
+      "source": "/storybook/:path*",
+      "destination": "/storybook/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/storybook/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
