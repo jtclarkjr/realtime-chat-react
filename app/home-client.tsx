@@ -30,10 +30,6 @@ export function HomeClient({
   const { userId } = useUserStore()
   const { selectedRoomId, setSelectedRoomId } = useRoomStore()
 
-  useEffect(() => {
-    setIsNavigating(false)
-  }, [])
-
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
@@ -79,10 +75,10 @@ export function HomeClient({
     return null
   }
 
-  // Show navigating state
-  if (isNavigating) {
-    return <LoadingTransition message="Entering room..." />
-  }
+  // Disable navigating state for now; put back later
+  // if (isNavigating) {
+  //   return <LoadingTransition message="Entering room..." />
+  // }
 
   return (
     <PageTransition className="min-h-dvh flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
