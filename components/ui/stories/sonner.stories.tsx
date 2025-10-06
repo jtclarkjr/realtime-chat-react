@@ -123,13 +123,13 @@ export const WithDescription: Story = {
   )
 }
 
-export const Promise: Story = {
+export const PromiseToast: Story = {
   render: () => (
     <div>
       <Toaster />
       <button
         onClick={() => {
-          const promise = new Promise((resolve) =>
+          const promise = new globalThis.Promise((resolve) =>
             setTimeout(() => resolve({ name: 'Data' }), 2000)
           )
           toast.promise(promise, {
