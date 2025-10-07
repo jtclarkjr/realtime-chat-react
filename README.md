@@ -36,7 +36,7 @@ Features instant messaging, message persistence, and reconnection handling.
 - **Real-time**: Supabase Realtime (WebSocket)
 - **Database**: Supabase (PostgreSQL)
 - **Caching**: Redis (local) / Vercel KV (production)
-- **State Management**: Zustand
+- **State/ Data Management**: Zustand (persist)/ TanStack Query
 - **Package Manager**: Bun
 - **Deployment**: Vercel with KV storage
 
