@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Sparkles } from 'lucide-react'
-import { createRoomAction } from '@/lib/actions/room-actions'
+import { useGenerateRoom, useCreateRoom } from '@/lib/query/mutations'
 import type { DatabaseRoom } from '@/lib/types/database'
 
 interface AddRoomDialogProps {
@@ -32,9 +32,9 @@ export function AddRoomDialog({
   const [open, setOpen] = useState<boolean>(false)
   const [roomName, setRoomName] = useState<string>('')
   const [description, setDescription] = useState<string>('')
-  const [loading, setLoading] = useState<boolean>(false)
-  const [generating, setGenerating] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const generateRoomMutation = useGenerateRoom()
+  const createRoomMutation = useCreateRoom()
 
   // Check if room name already exists (case-insensitive)
   const roomNameExists = (name: string): boolean => {
@@ -73,20 +73,18 @@ export function AddRoomDialog({
     }
 
     try {
-      setLoading(true)
       setError(null)
 
-      // Use server action instead of API call
       // Sanitize inputs before sending to server
       const sanitizedRoomName = DOMPurify.sanitize(roomName.trim())
       const sanitizedDescription = description.trim()
         ? DOMPurify.sanitize(description.trim())
         : undefined
 
-      const result = await createRoomAction(
-        sanitizedRoomName,
-        sanitizedDescription
-      )
+      const result = await createRoomMutation.mutateAsync({
+        name: sanitizedRoomName,
+        description: sanitizedDescription
+      })
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to create room')
@@ -97,7 +95,7 @@ export function AddRoomDialog({
       setOpen(false)
 
       // Notify parent component if callback exists
-      if (onRoomCreated && result.room) {
+      if (result.room && onRoomCreated) {
         onRoomCreated(result.room)
       }
     } catch (err) {
@@ -115,15 +113,12 @@ export function AddRoomDialog({
       } else {
         setError(errorMessage)
       }
-    } finally {
-      setLoading(false)
     }
   }
 
   const resetForm = (): void => {
     setRoomName('')
     setDescription('')
-    setGenerating(false)
     setError(null)
   }
 
@@ -142,25 +137,12 @@ export function AddRoomDialog({
   const handleGenerate = async (): Promise<void> => {
     track('event_generate_room_suggestion')
     try {
-      setGenerating(true)
       setError(null)
 
-      const response = await fetch('/api/rooms/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          existingRoomNames: existingRooms.map((room) => room.name)
-        })
+      const data = await generateRoomMutation.mutateAsync({
+        existingRoomNames: existingRooms.map((room) => room.name)
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate suggestion')
-      }
-
-      const data = await response.json()
       if (data.suggestion) {
         setRoomName(data.suggestion.name)
         setDescription(data.suggestion.description)
@@ -172,8 +154,6 @@ export function AddRoomDialog({
           ? err.message
           : 'Failed to generate room suggestion'
       )
-    } finally {
-      setGenerating(false)
     }
   }
 
@@ -203,15 +183,19 @@ export function AddRoomDialog({
             type="button"
             variant="outline"
             onClick={handleGenerate}
-            disabled={loading || generating}
+            disabled={
+              createRoomMutation.isPending || generateRoomMutation.isPending
+            }
             className="w-full flex items-center gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
           >
             <Sparkles
               className={`h-4 w-4 transition-transform duration-500 ${
-                generating ? 'animate-spin' : ''
+                generateRoomMutation.isPending ? 'animate-spin' : ''
               }`}
             />
-            {generating ? 'Generating...' : 'Generate with AI'}
+            {generateRoomMutation.isPending
+              ? 'Generating...'
+              : 'Generate with AI'}
           </Button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -230,7 +214,9 @@ export function AddRoomDialog({
                 // Validation errors are shown under the input field, not in bottom error area
                 setError(null)
               }}
-              disabled={loading || generating}
+              disabled={
+                createRoomMutation.isPending || generateRoomMutation.isPending
+              }
               required
               className={`w-full ${
                 roomName.trim() && roomNameExists(roomName)
@@ -254,7 +240,9 @@ export function AddRoomDialog({
               placeholder="Brief description of the room"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              disabled={loading || generating}
+              disabled={
+                createRoomMutation.isPending || generateRoomMutation.isPending
+              }
               maxLength={30}
               className="w-full"
             />
@@ -272,20 +260,22 @@ export function AddRoomDialog({
               type="button"
               variant="outline"
               onClick={handleCancel}
-              disabled={loading || generating}
+              disabled={
+                createRoomMutation.isPending || generateRoomMutation.isPending
+              }
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={
-                loading ||
-                generating ||
+                createRoomMutation.isPending ||
+                generateRoomMutation.isPending ||
                 !roomName.trim() ||
                 roomNameExists(roomName)
               }
             >
-              {loading ? 'Creating...' : 'Create Room'}
+              {createRoomMutation.isPending ? 'Creating...' : 'Create Room'}
             </Button>
           </DialogFooter>
         </form>

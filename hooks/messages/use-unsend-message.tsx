@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import type { ChatMessage } from '@/lib/types/database'
+import { useUnsendMessageMutation } from '@/lib/query/mutations/use-unsend-message'
 
 interface UseUnsendMessageProps {
   userId: string
@@ -22,6 +23,7 @@ export function useUnsendMessage({
   const [unsendingMessages, setUnsendingMessages] = useState<Set<string>>(
     new Set()
   )
+  const unsendMessageMutation = useUnsendMessageMutation()
 
   const unsendMessage = useCallback(
     async (messageId: string): Promise<boolean> => {
@@ -32,18 +34,11 @@ export function useUnsendMessage({
       setUnsendingMessages((prev) => new Set(prev).add(messageId))
 
       try {
-        const response = await fetch('/api/messages/unsend', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({
-            messageId,
-            userId,
-            roomId
-          })
+        const result = await unsendMessageMutation.mutateAsync({
+          messageId,
+          userId,
+          roomId
         })
-
-        const result = await response.json()
 
         if (result.success) {
           // Update the message in the local state to show it as deleted
@@ -76,7 +71,7 @@ export function useUnsendMessage({
         })
       }
     },
-    [userId, roomId, onMessageUpdate, unsendingMessages]
+    [userId, roomId, onMessageUpdate, unsendingMessages, unsendMessageMutation]
   )
 
   const isUnsending = useCallback(

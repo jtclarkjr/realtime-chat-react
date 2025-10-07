@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { AuthProvider } from '@/lib/auth/context'
 import { ThemeProvider } from '@/components/theme-provider'
+import { QueryProvider } from '@/components/providers/query-provider'
 import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
@@ -41,10 +42,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
-          <Toaster />
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            <AuthProvider>{children}</AuthProvider>
+            <Toaster />
+          </ThemeProvider>
+        </QueryProvider>
         <Analytics />
         <SpeedInsights />
       </body>
