@@ -56,6 +56,8 @@ export interface UnsendMessageResponse {
 // POST /api/rooms/generate - Generate AI room suggestion
 export interface GenerateRoomRequest {
   existingRoomNames: string[]
+  currentName?: string
+  currentDescription?: string
 }
 
 export interface GenerateRoomResponse {

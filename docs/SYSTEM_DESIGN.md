@@ -157,7 +157,6 @@ Key Patterns:
 - Automatic connection management
 - Built-in reconnection logic
 
-
 ## Design Decisions
 
 ### 1. Hybrid Storage Strategy
@@ -188,6 +187,8 @@ Key Patterns:
 
 ## Additional Documentation
 
-For detailed data flow diagrams, message handling, and React Query integration, see:
+For detailed data flow diagrams, message handling, and React Query integration,
+see:
 
-- **`DATA_FLOW_ARCHITECTURE.md`** - Complete data flow, message flows, and cache synchronization
+- **`DATA_FLOW_ARCHITECTURE.md`** - Complete data flow, message flows, and cache
+  synchronization

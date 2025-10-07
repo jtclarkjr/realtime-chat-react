@@ -6,47 +6,23 @@ import { roomCacheService } from '@/lib/services/room-cache-service'
 interface GenerateRoomRequest {
   prompt?: string
   existingRoomNames?: string[]
+  currentName?: string
+  currentDescription?: string
 }
 
 interface GeneratedRoomSuggestion {
   name: string
   description: string
-  reasoning?: string
 }
 
-export const POST = withAuth(async (request: NextRequest) => {
-  try {
-    const body: GenerateRoomRequest = await request.json()
-    const { prompt, existingRoomNames = [] } = body
-
-    // Initialize
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY
-    })
-
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.error('Anthropic API key not configured')
-      return NextResponse.json(
-        { error: 'AI service not configured' },
-        { status: 500 }
-      )
-    }
-
-    // Get existing rooms to avoid duplicates
-    const existingRooms = await roomCacheService.getAllRooms()
-    const allExistingNames = [
-      ...existingRooms.map((room) => room.name.toLowerCase()),
-      ...existingRoomNames.map((name) => name.toLowerCase())
-    ]
-
-    // Create system prompt for room generation
-    const systemPrompt = `You are a helpful assistant that generates creative and appropriate chat room names and descriptions.
+function buildSystemPrompt(existingNames: string[]): string {
+  return `You are a helpful assistant that generates creative and appropriate chat room names and descriptions.
 
 Guidelines:
 - Generate unique, engaging room names that would work well in a chat application
 - Names should be 8-30 characters long
 - Descriptions should be brief (under 30 characters) and helpful
-- Avoid existing room names: ${allExistingNames.join(', ')}
+- Avoid existing room names: ${existingNames.join(', ')}
 - Names should be professional but friendly
 - Consider common chat room categories like: general discussion, greek alphabet, animals, etc
 - Be creative but practical
@@ -55,88 +31,132 @@ Response format: You must respond with valid JSON only, no other text:
   "name": "room-name",
   "description": "Brief description"
 }`
+}
 
-    // Create user prompt
-    let userPrompt =
-      'Generate a creative and unique chat room name with description.'
+function buildUserPrompt(
+  currentName?: string,
+  currentDescription?: string,
+  prompt?: string,
+  existingNames?: string[]
+): string {
+  const hasName = currentName?.trim()
+  const hasDesc = currentDescription?.trim()
 
-    if (prompt && prompt.trim()) {
-      userPrompt = `Generate a chat room name and description based on this request: "${prompt.trim()}"`
+  let base = ''
+
+  if (hasName || hasDesc) {
+    base = [
+      'Enhance the following room information:',
+      hasName && `Name: "${hasName}"`,
+      hasDesc && `Description: "${hasDesc}"`,
+      '',
+      'Generate an improved version staying close to the theme but more engaging.',
+      !hasName && 'Create a name matching the description.',
+      !hasDesc && 'Create a description matching the name.'
+    ]
+      .filter(Boolean)
+      .join('\n')
+  } else if (prompt?.trim()) {
+    base = `Generate a chat room name and description based on: "${prompt.trim()}"`
+  } else {
+    base = 'Generate a creative and unique chat room name with description.'
+  }
+
+  if (existingNames?.length) {
+    base += `\n\nAvoid duplicating: ${existingNames.join(', ')}`
+  }
+
+  return base
+}
+
+function validateAndNormalize(
+  suggestion: GeneratedRoomSuggestion
+): GeneratedRoomSuggestion {
+  return {
+    name:
+      suggestion.name.length < 2 || suggestion.name.length > 50
+        ? suggestion.name.substring(0, 50) || 'chat-room'
+        : suggestion.name,
+    description:
+      suggestion.description.length > 30
+        ? suggestion.description.substring(0, 27) + '...'
+        : suggestion.description
+  }
+}
+
+function ensureUniqueName(name: string, existingNames: string[]): string {
+  if (!existingNames.includes(name.toLowerCase())) return name
+
+  for (let i = 1; i < 100; i++) {
+    const newName = `${name}-${i}`
+    if (!existingNames.includes(newName.toLowerCase())) return newName
+  }
+  return `${name}-${Date.now()}`
+}
+
+export const POST = withAuth(async (request: NextRequest) => {
+  try {
+    const {
+      prompt,
+      existingRoomNames = [],
+      currentName,
+      currentDescription
+    } = (await request.json()) as GenerateRoomRequest
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json(
+        { error: 'AI service not configured' },
+        { status: 500 }
+      )
     }
 
-    // Add context about existing rooms
-    if (allExistingNames.length > 0) {
-      userPrompt += `\n\nExisting rooms to avoid duplicating: ${allExistingNames.join(', ')}`
-    }
+    const existingRooms = await roomCacheService.getAllRooms()
+    const allExistingNames = [
+      ...existingRooms.map((room) => room.name.toLowerCase()),
+      ...existingRoomNames.map((name) => name.toLowerCase())
+    ]
 
-    // Call Anthropic API
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const response = await anthropic.messages.create({
       model: 'claude-3-5-haiku-latest',
       max_tokens: 200,
-      system: systemPrompt,
+      system: buildSystemPrompt(allExistingNames),
       messages: [
         {
           role: 'user',
-          content: userPrompt
+          content: buildUserPrompt(
+            currentName,
+            currentDescription,
+            prompt,
+            allExistingNames
+          )
         }
       ]
     })
 
-    // Extract the response content
     const content = response.content[0]
     if (content.type !== 'text') {
       throw new Error('Unexpected response format from AI')
     }
 
-    let suggestion: GeneratedRoomSuggestion
-    try {
-      suggestion = JSON.parse(content.text.trim())
-    } catch {
-      console.error('Failed to parse AI response:', content.text)
-      // Fallback to a basic suggestion
-      suggestion = {
-        name: 'general-chat',
-        description: 'General discussion room'
-      }
-    }
-
-    // Validate the suggestion
-    if (!suggestion.name || !suggestion.description) {
+    const parsed = JSON.parse(content.text.trim()) as GeneratedRoomSuggestion
+    if (!parsed.name || !parsed.description) {
       throw new Error('AI response missing required fields')
     }
 
-    // Ensure name length constraints
-    if (suggestion.name.length < 2 || suggestion.name.length > 50) {
-      suggestion.name = suggestion.name.substring(0, 50) || 'chat-room'
-    }
+    const normalized = validateAndNormalize(parsed)
+    const uniqueName = ensureUniqueName(normalized.name, allExistingNames)
 
-    // Ensure description length constraints
-    if (suggestion.description.length > 30) {
-      suggestion.description = suggestion.description.substring(0, 27) + '...'
-    }
-
-    // Check if name already exists (case insensitive)
-    const nameExists = allExistingNames.includes(suggestion.name.toLowerCase())
-    if (nameExists) {
-      // Add a number suffix to make it unique
-      let counter = 1
-      let newName = `${suggestion.name}-${counter}`
-      while (
-        allExistingNames.includes(newName.toLowerCase()) &&
-        counter < 100
-      ) {
-        counter++
-        newName = `${suggestion.name}-${counter}`
+    return NextResponse.json(
+      { suggestion: { name: uniqueName, description: normalized.description } },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0'
+        }
       }
-      suggestion.name = newName
-    }
-
-    return NextResponse.json({
-      suggestion: {
-        name: suggestion.name,
-        description: suggestion.description
-      }
-    })
+    )
   } catch (error) {
     console.error('Error generating room suggestion:', error)
     return NextResponse.json(

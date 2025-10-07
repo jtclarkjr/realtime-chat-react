@@ -153,7 +153,10 @@ export function useRealtimeChat({
               if (timeDiff < 5000) {
                 // Check if optimistic message was already confirmed
                 // If so, just update the ID instead of replacing entirely
-                if (existing.isOptimisticConfirmed && existing.serverId === message.id) {
+                if (
+                  existing.isOptimisticConfirmed &&
+                  existing.serverId === message.id
+                ) {
                   // This is the server confirmation - smoothly transition
                   messageMap.set(message.id, {
                     ...existing,

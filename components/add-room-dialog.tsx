@@ -140,7 +140,9 @@ export function AddRoomDialog({
       setError(null)
 
       const data = await generateRoomMutation.mutateAsync({
-        existingRoomNames: existingRooms.map((room) => room.name)
+        existingRoomNames: existingRooms.map((room) => room.name),
+        currentName: roomName.trim() || undefined,
+        currentDescription: description.trim() || undefined
       })
 
       if (data.suggestion) {
@@ -174,8 +176,9 @@ export function AddRoomDialog({
         <DialogHeader>
           <DialogTitle>Create New Room</DialogTitle>
           <DialogDescription>
-            Create a new chat room. Choose a unique name and optional
-            description, or let AI generate suggestions for you.
+            Create a new chat room. Enter your own details, or let AI generate
+            suggestions. You can also start typing and use AI to enhance your
+            ideas.
           </DialogDescription>
         </DialogHeader>
         <div className="mb-4">
