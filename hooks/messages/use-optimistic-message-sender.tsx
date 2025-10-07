@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useOptimistic, startTransition } from 'react'
+import { useCallback } from 'react'
 import type { ChatMessage } from '@/lib/types/database'
 import { useMessageSender } from './use-message-sender'
+import { useSendMessage } from '@/lib/query/mutations/use-send-message'
 
 interface UseOptimisticMessageSenderProps {
   roomId: string
@@ -38,22 +39,8 @@ export function useOptimisticMessageSender({
   confirmedMessages,
   onConfirmedMessageUpdate
 }: UseOptimisticMessageSenderProps): UseOptimisticMessageSenderReturn {
-  // Use React's useOptimistic for seamless optimistic updates
-  const [optimisticMessages, addOptimisticMessage] = useOptimistic(
-    confirmedMessages,
-    (currentMessages: ChatMessage[], newMessage: ChatMessage) => {
-      // Check if message already exists to avoid duplicates
-      const existingIndex = currentMessages.findIndex(
-        (msg) => msg.id === newMessage.id
-      )
-      if (existingIndex >= 0) {
-        return currentMessages.map((msg, index) =>
-          index === existingIndex ? newMessage : msg
-        )
-      }
-      return [...currentMessages, newMessage]
-    }
-  )
+  // React Query mutation for sending messages
+  const sendMessageMutation = useSendMessage()
 
   // Get queue-based sender for offline scenarios
   const {
@@ -70,7 +57,7 @@ export function useOptimisticMessageSender({
     onMessageUpdate: onConfirmedMessageUpdate
   })
 
-  // Create unified message sender function (online optimistic + offline queue)
+  // Create unified message sender function
   const sendMessage = useCallback(
     async (content: string, isPrivate = false): Promise<string | null> => {
       if (!content.trim()) return null
@@ -80,78 +67,56 @@ export function useOptimisticMessageSender({
         return await sendMessageWithQueue(content, isPrivate)
       }
 
-      // Online: use optimistic updates
-      const optimisticMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        content: content.trim(),
-        user: {
-          id: userId,
-          name: username,
-          avatar_url: userAvatarUrl
-        },
-        createdAt: new Date().toISOString(),
-        roomId: roomId,
-        isAI: false,
-        isPrivate,
-        requesterId: isPrivate ? userId : undefined,
-        isPending: false,
-        isOptimistic: true,
-        optimisticTimestamp: Date.now()
-      }
-
-      // Add optimistic message immediately within transition
-      startTransition(() => {
-        addOptimisticMessage(optimisticMessage)
-      })
-
       try {
-        // Send to server
-        const response = await fetch('/api/messages/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({
-            roomId: roomId,
-            userId,
-            username,
-            content: content.trim(),
-            isPrivate
-          })
+        // Send to server using React Query mutation
+        const result = await sendMessageMutation.mutateAsync({
+          roomId: roomId,
+          userId,
+          username,
+          content: content.trim(),
+          isPrivate
         })
 
-        const result = await response.json()
-
         if (!result.success) {
-          // If failed, add failed message to confirmed messages
-          const failedMessage = {
-            ...optimisticMessage,
+          // If failed, show failed message with server's message ID (or generate one)
+          const failedMessage: ChatMessage = {
+            id: result.message?.id || crypto.randomUUID(),
+            content: content.trim(),
+            user: {
+              id: userId,
+              name: username,
+              avatar_url: userAvatarUrl
+            },
+            createdAt: new Date().toISOString(),
+            roomId: roomId,
+            isAI: false,
+            isPrivate,
+            requesterId: isPrivate ? userId : undefined,
+            isPending: false,
             isFailed: true,
             isOptimistic: false
           }
           onConfirmedMessageUpdate((current) => [...current, failedMessage])
-        } else {
-          // Success - for private messages only, add confirmed message
-          // For public messages, let the broadcast handle it
-          if (optimisticMessage.isPrivate) {
-            const confirmedPrivateMessage = {
-              ...optimisticMessage,
-              id: result.message?.id || optimisticMessage.id,
-              isOptimistic: false
-            }
-            onConfirmedMessageUpdate((current) => [
-              ...current,
-              confirmedPrivateMessage
-            ])
-          }
-          // For public messages, do nothing - broadcast will arrive and deduplication will handle it
         }
 
         return result.success ? result.message?.id : null
       } catch (error) {
         console.error('Network error sending message:', error)
-        // Add failed message to confirmed messages
-        const failedMessage = {
-          ...optimisticMessage,
+        // Show failed message on network error (generate temp ID since we don't have server ID)
+        const failedMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          content: content.trim(),
+          user: {
+            id: userId,
+            name: username,
+            avatar_url: userAvatarUrl
+          },
+          createdAt: new Date().toISOString(),
+          roomId: roomId,
+          isAI: false,
+          isPrivate,
+          requesterId: isPrivate ? userId : undefined,
+          isPending: false,
           isFailed: true,
           isOptimistic: false
         }
@@ -165,14 +130,14 @@ export function useOptimisticMessageSender({
       username,
       userAvatarUrl,
       isConnected,
-      addOptimisticMessage,
       sendMessageWithQueue,
-      onConfirmedMessageUpdate
+      onConfirmedMessageUpdate,
+      sendMessageMutation
     ]
   )
 
   return {
-    optimisticMessages,
+    optimisticMessages: confirmedMessages,
     sendMessage,
     retryMessage,
     queueStatus,
