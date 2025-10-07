@@ -151,9 +151,23 @@ export function useRealtimeChat({
 
               // If within 5 seconds, consider it the same message
               if (timeDiff < 5000) {
-                // Replace optimistic with broadcast
-                messageMap.delete(existingId)
-                messageMap.set(message.id, message)
+                // Check if optimistic message was already confirmed
+                // If so, just update the ID instead of replacing entirely
+                if (existing.isOptimisticConfirmed && existing.serverId === message.id) {
+                  // This is the server confirmation - smoothly transition
+                  messageMap.set(message.id, {
+                    ...existing,
+                    ...message,
+                    id: message.id,
+                    isOptimistic: false,
+                    isOptimisticConfirmed: false
+                  })
+                  messageMap.delete(existingId)
+                } else {
+                  // Regular optimistic replacement
+                  messageMap.delete(existingId)
+                  messageMap.set(message.id, message)
+                }
                 replacedOptimistic = true
                 break
               }

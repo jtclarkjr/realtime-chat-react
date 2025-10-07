@@ -3,6 +3,7 @@
 import { useCallback } from 'react'
 import type { ChatMessage } from '@/lib/types/database'
 import { useMessageQueue } from './use-message-queue'
+import { useSendMessage } from '@/lib/query/mutations/use-send-message'
 
 interface UseMessageSenderProps {
   roomId: string
@@ -37,6 +38,8 @@ export function useMessageSender({
   isConnected,
   onMessageUpdate
 }: UseMessageSenderProps): UseMessageSenderReturn {
+  const sendMessageMutation = useSendMessage()
+
   // Process queued messages when connection is restored
   const processQueuedMessage = useCallback(
     async (
@@ -46,20 +49,13 @@ export function useMessageSender({
       }
     ): Promise<boolean> => {
       try {
-        const response = await fetch('/api/messages/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({
-            roomId: roomId,
-            userId,
-            username,
-            content: queuedMessage.originalContent,
-            isPrivate: queuedMessage.isPrivate
-          })
+        const result = await sendMessageMutation.mutateAsync({
+          roomId: roomId,
+          userId,
+          username,
+          content: queuedMessage.originalContent,
+          isPrivate: queuedMessage.isPrivate
         })
-
-        const result = await response.json()
 
         if (result.success) {
           // Remove queued message (broadcast will add final version)
@@ -74,7 +70,7 @@ export function useMessageSender({
         return false
       }
     },
-    [roomId, userId, username, onMessageUpdate]
+    [roomId, userId, username, onMessageUpdate, sendMessageMutation]
   )
 
   // Message queue for offline scenarios
@@ -131,21 +127,14 @@ export function useMessageSender({
       })
 
       try {
-        const response = await fetch('/api/messages/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({
-            roomId: roomId,
-            userId,
-            username,
-            content: content.trim(),
-            isPrivate,
-            optimisticId // Send optimistic ID to server for correlation
-          })
+        const result = await sendMessageMutation.mutateAsync({
+          roomId: roomId,
+          userId,
+          username,
+          content: content.trim(),
+          isPrivate,
+          optimisticId
         })
-
-        const result = await response.json()
 
         if (result.success) {
           // Instead of updating the message ID, mark it as confirmed
@@ -202,7 +191,14 @@ export function useMessageSender({
         return null
       }
     },
-    [roomId, userId, username, userAvatarUrl, onMessageUpdate]
+    [
+      roomId,
+      userId,
+      username,
+      userAvatarUrl,
+      onMessageUpdate,
+      sendMessageMutation
+    ]
   )
 
   // Queue message when offline

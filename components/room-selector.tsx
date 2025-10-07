@@ -11,7 +11,8 @@ import { MessageCircle, Trash2 } from 'lucide-react'
 import { AddRoomDialog } from '@/components/add-room-dialog'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import type { DatabaseRoom } from '@/lib/types/database'
-import { deleteRoomAction } from '@/lib/actions/room-actions'
+import { useRooms } from '@/lib/query/queries/use-rooms'
+import { useDeleteRoom } from '@/lib/query/mutations/use-delete-room'
 import { toast } from 'sonner'
 
 interface RoomSelectorProps {
@@ -31,9 +32,17 @@ export function RoomSelector({
   initialRooms = [],
   currentUserId
 }: RoomSelectorProps) {
-  const [rooms, setRooms] = useState<DatabaseRoom[]>(initialRooms)
-  const [loading, setLoading] = useState<boolean>(initialRooms.length === 0)
-  const [error, setError] = useState<string | null>(null)
+  const {
+    data: rooms = [],
+    isLoading: loading,
+    error: queryError
+  } = useRooms({
+    initialData: initialRooms.length > 0 ? initialRooms : undefined,
+    enabled: initialRooms.length === 0
+  })
+
+  const deleteRoomMutation = useDeleteRoom()
+
   const [deleting, setDeleting] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<{
     open: boolean
@@ -41,59 +50,19 @@ export function RoomSelector({
     roomName: string | null
   }>({ open: false, roomId: null, roomName: null })
   const [announcement, setAnnouncement] = useState<string>('')
+  const error = queryError ? 'Failed to load rooms' : null
 
   // Memoize onRoomChange to prevent useEffect re-runs
   const memoizedOnRoomChange = useCallback(onRoomChange, [onRoomChange])
 
-  const loadRooms = async (): Promise<DatabaseRoom[]> => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      // Fetch all rooms (API will ensure default rooms exist)
-      const response = await fetch('/api/rooms')
-      if (!response.ok) {
-        throw new Error('Failed to fetch rooms')
-      }
-
-      const { rooms: roomsData } = await response.json()
-      setRooms(roomsData)
-
-      return roomsData
-    } catch (err) {
-      console.error('Failed to load rooms:', err)
-      setError('Failed to load rooms')
-      return []
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Load rooms only if we don't have initial data
+  // Handle default room selection separately - only if no room is selected AND we have rooms
   useEffect(() => {
-    if (initialRooms.length === 0) {
-      loadRooms()
-    }
-  }, [initialRooms.length]) // Only run if we don't have initial rooms
-
-  // Handle default room selection separately - only if no room is selected AND we have initial rooms
-  // This prevents auto-selection during revalidation when rooms are updated
-  useEffect(() => {
-    if (!selectedRoom && rooms.length > 0 && initialRooms.length > 0) {
-      // Only auto-select when we have initial rooms (first load), not during updates
+    if (!selectedRoom && rooms.length > 0) {
       const generalRoom = rooms.find((room) => room.name === 'general')
       const defaultRoom = generalRoom || rooms[0]
       memoizedOnRoomChange(defaultRoom.id)
     }
-  }, [selectedRoom, rooms, memoizedOnRoomChange, initialRooms.length])
-
-  // Update rooms when initialRooms change (for cases where initial data loads later)
-  useEffect(() => {
-    if (initialRooms.length > 0 && rooms.length === 0) {
-      setRooms(initialRooms)
-      setLoading(false)
-    }
-  }, [initialRooms, rooms.length])
+  }, [selectedRoom, rooms, memoizedOnRoomChange])
 
   const handleDeleteRoomClick = (roomId: string): void => {
     if (deleting || !currentUserId) return
@@ -116,15 +85,12 @@ export function RoomSelector({
     setConfirmDelete({ open: false, roomId: null, roomName: null })
 
     try {
-      const result = await deleteRoomAction(roomId)
+      const result = await deleteRoomMutation.mutateAsync({ roomId })
 
       if (result.success) {
         if (currentUserId) {
           track('event_room_deleted', { roomId, userId: currentUserId })
         }
-
-        // Remove the room from the list
-        setRooms((prevRooms) => prevRooms.filter((room) => room.id !== roomId))
 
         // If the deleted room was selected, switch to another room
         const wasSelectedRoomDeleted = selectedRoom === roomId
@@ -175,16 +141,7 @@ export function RoomSelector({
   }
 
   const handleRoomCreated = async (newRoom: DatabaseRoom): Promise<void> => {
-    // Add the new room to the list and select it
-    setRooms((prevRooms) => {
-      // Check if room already exists to avoid duplicates
-      const exists = prevRooms.some((room) => room.id === newRoom.id)
-      if (exists) {
-        return prevRooms
-      }
-      return [...prevRooms, newRoom]
-    })
-    // Select the new room
+    // Select the new room (React Query will automatically update the cache)
     onRoomChange(newRoom.id)
   }
 
