@@ -1,7 +1,7 @@
-import Redis from 'ioredis'
 import { Redis as UpstashRedis } from '@upstash/redis'
 import { RedisLike } from './types'
 import { hasUpstashConfig, REDIS_CONFIG } from './constants'
+import type Redis from 'ioredis'
 
 let ioredisClient: Redis | null = null
 // Upstash client is created fresh for each adapter instance
@@ -47,15 +47,20 @@ class UpstashRedisAdapter implements RedisLike {
   }
 }
 
-class IoredisAdapter implements RedisLike {
-  private client: Redis
-
-  constructor(client: Redis) {
-    this.client = client
+class LazyIoredisAdapter implements RedisLike {
+  private async ensureInit(): Promise<Redis> {
+    if (initPromise) {
+      await initPromise
+    }
+    if (!ioredisClient) {
+      throw new Error('Redis client not initialized')
+    }
+    return ioredisClient
   }
 
   async get(key: string): Promise<string | null> {
-    return await this.client.get(key)
+    const client = await this.ensureInit()
+    return await client.get(key)
   }
 
   async set(
@@ -64,21 +69,41 @@ class IoredisAdapter implements RedisLike {
     mode?: string,
     duration?: number
   ): Promise<string | null> {
+    const client = await this.ensureInit()
     if (mode === 'EX' && duration) {
-      await this.client.setex(key, duration, value)
+      await client.setex(key, duration, value)
     } else {
-      await this.client.set(key, value)
+      await client.set(key, value)
     }
     return 'OK'
   }
 
   async del(...keys: string[]): Promise<number> {
-    return await this.client.del(...keys)
+    const client = await this.ensureInit()
+    return await client.del(...keys)
   }
+}
 
-  async quit(): Promise<void> {
-    await this.client.quit()
-  }
+let initPromise: Promise<void> | null = null
+
+async function initIoredis(): Promise<void> {
+  if (ioredisClient) return
+
+  // Dynamic import to avoid lru-cache issues during build with Bun
+  const { default: Redis } = await import('ioredis')
+  ioredisClient = new Redis(REDIS_CONFIG.url, {
+    maxRetriesPerRequest: REDIS_CONFIG.maxRetriesPerRequest,
+    enableReadyCheck: REDIS_CONFIG.enableReadyCheck,
+    lazyConnect: REDIS_CONFIG.lazyConnect
+  })
+
+  ioredisClient.on('error', (error) => {
+    console.error('Redis connection error:', error)
+  })
+
+  ioredisClient.on('connect', () => {
+    console.log('Connected to Redis')
+  })
 }
 
 export function getRedisClient(): RedisLike {
@@ -88,23 +113,13 @@ export function getRedisClient(): RedisLike {
   }
 
   // Use ioredis for local development
-  if (!ioredisClient) {
-    ioredisClient = new Redis(REDIS_CONFIG.url, {
-      maxRetriesPerRequest: REDIS_CONFIG.maxRetriesPerRequest,
-      enableReadyCheck: REDIS_CONFIG.enableReadyCheck,
-      lazyConnect: REDIS_CONFIG.lazyConnect
-    })
-
-    ioredisClient.on('error', (error) => {
-      console.error('Redis connection error:', error)
-    })
-
-    ioredisClient.on('connect', () => {
-      console.log('Connected to Redis')
-    })
+  // Initialize if not already done (lazy initialization)
+  if (!initPromise) {
+    initPromise = initIoredis()
   }
 
-  return new IoredisAdapter(ioredisClient)
+  // For synchronous compatibility, we use a lazy adapter pattern
+  return new LazyIoredisAdapter()
 }
 
 export async function disconnectRedis(): Promise<void> {
