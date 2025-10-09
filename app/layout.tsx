@@ -37,8 +37,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const isDev = process.env.ENV === 'dev'
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -50,12 +48,8 @@ export default function RootLayout({
             <Toaster />
           </ThemeProvider>
         </QueryProvider>
-        {!isDev && (
-          <>
-            <Analytics />
-            <SpeedInsights />
-          </>
-        )}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

@@ -2,7 +2,7 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   // Only use standalone output when ENV=dev (local/Docker builds)
-  ...(process.env.ENV === 'dev' && { output: 'standalone' }),
+  // ...(process.env.ENV === 'dev' && { output: 'standalone' }),
   images: {
     remotePatterns: [
       {
