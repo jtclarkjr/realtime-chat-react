@@ -101,13 +101,13 @@ export function useOptimisticMessageSender({
           // For private messages, add to local state since they won't be broadcast
           const successMessage: ChatMessage = {
             id: result.message.id,
-            content: result.message.content,
+            content: content.trim(),
             user: {
               id: userId,
               name: username,
               avatar_url: userAvatarUrl
             },
-            createdAt: result.message.createdAt,
+            createdAt: result.message.created_at || new Date().toISOString(),
             roomId: roomId,
             isAI: false,
             isPrivate: true,
