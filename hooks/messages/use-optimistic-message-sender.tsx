@@ -97,6 +97,26 @@ export function useOptimisticMessageSender({
             isOptimistic: false
           }
           onConfirmedMessageUpdate((current) => [...current, failedMessage])
+        } else if (isPrivate && result.message) {
+          // For private messages, add to local state since they won't be broadcast
+          const successMessage: ChatMessage = {
+            id: result.message.id,
+            content: result.message.content,
+            user: {
+              id: userId,
+              name: username,
+              avatar_url: userAvatarUrl
+            },
+            createdAt: result.message.createdAt,
+            roomId: roomId,
+            isAI: false,
+            isPrivate: true,
+            requesterId: userId,
+            isPending: false,
+            isFailed: false,
+            isOptimistic: false
+          }
+          onConfirmedMessageUpdate((current) => [...current, successMessage])
         }
 
         return result.success ? result.message?.id : null
