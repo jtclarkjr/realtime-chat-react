@@ -72,6 +72,9 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 # Redis Configuration (Local Development)
 REDIS_URL=redis://localhost:6379
 
+# Local Development
+ENV=dev
+
 # Vercel KV Configuration (Production - Auto-configured)
 # KV_REST_API_URL=your_vercel_kv_rest_api_url
 # KV_REST_API_TOKEN=your_vercel_kv_rest_api_token
