@@ -1,4 +1,8 @@
 import { Database } from './supabase'
+import { createServerClient } from '@supabase/ssr'
+
+// Supabase client types
+export type SupabaseServerClient = ReturnType<typeof createServerClient>
 
 // Supabase table row types
 export type DatabaseMessage = Database['public']['Tables']['messages']['Row']

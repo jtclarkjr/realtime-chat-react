@@ -2,7 +2,6 @@ import DOMPurify from 'isomorphic-dompurify'
 import { getServiceClient } from '@/lib/supabase/service-client'
 import { userService } from './user-service'
 import { AI_USER_ID } from './ai-user-setup'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   markMessageReceived,
   trackLatestMessage,
@@ -16,7 +15,8 @@ import type {
   MissedMessagesResponse,
   SendMessageRequest,
   SendAIMessageRequest,
-  UnsendMessageRequest
+  UnsendMessageRequest,
+  SupabaseServerClient
 } from '@/lib/types/database'
 
 export class ChatService {
@@ -335,7 +335,7 @@ export class ChatService {
    */
   async unsendMessage(
     request: UnsendMessageRequest,
-    authenticatedClient: Pick<SupabaseClient, 'from'>
+    authenticatedClient: SupabaseServerClient
   ): Promise<ChatMessageWithDB> {
     if (!request.messageId || !request.userId || !request.roomId) {
       throw new Error('Missing required fields for unsend message')
@@ -359,9 +359,10 @@ export class ChatService {
     if (updateError || !updatedMessage) {
       console.error('Error soft deleting message:', updateError)
       // Check if it's a permission error (RLS policy blocked the operation)
+      const errorWithCode = updateError as { code?: string; message?: string }
       if (
-        updateError?.code === 'PGRST116' ||
-        updateError?.message?.includes('No rows found')
+        errorWithCode?.code === 'PGRST116' ||
+        errorWithCode?.message?.includes('No rows found')
       ) {
         throw new Error(
           'Message not found or you do not have permission to unsend it'
