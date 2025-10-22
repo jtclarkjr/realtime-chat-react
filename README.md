@@ -31,7 +31,7 @@ Features instant messaging, message persistence, and reconnection handling.
 
 ## Tech Stack
 
-- **Frontend**: Next.js 15, React 19, TypeScript
+- **Frontend**: Next.js 16, React 19, TypeScript
 - **Styling**: Tailwind CSS v4, Radix UI components
 - **Real-time**: Supabase Realtime (WebSocket)
 - **Database**: Supabase (PostgreSQL)
