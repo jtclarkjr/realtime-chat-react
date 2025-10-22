@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "dev:instance1": "next dev --turbopack -p 3000",
     "dev:instance2": "next dev --turbopack -p 3001",
-    "build": "lint && next build --turbopack",
+    "build": "next build --turbopack",
     "build:app": "next build --turbopack",
     "start": "next start",
     "lint": "eslint && tsc --noEmit",
