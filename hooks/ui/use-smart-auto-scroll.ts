@@ -70,13 +70,14 @@ export const useSmartAutoScroll = ({
         // Auto-scroll and reset unread count
         isAutoScrollingRef.current = true
         scrollToBottom()
-        setUnreadMessageCount(0)
 
-        // Reset flag after scroll completes
-        setTimeout(() => {
+        // Reset flag and state after scroll completes
+        const resetTimer = setTimeout(() => {
+          setUnreadMessageCount(0)
           isAutoScrollingRef.current = false
           setUserHasScrolledUp(false) // Reset since we're now at bottom
-        }, 100)
+        }, 0)
+        return () => clearTimeout(resetTimer)
       } else {
         // User is scrolled up, increment unread count
         setUnreadMessageCount((prev) => prev + newMessageCount)
@@ -91,10 +92,13 @@ export const useSmartAutoScroll = ({
     if (messages.length > 0 && previousMessageCountRef.current === 0) {
       // Initial load - use instant scroll
       const scroll = scrollToBottomInstant || scrollToBottom
-      scroll()
-      previousMessageCountRef.current = messages.length
-      setUserHasScrolledUp(false)
-      setUnreadMessageCount(0)
+      const initTimer = setTimeout(() => {
+        scroll()
+        previousMessageCountRef.current = messages.length
+        setUserHasScrolledUp(false)
+        setUnreadMessageCount(0)
+      }, 0)
+      return () => clearTimeout(initTimer)
     }
   }, [messages.length, scrollToBottom, scrollToBottomInstant])
 

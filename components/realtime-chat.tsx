@@ -175,6 +175,7 @@ export const RealtimeChat = ({
     },
     [
       newMessage,
+      setNewMessage,
       sendMessage,
       sendAIMessage,
       loading,

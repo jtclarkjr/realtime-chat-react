@@ -24,7 +24,10 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
 
   // Mark as initialized immediately since we have the user from server
   useEffect(() => {
-    setIsInitialized(true)
+    const initializeTimer = setTimeout(() => {
+      setIsInitialized(true)
+    }, 0)
+    return () => clearTimeout(initializeTimer)
   }, [])
 
   const handleLeaveRoom = async () => {

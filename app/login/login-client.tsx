@@ -29,11 +29,6 @@ export function LoginClient() {
       }
     }
 
-    // Check on mount
-    if (!document.hidden) {
-      setLoading(null)
-    }
-
     // Clear loading when returning from external sites (GitHub/Discord login)
     window.addEventListener('focus', handleWindowFocus)
     // Clear loading when tab becomes visible again

@@ -75,7 +75,8 @@ export function useWebSocketConnection({
             clearTimeout(reconnectTimeout)
             reconnectTimeout = setTimeout(() => {
               supabase.removeChannel(newChannel)
-              setupChannel()
+              // Trigger reconnect without direct call
+              setIsConnected(false)
             }, 3000)
           }
         }
@@ -100,7 +101,8 @@ export function useWebSocketConnection({
             clearTimeout(reconnectTimeout)
             reconnectTimeout = setTimeout(() => {
               supabase.removeChannel(newChannel)
-              setupChannel()
+              // Trigger reconnect without direct call
+              setIsConnected(false)
             }, 3000)
           }
         } else if (status === 'TIMED_OUT') {

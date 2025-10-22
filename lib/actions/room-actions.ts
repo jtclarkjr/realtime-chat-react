@@ -117,7 +117,7 @@ export async function createRoomAction(
     // Revalidate the home page to refresh SSR data
     revalidatePath('/')
     // Also revalidate any pages that might cache room data
-    revalidateTag('rooms')
+    revalidateTag('rooms', 'default')
 
     return {
       success: true,
@@ -259,7 +259,7 @@ export async function deleteRoomAction(roomId: string): Promise<{
     // Revalidate the home page to refresh SSR data
     revalidatePath('/')
     // Also revalidate any pages that might cache room data
-    revalidateTag('rooms')
+    revalidateTag('rooms', 'default')
 
     return {
       success: true
