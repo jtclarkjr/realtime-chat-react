@@ -1,4 +1,3 @@
-import DOMPurify from 'isomorphic-dompurify'
 import { getServiceClient } from '@/lib/supabase/service-client'
 import { userService } from './user-service'
 import { AI_USER_ID } from './ai-user-setup'
@@ -64,14 +63,11 @@ export class ChatService {
       throw new Error('Missing required fields for message')
     }
 
-    // Sanitize content before saving to database
-    const sanitizedContent = DOMPurify.sanitize(request.content)
-
     // Save to database (id will be auto-generated)
     const messageInsert: DatabaseMessageInsert = {
       room_id: request.roomId,
       user_id: request.userId,
-      content: sanitizedContent,
+      content: request.content,
       is_ai_message: false,
       is_private: request.isPrivate || false
     }
@@ -119,14 +115,11 @@ export class ChatService {
       throw new Error('AI_USER_ID is not configured')
     }
 
-    // Sanitize AI content before saving to database
-    const sanitizedContent = DOMPurify.sanitize(request.content)
-
     // Save AI message to database
     const aiMessageInsert: DatabaseMessageInsert = {
       room_id: request.roomId,
       user_id: AI_USER_ID,
-      content: sanitizedContent,
+      content: request.content,
       is_ai_message: true,
       is_private: request.isPrivate || false,
       requester_id: request.isPrivate ? request.requesterId : null

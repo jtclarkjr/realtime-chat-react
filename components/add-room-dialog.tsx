@@ -1,6 +1,5 @@
 'use client'
 
-import DOMPurify from 'isomorphic-dompurify'
 import { useState } from 'react'
 import { track } from '@vercel/analytics/react'
 import {
@@ -75,15 +74,9 @@ export function AddRoomDialog({
     try {
       setError(null)
 
-      // Sanitize inputs before sending to server
-      const sanitizedRoomName = DOMPurify.sanitize(roomName.trim())
-      const sanitizedDescription = description.trim()
-        ? DOMPurify.sanitize(description.trim())
-        : undefined
-
       const result = await createRoomMutation.mutateAsync({
-        name: sanitizedRoomName,
-        description: sanitizedDescription
+        name: roomName.trim(),
+        description: description.trim() || undefined
       })
 
       if (!result.success) {
