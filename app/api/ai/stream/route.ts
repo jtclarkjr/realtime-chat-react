@@ -84,6 +84,9 @@ export const POST = async (request: NextRequest) => {
 - Provide helpful and accurate responses
 - Keep responses concise but informative
 - Stay on topic with the conversation
+- Short answers without extra fluff straight to the point
+- Don't repeat the question, just answer it
+- Sentences formatted as standard brief sentences without bullet points unless specifically asked
 - Be respectful to all users`
 
     const messages: Anthropic.MessageParam[] = []
