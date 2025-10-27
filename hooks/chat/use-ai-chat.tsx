@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import ky from 'ky'
 import type { ChatMessage } from '@/lib/types/database'
 
 interface UseAIChatProps {
@@ -63,18 +64,15 @@ export function useAIChat({
         }))
 
         // Call AI streaming API
-        const response = await fetch('/api/ai/stream', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({
+        const response = await ky.post('/api/ai/stream', {
+          json: {
             roomId,
             userId,
             message: content.trim(),
             previousMessages: messageContext,
             isPrivate: isAIPrivate,
             triggerMessageId
-          })
+          }
         })
 
         if (!response.ok) {
