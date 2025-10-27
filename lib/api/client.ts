@@ -1,3 +1,4 @@
+import ky from 'ky'
 import type { ApiMessage, ChatMessage } from '@/lib/types/database'
 import type {
   RoomsResponse,
@@ -11,28 +12,8 @@ import type {
 } from '@/lib/types/api'
 
 class ApiClient {
-  private async request<T>(url: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(url, {
-      ...options,
-      credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers
-      }
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({
-        error: `status: ${response.status}`
-      }))
-      throw new Error(error.error || `status: ${response.status}`)
-    }
-
-    return response.json()
-  }
-
   async getRooms(): Promise<RoomsResponse> {
-    return this.request<RoomsResponse>('/api/rooms')
+    return ky.get('/api/rooms').json<RoomsResponse>()
   }
 
   async getMissedMessages(
@@ -40,35 +21,39 @@ class ApiClient {
     userId: string,
     signal?: AbortSignal
   ): Promise<MissedMessagesResponse> {
-    return this.request<MissedMessagesResponse>(
-      `/api/rooms/${roomId}/rejoin?userId=${userId}`,
-      { signal }
-    )
+    return ky
+      .get(`/api/rooms/${roomId}/rejoin?userId=${userId}`, {
+        signal
+      })
+      .json<MissedMessagesResponse>()
   }
 
   async sendMessage(data: SendMessageRequest): Promise<SendMessageResponse> {
-    return this.request<SendMessageResponse>('/api/messages/send', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    })
+    return ky
+      .post('/api/messages/send', {
+        json: data
+      })
+      .json<SendMessageResponse>()
   }
 
   async unsendMessage(
     data: UnsendMessageRequest
   ): Promise<UnsendMessageResponse> {
-    return this.request<UnsendMessageResponse>('/api/messages/unsend', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    })
+    return ky
+      .post('/api/messages/unsend', {
+        json: data
+      })
+      .json<UnsendMessageResponse>()
   }
 
   async generateRoomSuggestion(
     data: GenerateRoomRequest
   ): Promise<GenerateRoomResponse> {
-    return this.request<GenerateRoomResponse>('/api/rooms/generate', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    })
+    return ky
+      .post('/api/rooms/generate', {
+        json: data
+      })
+      .json<GenerateRoomResponse>()
   }
 }
 
