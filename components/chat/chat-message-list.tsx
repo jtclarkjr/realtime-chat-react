@@ -1,9 +1,9 @@
 'use client'
 
-import { forwardRef } from 'react'
+import { forwardRef, useMemo, Fragment, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChatMessageItem } from '@/components/chat-message'
-import { ScrollDateIndicator } from '@/components/chat'
+import { ScrollDateIndicator, NewMessagesDivider } from '@/components/chat'
 import { useScrollDateDetection } from '@/hooks/ui'
 import type { ChatMessage } from '@/lib/types/database'
 
@@ -18,6 +18,9 @@ interface ChatMessageListProps {
   onUnsend?: (messageId: string) => void
   isUnsending?: (messageId: string) => boolean
   onUserScroll?: () => void
+  lastReadMessageId?: string | null
+  lastReadTimestamp?: string | null
+  currentSessionId?: string
 }
 
 export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
@@ -32,10 +35,17 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
       onRetry,
       onUnsend,
       isUnsending,
-      onUserScroll
+      onUserScroll,
+      lastReadMessageId,
+      lastReadTimestamp,
+      currentSessionId
     },
     ref
   ) => {
+    const [initialDividerMessageId, setInitialDividerMessageId] = useState<
+      string | null
+    >(null)
+
     const { scrollDate, isScrolling, handleScroll } = useScrollDateDetection({
       messages
     })
@@ -44,6 +54,61 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
       handleScroll(e)
       onUserScroll?.()
     }
+
+    // Determine if we should show the divider and where
+    const { shouldShowDivider, dividerAfterMessageId } = useMemo(() => {
+      if (!lastReadMessageId || !lastReadTimestamp || !currentSessionId) {
+        return { shouldShowDivider: false, dividerAfterMessageId: null }
+      }
+
+      const lastReadIndex = messages.findIndex(
+        (msg) => msg.id === lastReadMessageId
+      )
+
+      // No divider if last read message not found or is the last message
+      if (lastReadIndex === -1 || lastReadIndex === messages.length - 1) {
+        return { shouldShowDivider: false, dividerAfterMessageId: null }
+      }
+
+      // Check if there are new messages after the last read message
+      const hasNewMessages = lastReadIndex < messages.length - 1
+
+      if (!hasNewMessages) {
+        return { shouldShowDivider: false, dividerAfterMessageId: null }
+      }
+
+      // Check if the new messages are from a different day
+      // const lastReadDate = new Date(lastReadTimestamp)
+      // const firstNewMessage = messages[lastReadIndex + 1]
+      // const firstNewMessageDate = new Date(firstNewMessage.createdAt)
+
+      // const isDifferentDay =
+      //   lastReadDate.getFullYear() !== firstNewMessageDate.getFullYear() ||
+      //   lastReadDate.getMonth() !== firstNewMessageDate.getMonth() ||
+      //   lastReadDate.getDate() !== firstNewMessageDate.getDate()
+
+      // Temporarily show divider for all new messages (for testing)
+      const isDifferentDay = true
+
+      return {
+        shouldShowDivider: isDifferentDay,
+        dividerAfterMessageId: isDifferentDay ? lastReadMessageId : null
+      }
+    }, [messages, lastReadMessageId, lastReadTimestamp, currentSessionId])
+
+    // Capture the initial divider state only on mount
+    useEffect(() => {
+      if (shouldShowDivider && dividerAfterMessageId) {
+        setInitialDividerMessageId(dividerAfterMessageId)
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    // Only show divider if it was present on initial load (not for new messages during session)
+    // Use initialDividerMessageId as the stable position, don't depend on recalculated dividerAfterMessageId
+    const showDivider =
+      initialDividerMessageId !== null &&
+      currentSessionId !== null
 
     return (
       <>
@@ -77,41 +142,47 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                       !prevMessage ||
                       prevMessage.user.name !== message.user.name
                     const shouldAnimate = !message.isOptimistic
+                    const showDividerAfterThis =
+                      showDivider && message.id === initialDividerMessageId
 
-                    return shouldAnimate ? (
-                      <motion.div
-                        key={message.id}
-                        data-message-id={message.id}
-                        exit={{
-                          opacity: 0,
-                          height: 0,
-                          marginTop: 0,
-                          marginBottom: 0,
-                          transition: { duration: 0.3, ease: 'easeInOut' }
-                        }}
-                      >
-                        <ChatMessageItem
-                          message={message}
-                          isOwnMessage={message.user.name === username}
-                          showHeader={showHeader}
-                          currentUserId={userId}
-                          onRetry={onRetry}
-                          onUnsend={onUnsend}
-                          isUnsending={isUnsending}
-                        />
-                      </motion.div>
-                    ) : (
-                      <div key={message.id} data-message-id={message.id}>
-                        <ChatMessageItem
-                          message={message}
-                          isOwnMessage={message.user.name === username}
-                          showHeader={showHeader}
-                          currentUserId={userId}
-                          onRetry={onRetry}
-                          onUnsend={onUnsend}
-                          isUnsending={isUnsending}
-                        />
-                      </div>
+                    return (
+                      <Fragment key={message.id}>
+                        {shouldAnimate ? (
+                          <motion.div
+                            data-message-id={message.id}
+                            exit={{
+                              opacity: 0,
+                              height: 0,
+                              marginTop: 0,
+                              marginBottom: 0,
+                              transition: { duration: 0.3, ease: 'easeInOut' }
+                            }}
+                          >
+                            <ChatMessageItem
+                              message={message}
+                              isOwnMessage={message.user.name === username}
+                              showHeader={showHeader}
+                              currentUserId={userId}
+                              onRetry={onRetry}
+                              onUnsend={onUnsend}
+                              isUnsending={isUnsending}
+                            />
+                          </motion.div>
+                        ) : (
+                          <div data-message-id={message.id}>
+                            <ChatMessageItem
+                              message={message}
+                              isOwnMessage={message.user.name === username}
+                              showHeader={showHeader}
+                              currentUserId={userId}
+                              onRetry={onRetry}
+                              onUnsend={onUnsend}
+                              isUnsending={isUnsending}
+                            />
+                          </div>
+                        )}
+                        {showDividerAfterThis && <NewMessagesDivider />}
+                      </Fragment>
                     )
                   })}
               </div>
