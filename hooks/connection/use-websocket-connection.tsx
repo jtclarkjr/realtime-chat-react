@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { ChatMessage } from '@/lib/types/database'
 
 const EVENT_MESSAGE_TYPE = 'message'
@@ -27,14 +27,19 @@ export function useWebSocketConnection({
   enabled = true
 }: UseWebSocketConnectionProps): UseWebSocketConnectionReturn {
   const [isConnected, setIsConnected] = useState<boolean>(false)
-  const supabase = createClient()
+  const [reconnectTrigger, setReconnectTrigger] = useState<number>(0)
+  const supabaseRef = useRef(createClient())
 
   const setupChannel = useCallback((): (() => void) | null => {
     if (!enabled) return null
 
     let reconnectTimeout: NodeJS.Timeout
     let heartbeatInterval: NodeJS.Timeout
+    let missedHeartbeats = 0
     let isCleanedUp = false
+
+    // Get fresh supabase client
+    const supabase = supabaseRef.current
 
     const newChannel = supabase
       .channel(roomId, {
@@ -45,6 +50,8 @@ export function useWebSocketConnection({
       })
       .on('broadcast', { event: EVENT_MESSAGE_TYPE }, (payload) => {
         const receivedMessage = payload.payload as ChatMessage
+        // Reset missed heartbeats when we receive a message
+        missedHeartbeats = 0
         // Only process messages that have content and valid structure
         if (
           receivedMessage &&
@@ -75,8 +82,8 @@ export function useWebSocketConnection({
             clearTimeout(reconnectTimeout)
             reconnectTimeout = setTimeout(() => {
               supabase.removeChannel(newChannel)
-              // Trigger reconnect without direct call
-              setIsConnected(false)
+              // Trigger reconnect by incrementing trigger
+              setReconnectTrigger((prev) => prev + 1)
             }, 3000)
           }
         }
@@ -84,10 +91,25 @@ export function useWebSocketConnection({
       .subscribe((status, error) => {
         if (status === 'SUBSCRIBED') {
           setIsConnected(true)
+          missedHeartbeats = 0
 
           // Start heartbeat to keep connection alive
           clearInterval(heartbeatInterval)
           heartbeatInterval = setInterval(() => {
+            missedHeartbeats++
+            
+            // If we've missed too many heartbeats, reconnect
+            if (missedHeartbeats > 3) {
+              console.warn('Connection appears stale, reconnecting...')
+              clearInterval(heartbeatInterval)
+              setIsConnected(false)
+              if (!isCleanedUp) {
+                supabase.removeChannel(newChannel)
+                setReconnectTrigger((prev) => prev + 1)
+              }
+              return
+            }
+            
             // Send a presence update as heartbeat
             newChannel.track({ online: true, userId, timestamp: Date.now() })
           }, 30000) // Send heartbeat every 30 seconds
@@ -101,14 +123,22 @@ export function useWebSocketConnection({
             clearTimeout(reconnectTimeout)
             reconnectTimeout = setTimeout(() => {
               supabase.removeChannel(newChannel)
-              // Trigger reconnect without direct call
-              setIsConnected(false)
+              // Trigger reconnect by incrementing trigger
+              setReconnectTrigger((prev) => prev + 1)
             }, 3000)
           }
         } else if (status === 'TIMED_OUT') {
           setIsConnected(false)
+          // Trigger reconnect on timeout
+          if (!isCleanedUp) {
+            setReconnectTrigger((prev) => prev + 1)
+          }
         } else if (status === 'CLOSED') {
           setIsConnected(false)
+          // Trigger reconnect when closed
+          if (!isCleanedUp) {
+            setReconnectTrigger((prev) => prev + 1)
+          }
         }
       })
 
@@ -122,11 +152,12 @@ export function useWebSocketConnection({
       }
       setIsConnected(false)
     }
-  }, [supabase, roomId, userId, onMessage, onMessageUnsent, enabled])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, userId, onMessage, onMessageUnsent, enabled, reconnectTrigger])
 
   const reconnect = useCallback((): void => {
-    setupChannel()
-  }, [setupChannel])
+    setReconnectTrigger((prev) => prev + 1)
+  }, [])
 
   useEffect(() => {
     const cleanup = setupChannel()
