@@ -101,6 +101,7 @@ export function useWebSocketConnection({
             // If we've missed too many heartbeats, reconnect
             if (missedHeartbeats > 3) {
               console.warn('Connection appears stale, reconnecting...')
+              clearInterval(heartbeatInterval)
               setIsConnected(false)
               if (!isCleanedUp) {
                 supabase.removeChannel(newChannel)
@@ -151,6 +152,7 @@ export function useWebSocketConnection({
       }
       setIsConnected(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, userId, onMessage, onMessageUnsent, enabled, reconnectTrigger])
 
   const reconnect = useCallback((): void => {
