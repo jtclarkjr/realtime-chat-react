@@ -8,6 +8,7 @@ interface UseUnsendMessageProps {
   userId: string
   roomId: string
   onMessageUpdate: (updater: (messages: ChatMessage[]) => ChatMessage[]) => void
+  markMessageAsDeleted: (messageId: string) => void
 }
 
 interface UseUnsendMessageReturn {
@@ -18,7 +19,8 @@ interface UseUnsendMessageReturn {
 export function useUnsendMessage({
   userId,
   roomId,
-  onMessageUpdate
+  onMessageUpdate,
+  markMessageAsDeleted
 }: UseUnsendMessageProps): UseUnsendMessageReturn {
   const [unsendingMessages, setUnsendingMessages] = useState<Set<string>>(
     new Set()
@@ -41,20 +43,8 @@ export function useUnsendMessage({
         })
 
         if (result.success) {
-          // Update the message in the local state to show it as deleted
-          onMessageUpdate((current) =>
-            current.map((msg) =>
-              msg.id === messageId
-                ? {
-                    ...msg,
-                    isDeleted: true,
-                    deletedAt: result.message.deletedAt,
-                    deletedBy: result.message.deletedBy,
-                    content: 'This message was deleted'
-                  }
-                : msg
-            )
-          )
+          // Mark message as deleted - this handles both confirmed and missed messages
+          markMessageAsDeleted(messageId)
           return true
         } else {
           console.error('Failed to unsend message:', result.error)
@@ -71,7 +61,7 @@ export function useUnsendMessage({
         })
       }
     },
-    [userId, roomId, onMessageUpdate, unsendingMessages, unsendMessageMutation]
+    [userId, roomId, onMessageUpdate, markMessageAsDeleted, unsendingMessages, unsendMessageMutation]
   )
 
   const isUnsending = useCallback(
