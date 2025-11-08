@@ -49,7 +49,9 @@ export const RealtimeChat = ({
     loading,
     queueStatus,
     clearFailedMessages,
-    onMessageUpdate
+    onMessageUpdate,
+    markMessageAsDeleted,
+    deletedMessageIds
   } = useRealtimeChat({
     roomId,
     username,
@@ -61,7 +63,8 @@ export const RealtimeChat = ({
   const { unsendMessage, isUnsending } = useUnsendMessage({
     userId,
     roomId,
-    onMessageUpdate
+    onMessageUpdate,
+    markMessageAsDeleted
   })
 
   const {
@@ -100,7 +103,8 @@ export const RealtimeChat = ({
     initialMessages,
     realtimeMessages,
     streamingMessages,
-    userId
+    userId,
+    deletedMessageIds
   })
 
   // Smart auto-scroll that only scrolls when appropriate

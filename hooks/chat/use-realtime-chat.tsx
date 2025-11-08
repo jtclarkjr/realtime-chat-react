@@ -209,6 +209,42 @@ export function useRealtimeChat({
     )
   }, [missedMessages, optimisticMessages, deletedMessageIds])
 
+  // Callback to update confirmed messages and track deleted messages
+  const handleMessageUpdate = useCallback(
+    (updater: (messages: ChatMessage[]) => ChatMessage[]) => {
+      setConfirmedMessages((current) => {
+        const updated = updater(current)
+        
+        // Check if any messages were marked as deleted and add them to deletedMessageIds
+        updated.forEach((msg) => {
+          if (msg.isDeleted) {
+            setDeletedMessageIds((prev) => new Set(prev).add(msg.id))
+          }
+        })
+        
+        return updated
+      })
+    },
+    []
+  )
+
+  // Direct method to mark a message as deleted (for unsend)
+  const markMessageAsDeleted = useCallback((messageId: string) => {
+    setDeletedMessageIds((prev) => new Set(prev).add(messageId))
+    // Also update confirmed messages if the message exists there
+    setConfirmedMessages((current) =>
+      current.map((msg) =>
+        msg.id === messageId
+          ? {
+              ...msg,
+              isDeleted: true,
+              content: 'This message was deleted'
+            }
+          : msg
+      )
+    )
+  }, [])
+
   return {
     messages: allMessages,
     sendMessage,
@@ -217,6 +253,8 @@ export function useRealtimeChat({
     loading: missedMessagesLoading,
     queueStatus,
     clearFailedMessages,
-    onMessageUpdate: setConfirmedMessages
+    onMessageUpdate: handleMessageUpdate,
+    markMessageAsDeleted,
+    deletedMessageIds
   }
 }
