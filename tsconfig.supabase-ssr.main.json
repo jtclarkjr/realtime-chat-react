@@ -1,0 +1,12 @@
+{
+  "extends": "./node_modules/@supabase/ssr/tsconfig.main.json",
+  "compilerOptions": {
+    "outDir": "./node_modules/@supabase/ssr/dist/main"
+  },
+  "include": ["./node_modules/@supabase/ssr/src/**/*.ts"],
+  "exclude": [
+    "./node_modules/@supabase/ssr/src/**/*.spec.ts",
+    "./node_modules/@supabase/ssr/src/**/*.test.ts",
+    "./node_modules/@supabase/ssr/src/__snapshots__/**"
+  ]
+}
