@@ -1,6 +1,6 @@
 'use client'
 
-import { useChatScroll, useSmartAutoScroll } from '@/hooks/ui'
+import { useChatScroll, useSmartAutoScroll, useLastReadMessage } from '@/hooks/ui'
 import { useRealtimeChat, useAIChat, useStreamingMessages } from '@/hooks/chat'
 import { useMessageMerging, useUnsendMessage } from '@/hooks/messages'
 import {
@@ -111,6 +111,17 @@ export const RealtimeChat = ({
     deletedMessageIds
   })
 
+  // Track last read message for new message divider
+  const {
+    getLastReadMessage,
+    currentSessionId
+  } = useLastReadMessage({
+    roomId,
+    messages: allMessages
+  })
+
+  const lastReadData = getLastReadMessage()
+
   // Smart auto-scroll that only scrolls when appropriate
   const {
     handleUserScroll,
@@ -220,6 +231,9 @@ export const RealtimeChat = ({
         onUnsend={unsendMessage}
         isUnsending={isUnsending}
         onUserScroll={handleUserScroll}
+        lastReadMessageId={lastReadData?.messageId || null}
+        lastReadTimestamp={lastReadData?.timestamp || null}
+        currentSessionId={currentSessionId}
       />
 
       <NewMessagesBadge
