@@ -4,8 +4,10 @@ import { useRouter } from 'next/navigation'
 import { RealtimeChat } from '@/components/realtime-chat'
 import { Button } from '@/components/ui/button'
 import { PageTransition } from '@/components/page-transition'
-import { useEffect, useState } from 'react'
+import { RealtimePresenceAvatars } from '@/components/presence'
+import { useEffect, useState, useCallback } from 'react'
 import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
+import type { PresenceState } from '@/lib/types/presence'
 import type { User } from '@supabase/supabase-js'
 
 interface RoomClientProps {
@@ -18,9 +20,15 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const router = useRouter()
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
   const [isLeaving, setIsLeaving] = useState<boolean>(false)
+  const [presenceUsers, setPresenceUsers] = useState<PresenceState>({})
 
   // Use the authenticated user's ID instead of generating a new one
   const userId = user.id
+
+  // Handle presence changes
+  const handlePresenceChange = useCallback((users: PresenceState) => {
+    setPresenceUsers(users)
+  }, [])
 
   // Mark as initialized immediately since we have the user from server
   useEffect(() => {
@@ -56,7 +64,14 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
     <PageTransition className="h-dvh flex flex-col bg-background">
       <header className="border-b border-border p-3 sm:p-4 shrink-0">
         <div className="flex items-center justify-between">
-          <div className="w-16"></div>
+          <div className="w-16 flex items-center justify-start">
+            <RealtimePresenceAvatars
+              presenceUsers={presenceUsers}
+              currentUserId={userId}
+              currentUserName={user?.user_metadata?.full_name || 'Anonymous'}
+              currentUserAvatar={user?.user_metadata?.avatar_url}
+            />
+          </div>
           <h1 className="text-base sm:text-lg font-semibold flex-1 text-center">
             {room.name}
           </h1>
@@ -76,6 +91,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
           username={user?.user_metadata?.full_name || 'Anonymous User'}
           userId={userId}
           userAvatarUrl={user?.user_metadata?.avatar_url}
+          onPresenceChange={handlePresenceChange}
           messages={initialMessages.map((message) => ({
             ...message,
             roomId: message.channelId, // Convert channelId to roomId for consistency
