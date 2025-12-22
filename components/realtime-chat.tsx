@@ -10,6 +10,7 @@ import {
   NewMessagesBadge
 } from '@/components/chat'
 import type { ChatMessage } from '@/lib/types/database'
+import type { PresenceState } from '@/lib/types/presence'
 import { useCallback, useEffect, useState } from 'react'
 import { track } from '@vercel/analytics/react'
 
@@ -20,6 +21,7 @@ interface RealtimeChatProps {
   userAvatarUrl?: string
   onMessage?: (messages: ChatMessage[]) => void
   messages?: ChatMessage[]
+  onPresenceChange?: (users: PresenceState) => void
 }
 
 /**
@@ -36,7 +38,8 @@ export const RealtimeChat = ({
   userId,
   userAvatarUrl,
   onMessage,
-  messages: initialMessages = []
+  messages: initialMessages = [],
+  onPresenceChange
 }: RealtimeChatProps) => {
   const { containerRef, scrollToBottom, scrollToBottomInstant } =
     useChatScroll()
@@ -51,7 +54,8 @@ export const RealtimeChat = ({
     clearFailedMessages,
     onMessageUpdate,
     markMessageAsDeleted,
-    deletedMessageIds
+    deletedMessageIds,
+    presenceUsers
   } = useRealtimeChat({
     roomId,
     username,
@@ -146,6 +150,12 @@ export const RealtimeChat = ({
       onMessage(allMessages)
     }
   }, [allMessages, onMessage])
+
+  useEffect(() => {
+    if (onPresenceChange) {
+      onPresenceChange(presenceUsers)
+    }
+  }, [presenceUsers, onPresenceChange])
 
   const handleSendMessage = useCallback(
     async (e: React.FormEvent) => {
