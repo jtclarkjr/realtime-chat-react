@@ -61,7 +61,14 @@ export function useUnsendMessage({
         })
       }
     },
-    [userId, roomId, onMessageUpdate, markMessageAsDeleted, unsendingMessages, unsendMessageMutation]
+    [
+      userId,
+      roomId,
+      onMessageUpdate,
+      markMessageAsDeleted,
+      unsendingMessages,
+      unsendMessageMutation
+    ]
   )
 
   const isUnsending = useCallback(

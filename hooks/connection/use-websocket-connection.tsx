@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { ChatMessage } from '@/lib/types/database'
+import type { PresenceState, PresenceUser } from '@/lib/types/presence'
 
 const EVENT_MESSAGE_TYPE = 'message'
 
@@ -12,6 +13,9 @@ interface UseWebSocketConnectionProps {
   onMessage: (message: ChatMessage) => void
   onMessageUnsent?: (messageId: string) => void
   enabled: boolean
+  username?: string
+  userAvatarUrl?: string
+  onPresenceSync?: (state: PresenceState) => void
 }
 
 interface UseWebSocketConnectionReturn {
@@ -24,7 +28,10 @@ export function useWebSocketConnection({
   userId,
   onMessage,
   onMessageUnsent,
-  enabled = true
+  enabled = true,
+  username,
+  userAvatarUrl,
+  onPresenceSync
 }: UseWebSocketConnectionProps): UseWebSocketConnectionReturn {
   const [isConnected, setIsConnected] = useState<boolean>(false)
   const [reconnectTrigger, setReconnectTrigger] = useState<number>(0)
@@ -69,6 +76,24 @@ export function useWebSocketConnection({
           onMessageUnsent(messageId)
         }
       })
+      .on('presence', { event: 'sync' }, () => {
+        // Handle presence sync events
+        const presenceState = newChannel.presenceState<PresenceUser>()
+        const transformedState: PresenceState = {}
+
+        Object.entries(presenceState).forEach(([userId, presences]) => {
+          if (presences && presences[0]) {
+            transformedState[userId] = {
+              id: userId,
+              name: presences[0].name,
+              avatar_url: presences[0].avatar_url,
+              online_at: presences[0].online_at
+            }
+          }
+        })
+
+        onPresenceSync?.(transformedState)
+      })
       .on('system', {}, (payload) => {
         // Handle system events (connection state changes)
         if (
@@ -88,16 +113,26 @@ export function useWebSocketConnection({
           }
         }
       })
-      .subscribe((status, error) => {
+      .subscribe(async (status, error) => {
         if (status === 'SUBSCRIBED') {
           setIsConnected(true)
           missedHeartbeats = 0
+
+          // Track user presence with metadata
+          await newChannel.track({
+            online: true,
+            userId,
+            name: username || 'Anonymous',
+            avatar_url: userAvatarUrl,
+            online_at: Date.now(),
+            timestamp: Date.now()
+          })
 
           // Start heartbeat to keep connection alive
           clearInterval(heartbeatInterval)
           heartbeatInterval = setInterval(() => {
             missedHeartbeats++
-            
+
             // If we've missed too many heartbeats, reconnect
             if (missedHeartbeats > 3) {
               console.warn('Connection appears stale, reconnecting...')
@@ -109,9 +144,16 @@ export function useWebSocketConnection({
               }
               return
             }
-            
+
             // Send a presence update as heartbeat
-            newChannel.track({ online: true, userId, timestamp: Date.now() })
+            newChannel.track({
+              online: true,
+              userId,
+              name: username || 'Anonymous',
+              avatar_url: userAvatarUrl,
+              online_at: Date.now(),
+              timestamp: Date.now()
+            })
           }, 30000) // Send heartbeat every 30 seconds
         } else if (status === 'CHANNEL_ERROR') {
           setIsConnected(false)
@@ -153,7 +195,17 @@ export function useWebSocketConnection({
       setIsConnected(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, userId, onMessage, onMessageUnsent, enabled, reconnectTrigger])
+  }, [
+    roomId,
+    userId,
+    onMessage,
+    onMessageUnsent,
+    enabled,
+    reconnectTrigger,
+    username,
+    userAvatarUrl,
+    onPresenceSync
+  ])
 
   const reconnect = useCallback((): void => {
     setReconnectTrigger((prev) => prev + 1)

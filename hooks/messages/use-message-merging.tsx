@@ -41,12 +41,12 @@ export function useMessageMerging({
     const uniqueMessages = mergedMessages.filter((message, index, self) => {
       if (!message) return false
       if (!message.id) return false
-      
+
       // Filter out deleted messages (check both isDeleted flag and deletedMessageIds set)
       if (message.isDeleted || deletedMessageIds.has(message.id)) {
         return false
       }
-      
+
       // Filter out messages without content or invalid structure
       const isStreamingMessage = streamingMessages.some((sm) => sm === message)
       if (
@@ -98,7 +98,13 @@ export function useMessageMerging({
     })
 
     return sortedMessages
-  }, [initialMessages, realtimeMessages, streamingMessages, userId, deletedMessageIds])
+  }, [
+    initialMessages,
+    realtimeMessages,
+    streamingMessages,
+    userId,
+    deletedMessageIds
+  ])
 
   return allMessages
 }
