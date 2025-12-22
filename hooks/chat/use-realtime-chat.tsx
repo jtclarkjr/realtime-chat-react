@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import ky from 'ky'
 import type { ChatMessage } from '@/lib/types/database'
+import type { PresenceState } from '@/lib/types/presence'
 import { useNetworkConnectivity, useWebSocketConnection } from '../connection'
 import { useMissedMessages, useOptimisticMessageSender } from '../messages'
 
@@ -23,6 +24,7 @@ export function useRealtimeChat({
   const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(
     new Set()
   )
+  const [presenceUsers, setPresenceUsers] = useState<PresenceState>({})
 
   // Network connectivity detection
   const networkState = useNetworkConnectivity()
@@ -91,13 +93,21 @@ export function useRealtimeChat({
     )
   }, [])
 
+  // Handle presence sync events
+  const handlePresenceSync = useCallback((state: PresenceState) => {
+    setPresenceUsers(state)
+  }, [])
+
   // WebSocket connection for real-time messaging
   useWebSocketConnection({
     roomId,
     userId,
     onMessage: handleIncomingMessage,
     onMessageUnsent: handleMessageUnsent,
-    enabled: true
+    enabled: true,
+    username,
+    userAvatarUrl,
+    onPresenceSync: handlePresenceSync
   })
 
   // Optimistic message sender with queue support
@@ -214,14 +224,14 @@ export function useRealtimeChat({
     (updater: (messages: ChatMessage[]) => ChatMessage[]) => {
       setConfirmedMessages((current) => {
         const updated = updater(current)
-        
+
         // Check if any messages were marked as deleted and add them to deletedMessageIds
         updated.forEach((msg) => {
           if (msg.isDeleted) {
             setDeletedMessageIds((prev) => new Set(prev).add(msg.id))
           }
         })
-        
+
         return updated
       })
     },
@@ -255,6 +265,7 @@ export function useRealtimeChat({
     clearFailedMessages,
     onMessageUpdate: handleMessageUpdate,
     markMessageAsDeleted,
-    deletedMessageIds
+    deletedMessageIds,
+    presenceUsers
   }
 }
