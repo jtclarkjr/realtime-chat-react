@@ -28,28 +28,24 @@ The user presence system provides real-time visibility of active users in chat r
 
 ### Component Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         RoomClient                               │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │                    Header Section                          │  │
-│  │  ┌──────────────────┐  ┌──────────┐  ┌──────────────┐    │  │
-│  │  │ Presence Avatars │  │Room Name │  │ Leave Button │    │  │
-│  │  └──────────────────┘  └──────────┘  └──────────────┘    │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │                   RealtimeChat                            │  │
-│  │    ┌─────────────────────────────────────┐               │  │
-│  │    │    useRealtimeChat Hook             │               │  │
-│  │    │  ┌───────────────────────────────┐  │               │  │
-│  │    │  │  useWebSocketConnection       │  │               │  │
-│  │    │  │  - Presence tracking          │  │               │  │
-│  │    │  │  - Message broadcasting       │  │               │  │
-│  │    │  │  - Heartbeat mechanism        │  │               │  │
-│  │    │  └───────────────────────────────┘  │               │  │
-│  │    └─────────────────────────────────────┘               │  │
-│  └───────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    RC[RoomClient]
+    HS[Header Section]
+    PA[Presence Avatars]
+    RN[Room Name]
+    LB[Leave Button]
+    RTC[RealtimeChat]
+    URC[useRealtimeChat Hook]
+    UWS[useWebSocketConnection<br/>- Presence tracking<br/>- Message broadcasting<br/>- Heartbeat mechanism]
+
+    RC --> HS
+    RC --> RTC
+    HS --> PA
+    HS --> RN
+    HS --> LB
+    RTC --> URC
+    URC --> UWS
 ```
 
 ---
@@ -58,161 +54,25 @@ The user presence system provides real-time visibility of active users in chat r
 
 ### Complete Presence Lifecycle
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    USER ENTERS ROOM                              │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ RoomClient Component Initializes                                 │
-│ - Receives user data from server (SSR)                          │
-│ - Sets up presence state: useState<PresenceState>({})           │
-│ - Creates handlePresenceChange callback                         │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ RealtimeChat Component Mounts                                    │
-│ - Receives onPresenceChange prop                                │
-│ - Initializes useRealtimeChat hook                              │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ useRealtimeChat Hook Initializes                                │
-│ - Creates presence state: useState<PresenceState>({})           │
-│ - Defines handlePresenceSync callback                           │
-│ - Passes username, avatar_url to useWebSocketConnection         │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ useWebSocketConnection Hook                                     │
-│ Step 1: Creates Supabase channel                                │
-│   channel(roomId, {                                             │
-│     config: {                                                   │
-│       broadcast: { self: false },                               │
-│       presence: { key: userId }                                 │
-│     }                                                            │
-│   })                                                             │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 2: Sets up event listeners                                 │
-│   - .on('broadcast', { event: 'message' }, ...)                │
-│   - .on('broadcast', { event: 'message_unsent' }, ...)         │
-│   - .on('presence', { event: 'sync' }, ...)  ← NEW             │
-│   - .on('system', {}, ...)                                     │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 3: Subscribes to channel                                   │
-│   .subscribe(async (status) => {                                │
-│     if (status === 'SUBSCRIBED') {                              │
-│       // Initial presence track                                 │
-│       await channel.track({                                     │
-│         online: true,                                            │
-│         userId,                                                  │
-│         name: username,                                          │
-│         avatar_url: userAvatarUrl,                              │
-│         online_at: Date.now(),                                  │
-│         timestamp: Date.now()                                   │
-│       })                                                         │
-│     }                                                            │
-│   })                                                             │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ SUPABASE REALTIME SERVER                                        │
-│ - Receives presence track from user                             │
-│ - Broadcasts presence:sync to all channel subscribers           │
-│ - Includes complete presence state of all users in room         │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ Presence 'sync' Event Fires (All Clients)                       │
-│   .on('presence', { event: 'sync' }, () => {                   │
-│     const presenceState = channel.presenceState<PresenceUser>() │
-│     // Transform to PresenceState format                        │
-│     const transformedState = {}                                 │
-│     Object.entries(presenceState).forEach(([userId, data]) => {│
-│       transformedState[userId] = {                              │
-│         id: userId,                                             │
-│         name: data[0].name,                                     │
-│         avatar_url: data[0].avatar_url,                         │
-│         online_at: data[0].online_at                            │
-│       }                                                          │
-│     })                                                           │
-│     onPresenceSync?.(transformedState)                          │
-│   })                                                             │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ handlePresenceSync in useRealtimeChat                           │
-│   - Updates local presenceUsers state                           │
-│   - setPresenceUsers(transformedState)                          │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ useEffect in RealtimeChat Component                             │
-│   useEffect(() => {                                             │
-│     if (onPresenceChange) {                                     │
-│       onPresenceChange(presenceUsers)                           │
-│     }                                                            │
-│   }, [presenceUsers, onPresenceChange])                        │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ handlePresenceChange in RoomClient                              │
-│   - Updates RoomClient's local presenceUsers state              │
-│   - setPresenceUsers(users)                                     │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ RealtimePresenceAvatars Renders                                 │
-│   - Receives presenceUsers prop                                 │
-│   - Transforms Record to Array                                  │
-│   - Ensures current user is included                            │
-│   - Sorts: current user first, then alphabetically              │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ AvatarStack Component Renders                                   │
-│   - Takes first maxVisible (5) users                            │
-│   - Calculates overflow count                                   │
-│   - Renders overlapping avatars with z-index layering           │
-│   - Highlights current user with ring-primary                   │
-│   - Shows "+N" badge for overflow                               │
-│   - Wraps each in Tooltip with user name                        │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ USER INTERACTION                                                │
-│   - Hover over avatar → Tooltip shows "Name (you)" or "Name"   │
-│   - See real-time updates as others join/leave                  │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ HEARTBEAT MECHANISM (Every 30 seconds)                          │
-│   setInterval(() => {                                           │
-│     channel.track({                                             │
-│       online: true,                                             │
-│       userId,                                                    │
-│       name: username,                                            │
-│       avatar_url: userAvatarUrl,                                │
-│       online_at: Date.now(),                                    │
-│       timestamp: Date.now()                                     │
-│     })                                                           │
-│   }, 30000)                                                     │
-│   // Keeps presence fresh, prevents stale data                 │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ USER LEAVES ROOM                                                │
-│   - Component unmounts                                          │
-│   - Cleanup function runs:                                      │
-│     supabase.removeChannel(channel)                             │
-│   - Supabase automatically removes user from presence           │
-│   - Presence:sync event fires for remaining users               │
-│   - Avatars update to remove departed user                      │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A[USER ENTERS ROOM] --> B[RoomClient Component Initializes<br/>- Receives user data from server SSR<br/>- Sets up presence state<br/>- Creates handlePresenceChange callback]
+    B --> C[RealtimeChat Component Mounts<br/>- Receives onPresenceChange prop<br/>- Initializes useRealtimeChat hook]
+    C --> D[useRealtimeChat Hook Initializes<br/>- Creates presence state<br/>- Defines handlePresenceSync callback<br/>- Passes username, avatar_url to useWebSocketConnection]
+    D --> E[useWebSocketConnection Hook<br/>Step 1: Creates Supabase channel<br/>with broadcast and presence config]
+    E --> F[Step 2: Sets up event listeners<br/>- broadcast: message<br/>- broadcast: message_unsent<br/>- presence: sync<br/>- system events]
+    F --> G[Step 3: Subscribes to channel<br/>Tracks initial presence with<br/>online, userId, name, avatar_url, timestamps]
+    G --> H[SUPABASE REALTIME SERVER<br/>- Receives presence track<br/>- Broadcasts presence:sync to all subscribers<br/>- Includes complete presence state]
+    H --> I[Presence 'sync' Event Fires<br/>Gets presenceState and transforms<br/>to PresenceState format]
+    I --> J[handlePresenceSync in useRealtimeChat<br/>Updates local presenceUsers state]
+    J --> K[useEffect in RealtimeChat Component<br/>Calls onPresenceChange with presenceUsers]
+    K --> L[handlePresenceChange in RoomClient<br/>Updates RoomClient's presenceUsers state]
+    L --> M[RealtimePresenceAvatars Renders<br/>- Transforms Record to Array<br/>- Ensures current user included<br/>- Sorts: current user first, then alphabetically]
+    M --> N[AvatarStack Component Renders<br/>- First 5 users visible<br/>- Calculates overflow<br/>- Highlights current user<br/>- Shows +N badge if overflow]
+    N --> O[USER INTERACTION<br/>- Hover shows tooltips<br/>- See real-time updates]
+    O --> P[HEARTBEAT MECHANISM<br/>Every 30 seconds<br/>channel.track with updated timestamps]
+    P --> O
+    O --> Q[USER LEAVES ROOM<br/>- Component unmounts<br/>- Cleanup: supabase.removeChannel<br/>- Supabase removes user from presence<br/>- Avatars update for remaining users]
 ```
 
 ---
@@ -221,86 +81,75 @@ The user presence system provides real-time visibility of active users in chat r
 
 ### Visual Component Tree
 
-```
-RoomClient
-│
-├── Header
-│   ├── RealtimePresenceAvatars (LEFT SIDE)
-│   │   └── AvatarStack
-│   │       ├── TooltipProvider
-│   │       ├── Tooltip (for each user)
-│   │       │   ├── TooltipTrigger
-│   │       │   │   └── UserAvatar (with ring styling)
-│   │       │   └── TooltipContent
-│   │       │       └── "Username" or "Username (you)"
-│   │       └── Tooltip (overflow badge)
-│   │           ├── TooltipTrigger
-│   │           │   └── "+N" Badge
-│   │           └── TooltipContent
-│   │               └── List of hidden users
-│   │
-│   ├── Room Title (CENTER)
-│   └── Leave Button (RIGHT)
-│
-└── RealtimeChat
-    └── (chat interface)
+```mermaid
+graph TB
+    RC[RoomClient]
+    H[Header]
+    RPA[RealtimePresenceAvatars<br/>LEFT SIDE]
+    RT[Room Title<br/>CENTER]
+    LB[Leave Button<br/>RIGHT]
+    AS[AvatarStack]
+    TP[TooltipProvider]
+    T1[Tooltip for each user]
+    TT1[TooltipTrigger]
+    UA[UserAvatar with ring styling]
+    TC1[TooltipContent<br/>Username or Username you]
+    T2[Tooltip overflow badge]
+    TT2[TooltipTrigger<br/>+N Badge]
+    TC2[TooltipContent<br/>List of hidden users]
+    RTC[RealtimeChat<br/>chat interface]
+
+    RC --> H
+    RC --> RTC
+    H --> RPA
+    H --> RT
+    H --> LB
+    RPA --> AS
+    AS --> TP
+    AS --> T1
+    AS --> T2
+    T1 --> TT1
+    T1 --> TC1
+    TT1 --> UA
+    T2 --> TT2
+    T2 --> TC2
 ```
 
 ### Data Flow Between Components
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                         RoomClient                            │
-│                                                               │
-│  State: presenceUsers (PresenceState)                        │
-│  Callback: handlePresenceChange                              │
-│                                                               │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │                  RealtimeChat                          │  │
-│  │                                                         │  │
-│  │  Props: onPresenceChange                               │  │
-│  │                                                         │  │
-│  │  ┌──────────────────────────────────────────────────┐  │  │
-│  │  │          useRealtimeChat                         │  │  │
-│  │  │                                                   │  │  │
-│  │  │  State: presenceUsers                            │  │  │
-│  │  │  Callback: handlePresenceSync                    │  │  │
-│  │  │                                                   │  │  │
-│  │  │  ┌────────────────────────────────────────────┐  │  │  │
-│  │  │  │   useWebSocketConnection                   │  │  │  │
-│  │  │  │                                             │  │  │  │
-│  │  │  │  Props:                                     │  │  │  │
-│  │  │  │  - username                                 │  │  │  │
-│  │  │  │  - userAvatarUrl                            │  │  │  │
-│  │  │  │  - onPresenceSync                           │  │  │  │
-│  │  │  │                                             │  │  │  │
-│  │  │  │  Supabase Channel:                          │  │  │  │
-│  │  │  │  - track() sends presence                   │  │  │  │
-│  │  │  │  - presenceState() reads presence           │  │  │  │
-│  │  │  │  - sync event triggers callback             │  │  │  │
-│  │  │  └────────────────────────────────────────────┘  │  │  │
-│  │  └──────────────────────────────────────────────────┘  │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                                                               │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │         RealtimePresenceAvatars                        │  │
-│  │                                                         │  │
-│  │  Props:                                                │  │
-│  │  - presenceUsers (from RoomClient state)              │  │
-│  │  - currentUserId                                       │  │
-│  │  - currentUserName                                     │  │
-│  │  - currentUserAvatar                                   │  │
-│  │                                                         │  │
-│  │  ┌──────────────────────────────────────────────────┐  │  │
-│  │  │           AvatarStack                            │  │  │
-│  │  │                                                   │  │  │
-│  │  │  - Transforms data to array                      │  │  │
-│  │  │  - Sorts users (current first)                   │  │  │
-│  │  │  - Renders visible avatars                       │  │  │
-│  │  │  - Shows overflow badge                          │  │  │
-│  │  └──────────────────────────────────────────────────┘  │  │
-│  └────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph RC[RoomClient]
+        RC_State[State: presenceUsers PresenceState<br/>Callback: handlePresenceChange]
+
+        subgraph RTC[RealtimeChat]
+            RTC_Props[Props: onPresenceChange]
+
+            subgraph URC[useRealtimeChat]
+                URC_State[State: presenceUsers<br/>Callback: handlePresenceSync]
+
+                subgraph UWS[useWebSocketConnection]
+                    UWS_Props[Props:<br/>- username<br/>- userAvatarUrl<br/>- onPresenceSync]
+                    UWS_Channel[Supabase Channel:<br/>- track sends presence<br/>- presenceState reads presence<br/>- sync event triggers callback]
+                end
+            end
+        end
+
+        subgraph RPA[RealtimePresenceAvatars]
+            RPA_Props[Props:<br/>- presenceUsers from RoomClient state<br/>- currentUserId<br/>- currentUserName<br/>- currentUserAvatar]
+
+            subgraph AS[AvatarStack]
+                AS_Logic[- Transforms data to array<br/>- Sorts users current first<br/>- Renders visible avatars<br/>- Shows overflow badge]
+            end
+        end
+    end
+
+    UWS_Props --> UWS_Channel
+    URC_State --> UWS
+    RTC_Props --> URC
+    RC_State --> RTC
+    RC_State --> RPA_Props
+    RPA_Props --> AS_Logic
 ```
 
 ---
@@ -309,26 +158,26 @@ RoomClient
 
 ### State Flow Chart
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│              SUPABASE REALTIME SERVER                        │
-│         (Source of Truth for Presence State)                 │
-└─────────────────────────────────────────────────────────────┘
-                          ↓ presence:sync
-        ┌─────────────────┴──────────────────┐
-        ↓                                     ↓
-┌──────────────────┐                 ┌──────────────────┐
-│   Client A       │                 │   Client B       │
-│                  │                 │                  │
-│  Hook State:     │                 │  Hook State:     │
-│  presenceUsers   │                 │  presenceUsers   │
-│      ↓           │                 │      ↓           │
-│  Component State │                 │  Component State │
-│  presenceUsers   │                 │  presenceUsers   │
-│      ↓           │                 │      ↓           │
-│  UI Renders:     │                 │  UI Renders:     │
-│  [A, B, C]       │                 │  [A, B, C]       │
-└──────────────────┘                 └──────────────────┘
+```mermaid
+flowchart TD
+    Server[SUPABASE REALTIME SERVER<br/>Source of Truth for Presence State]
+
+    Server -->|presence:sync| ClientA
+    Server -->|presence:sync| ClientB
+
+    subgraph ClientA[Client A]
+        A1[Hook State:<br/>presenceUsers]
+        A2[Component State:<br/>presenceUsers]
+        A3[UI Renders:<br/>A, B, C]
+        A1 --> A2 --> A3
+    end
+
+    subgraph ClientB[Client B]
+        B1[Hook State:<br/>presenceUsers]
+        B2[Component State:<br/>presenceUsers]
+        B3[UI Renders:<br/>A, B, C]
+        B1 --> B2 --> B3
+    end
 ```
 
 ### Update Propagation
