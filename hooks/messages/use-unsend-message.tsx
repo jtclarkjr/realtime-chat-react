@@ -1,13 +1,11 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import type { ChatMessage } from '@/lib/types/database'
 import { useUnsendMessageMutation } from '@/lib/query/mutations/use-unsend-message'
 
 interface UseUnsendMessageProps {
   userId: string
   roomId: string
-  onMessageUpdate: (updater: (messages: ChatMessage[]) => ChatMessage[]) => void
   markMessageAsDeleted: (messageId: string) => void
 }
 
@@ -19,7 +17,6 @@ interface UseUnsendMessageReturn {
 export function useUnsendMessage({
   userId,
   roomId,
-  onMessageUpdate,
   markMessageAsDeleted
 }: UseUnsendMessageProps): UseUnsendMessageReturn {
   const [unsendingMessages, setUnsendingMessages] = useState<Set<string>>(
@@ -64,7 +61,6 @@ export function useUnsendMessage({
     [
       userId,
       roomId,
-      onMessageUpdate,
       markMessageAsDeleted,
       unsendingMessages,
       unsendMessageMutation

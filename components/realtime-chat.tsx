@@ -52,7 +52,6 @@ export const RealtimeChat = ({
     loading,
     queueStatus,
     clearFailedMessages,
-    onMessageUpdate,
     markMessageAsDeleted,
     deletedMessageIds,
     presenceUsers
@@ -67,7 +66,6 @@ export const RealtimeChat = ({
   const { unsendMessage, isUnsending } = useUnsendMessage({
     userId,
     roomId,
-    onMessageUpdate,
     markMessageAsDeleted
   })
 
