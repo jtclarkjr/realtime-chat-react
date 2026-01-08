@@ -48,7 +48,7 @@ export const POST = withAuth(
           }
         }
 
-        await supabase.channel(body.roomId).send({
+        await supabase.channel(body.roomId).httpSend({
           type: 'broadcast',
           event: 'message',
           payload: broadcastMessage

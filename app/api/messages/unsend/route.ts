@@ -29,7 +29,7 @@ export const POST = withAuth(
       const unsent = await chatService.unsendMessage(body, supabase)
 
       // Broadcast the unsend event to all users in the room
-      await supabase.channel(body.roomId).send({
+      await supabase.channel(body.roomId).httpSend({
         type: 'broadcast',
         event: 'message_unsent',
         payload: {
