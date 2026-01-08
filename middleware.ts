@@ -19,23 +19,41 @@ export async function middleware(request: NextRequest) {
   // Get content length from headers
   const contentLength = request.headers.get('content-length')
 
-  if (contentLength) {
-    const bodySize = parseInt(contentLength, 10)
+  if (!contentLength) {
+    return NextResponse.json(
+      {
+        error: 'Content-Length required',
+        code: 'LENGTH_REQUIRED'
+      },
+      { status: 411 }
+    )
+  }
 
-    // Get the specific limit for this route or use default
-    const pathname = new URL(request.url).pathname
-    const maxSize = ROUTE_SIZE_LIMITS[pathname] || MAX_BODY_SIZE
+  const bodySize = parseInt(contentLength, 10)
 
-    if (bodySize > maxSize) {
-      return NextResponse.json(
-        {
-          error: 'Payload too large',
-          code: 'PAYLOAD_TOO_LARGE',
-          maxSize: `${maxSize / 1024}KB`
-        },
-        { status: 413 }
-      )
-    }
+  if (!Number.isFinite(bodySize) || bodySize < 0) {
+    return NextResponse.json(
+      {
+        error: 'Invalid Content-Length',
+        code: 'INVALID_CONTENT_LENGTH'
+      },
+      { status: 400 }
+    )
+  }
+
+  // Get the specific limit for this route or use default
+  const pathname = new URL(request.url).pathname
+  const maxSize = ROUTE_SIZE_LIMITS[pathname] || MAX_BODY_SIZE
+
+  if (bodySize > maxSize) {
+    return NextResponse.json(
+      {
+        error: 'Payload too large',
+        code: 'PAYLOAD_TOO_LARGE',
+        maxSize: `${maxSize / 1024}KB`
+      },
+      { status: 413 }
+    )
   }
 
   return NextResponse.next()

@@ -11,9 +11,13 @@ const nonEmptyString = z.string().min(1, 'Cannot be empty')
 const validatedTrimmedString = (min: number, max: number, label: string) =>
   z
     .string()
-    .min(min, `${label} must be at least ${min} characters`)
-    .max(max, `${label} must be ${max} characters or less`)
     .transform((val) => val.trim().normalize('NFC'))
+    .pipe(
+      z
+        .string()
+        .min(min, `${label} must be at least ${min} characters`)
+        .max(max, `${label} must be ${max} characters or less`)
+    )
 
 // Byte length validation helper
 
