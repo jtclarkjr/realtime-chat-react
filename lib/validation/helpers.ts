@@ -6,10 +6,31 @@ import { z } from 'zod'
  */
 interface ValidationErrorResponse {
   error: string
+  code: string
   details?: Array<{
-    path: string[]
+    field: string
     message: string
   }>
+}
+
+/**
+ * Sanitize error message to prevent leaking sensitive information
+ */
+function sanitizeErrorMessage(message: string): string {
+  // Remove file paths, stack traces, and internal details
+  return message
+    .replace(/\/[^\s]+\.ts/g, '[file]') // Remove file paths
+    .replace(/at .+\(.+\)/g, '') // Remove stack trace lines
+    .replace(/Expected .+, received .+/g, 'Invalid value') // Generic type errors
+    .trim()
+}
+
+/**
+ * Convert Zod path array to dot notation field name
+ */
+function formatFieldPath(path: (string | number | symbol)[]): string {
+  if (path.length === 0) return 'root'
+  return path.map((p) => String(p)).join('.')
 }
 
 /**
@@ -29,8 +50,8 @@ export async function validateRequestBody<T extends z.ZodTypeAny>(
 
     if (!result.success) {
       const errorDetails = result.error.issues.map((err) => ({
-        path: err.path.map(String),
-        message: err.message
+        field: formatFieldPath(err.path),
+        message: sanitizeErrorMessage(err.message)
       }))
 
       return {
@@ -38,6 +59,7 @@ export async function validateRequestBody<T extends z.ZodTypeAny>(
         response: NextResponse.json(
           {
             error: 'Validation failed',
+            code: 'VALIDATION_ERROR',
             details: errorDetails
           },
           { status: 400 }
@@ -46,11 +68,14 @@ export async function validateRequestBody<T extends z.ZodTypeAny>(
     }
 
     return { success: true, data: result.data }
-  } catch (error) {
+  } catch {
     return {
       success: false,
       response: NextResponse.json(
-        { error: 'Invalid JSON in request body' },
+        {
+          error: 'Invalid JSON in request body',
+          code: 'INVALID_JSON'
+        },
         { status: 400 }
       )
     }
@@ -79,8 +104,8 @@ export function validateQueryParams<T extends z.ZodTypeAny>(
 
   if (!result.success) {
     const errorDetails = result.error.issues.map((err) => ({
-      path: err.path.map(String),
-      message: err.message
+      field: formatFieldPath(err.path),
+      message: sanitizeErrorMessage(err.message)
     }))
 
     return {
@@ -88,6 +113,7 @@ export function validateQueryParams<T extends z.ZodTypeAny>(
       response: NextResponse.json(
         {
           error: 'Invalid query parameters',
+          code: 'INVALID_QUERY_PARAMS',
           details: errorDetails
         },
         { status: 400 }
@@ -113,8 +139,8 @@ export function validatePathParams<T extends z.ZodTypeAny>(
 
   if (!result.success) {
     const errorDetails = result.error.issues.map((err) => ({
-      path: err.path.map(String),
-      message: err.message
+      field: formatFieldPath(err.path),
+      message: sanitizeErrorMessage(err.message)
     }))
 
     return {
@@ -122,6 +148,7 @@ export function validatePathParams<T extends z.ZodTypeAny>(
       response: NextResponse.json(
         {
           error: 'Invalid path parameters',
+          code: 'INVALID_PATH_PARAMS',
           details: errorDetails
         },
         { status: 400 }
@@ -150,3 +177,6 @@ export function validateData<T extends z.ZodTypeAny>(
 
   return { success: true, data: result.data }
 }
+
+export const byteLength = (str: string): number => new TextEncoder().encode(str).length
+

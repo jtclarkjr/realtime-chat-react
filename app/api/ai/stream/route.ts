@@ -4,6 +4,10 @@ import { ChatService } from '@/lib/services/chat-service'
 import { requireAuth } from '@/lib/auth/middleware'
 import { aiStreamRequestSchema, validateRequestBody } from '@/lib/validation'
 
+// Configure route for streaming with body size limit
+export const runtime = 'nodejs'
+export const maxDuration = 60 // 60 seconds max for AI responses
+
 // AI Assistant user constants
 const AI_ASSISTANT = {
   id: 'ai-assistant',
@@ -22,7 +26,10 @@ export const POST = async (request: NextRequest) => {
   const { user, supabase } = authResult
 
   try {
-    // Validate request body with Zod schema
+    // STREAMING VALIDATION PATTERN:
+    // For streaming endpoints, we validate the entire body BEFORE initiating the stream.
+    // This prevents resource allocation for invalid requests.
+    // Body size is already limited by middleware to 50KB.
     const validation = await validateRequestBody(request, aiStreamRequestSchema)
     if (!validation.success) {
       // Convert NextResponse to regular Response for streaming endpoint
