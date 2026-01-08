@@ -2,24 +2,12 @@ import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { ChatService } from '@/lib/services/chat-service'
 import { requireAuth } from '@/lib/auth/middleware'
+import { aiStreamRequestSchema, validateRequestBody } from '@/lib/validation'
 
 // AI Assistant user constants
 const AI_ASSISTANT = {
   id: 'ai-assistant',
   name: 'AI Assistant'
-}
-
-interface AIStreamRequest {
-  roomId: string
-  userId: string
-  message: string
-  isPrivate?: boolean
-  triggerMessageId?: string
-  previousMessages?: Array<{
-    content: string
-    isAi: boolean
-    userName: string
-  }>
 }
 
 export const POST = async (request: NextRequest) => {
@@ -34,20 +22,17 @@ export const POST = async (request: NextRequest) => {
   const { user, supabase } = authResult
 
   try {
-    const body: AIStreamRequest = await request.json()
-
-    // Validate request
-    if (!body.roomId || !body.userId || !body.message?.trim()) {
-      return new Response(
-        JSON.stringify({
-          error: 'Missing required fields: roomId, userId, message'
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      )
+    // Validate request body with Zod schema
+    const validation = await validateRequestBody(request, aiStreamRequestSchema)
+    if (!validation.success) {
+      // Convert NextResponse to regular Response for streaming endpoint
+      return new Response(validation.response.body, {
+        status: validation.response.status,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
+
+    const body = validation.data
 
     // Validate that the user making the request matches the userId
     if (user.id !== body.userId) {
@@ -191,7 +176,7 @@ Be friendly and respectful, but extreme brevity is mandatory.`
           // Only broadcast public AI messages via Supabase Realtime
           // Private messages are only visible to the requesting user
           if (!body.isPrivate) {
-            await supabase.channel(body.roomId).httpSend({
+            await supabase.channel(body.roomId).httpSend('broadcast', {
               type: 'broadcast',
               event: 'message',
               payload: {

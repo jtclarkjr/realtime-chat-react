@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { roomCacheService } from '@/lib/services/room-cache-service'
 import { withAuth } from '@/lib/auth/middleware'
+import {
+  createRoomSchema,
+  deleteRoomQuerySchema,
+  validateRequestBody,
+  validateQueryParams
+} from '@/lib/validation'
 
 export const GET = withAuth(async () => {
   try {
@@ -19,19 +25,17 @@ export const GET = withAuth(async () => {
 
 export const POST = withAuth(async (request: NextRequest, auth) => {
   try {
-    const body = await request.json()
-    const { name, description } = body
-
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Room name is required' },
-        { status: 400 }
-      )
+    // Validate request body with Zod schema
+    const validation = await validateRequestBody(request, createRoomSchema)
+    if (!validation.success) {
+      return validation.response
     }
+
+    const { name, description } = validation.data
 
     // Use the cache service which handles database creation and cache invalidation
     const room = await roomCacheService.createRoom({
-      name: name.trim(),
+      name,
       description: description || null,
       created_by: auth.user.id
     })
@@ -59,15 +63,13 @@ export const POST = withAuth(async (request: NextRequest, auth) => {
 
 export const DELETE = withAuth(async (request: NextRequest) => {
   try {
-    const { searchParams } = new URL(request.url)
-    const roomId = searchParams.get('id')
-
-    if (!roomId || typeof roomId !== 'string') {
-      return NextResponse.json(
-        { error: 'Room ID is required' },
-        { status: 400 }
-      )
+    // Validate query parameters with Zod schema
+    const validation = validateQueryParams(request, deleteRoomQuerySchema)
+    if (!validation.success) {
+      return validation.response
     }
+
+    const { id: roomId } = validation.data
 
     // Use the cache service which handles database deletion and cache invalidation
     const success = await roomCacheService.deleteRoom(roomId)
