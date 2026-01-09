@@ -10,7 +10,7 @@ const ROUTE_SIZE_LIMITS: Record<string, number> = {
   '/api/ai/stream': 50 * 1024 // 50KB for AI requests
 }
 
-export async function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Only check body size for POST, PUT, PATCH requests
   if (!['POST', 'PUT', 'PATCH'].includes(request.method)) {
     return NextResponse.next()
