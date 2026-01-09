@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ChatService } from '@/lib/services/chat-service'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
+import { markReceivedSchema, validateRequestBody } from '@/lib/validation'
 import type { MarkReceivedRequest } from '@/lib/types/database'
 
 export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
-    const body: MarkReceivedRequest = await request.json()
-
-    // Validate request
-    if (!body.userId || !body.roomId || !body.messageId) {
-      return NextResponse.json(
-        { error: 'Missing required fields: userId, roomId, messageId' },
-        { status: 400 }
-      )
+    // Validate request body with Zod schema
+    const validation = await validateRequestBody(request, markReceivedSchema)
+    if (!validation.success) {
+      return validation.response
     }
+
+    const body = validation.data as MarkReceivedRequest
 
     // Validate that the user is marking messages for themselves
     if (!validateUserAccess(user.id, body.userId)) {

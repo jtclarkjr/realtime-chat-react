@@ -2,24 +2,16 @@ import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { ChatService } from '@/lib/services/chat-service'
 import { requireAuth } from '@/lib/auth/middleware'
+import { aiStreamRequestSchema, validateRequestBody } from '@/lib/validation'
+
+// Configure route for streaming with body size limit
+export const runtime = 'nodejs'
+export const maxDuration = 60 // 60 seconds max for AI responses
 
 // AI Assistant user constants
 const AI_ASSISTANT = {
   id: 'ai-assistant',
   name: 'AI Assistant'
-}
-
-interface AIStreamRequest {
-  roomId: string
-  userId: string
-  message: string
-  isPrivate?: boolean
-  triggerMessageId?: string
-  previousMessages?: Array<{
-    content: string
-    isAi: boolean
-    userName: string
-  }>
 }
 
 export const POST = async (request: NextRequest) => {
@@ -34,20 +26,20 @@ export const POST = async (request: NextRequest) => {
   const { user, supabase } = authResult
 
   try {
-    const body: AIStreamRequest = await request.json()
-
-    // Validate request
-    if (!body.roomId || !body.userId || !body.message?.trim()) {
-      return new Response(
-        JSON.stringify({
-          error: 'Missing required fields: roomId, userId, message'
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      )
+    // STREAMING VALIDATION PATTERN:
+    // For streaming endpoints, we validate the entire body BEFORE initiating the stream.
+    // This prevents resource allocation for invalid requests.
+    // Body size is already limited by middleware to 50KB.
+    const validation = await validateRequestBody(request, aiStreamRequestSchema)
+    if (!validation.success) {
+      // Convert NextResponse to regular Response for streaming endpoint
+      return new Response(validation.response.body, {
+        status: validation.response.status,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
+
+    const body = validation.data
 
     // Validate that the user making the request matches the userId
     if (user.id !== body.userId) {

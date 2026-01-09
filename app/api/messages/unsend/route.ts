@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ChatService } from '@/lib/services/chat-service'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
+import { unsendMessageSchema, validateRequestBody } from '@/lib/validation'
 import type { UnsendMessageRequest } from '@/lib/types/database'
 
 export const POST = withAuth(
   async (request: NextRequest, { user, supabase }) => {
     try {
-      const body: UnsendMessageRequest = await request.json()
-
-      if (!body.messageId || !body.userId || !body.roomId) {
-        return NextResponse.json(
-          {
-            error: 'Missing required fields: messageId, userId, roomId'
-          },
-          { status: 400 }
-        )
+      // Validate request body with Zod schema
+      const validation = await validateRequestBody(request, unsendMessageSchema)
+      if (!validation.success) {
+        return validation.response
       }
+
+      const body = validation.data as UnsendMessageRequest
 
       // Validate that the user is unsending their own message
       if (!validateUserAccess(user.id, body.userId)) {

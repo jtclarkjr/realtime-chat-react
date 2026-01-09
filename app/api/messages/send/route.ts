@@ -2,27 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ChatService } from '@/lib/services/chat-service'
 import { userService } from '@/lib/services/user-service'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
+import { sendMessageSchema, validateRequestBody } from '@/lib/validation'
 import type { SendMessageRequest } from '@/lib/types/database'
 
 export const POST = withAuth(
   async (request: NextRequest, { user, supabase }) => {
     try {
-      const body: SendMessageRequest = await request.json()
-
-      // Validate request
-      if (
-        !body.roomId ||
-        !body.userId ||
-        !body.username ||
-        !body.content?.trim()
-      ) {
-        return NextResponse.json(
-          {
-            error: 'Missing required fields: roomId, userId, username, content'
-          },
-          { status: 400 }
-        )
+      // Validate request body with Zod schema
+      const validation = await validateRequestBody(request, sendMessageSchema)
+      if (!validation.success) {
+        return validation.response
       }
+
+      const body = validation.data as SendMessageRequest
 
       // Validate that the user is sending messages as themselves
       if (!validateUserAccess(user.id, body.userId)) {
