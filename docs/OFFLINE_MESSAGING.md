@@ -2,15 +2,19 @@
 
 ## Overview
 
-This document describes the offline messaging system in the realtime chat application. The system ensures that messages sent to offline users are reliably stored and delivered when those users reconnect.
+This document describes the offline messaging system in the realtime chat
+application. The system ensures that messages sent to offline users are reliably
+stored and delivered when those users reconnect.
 
 ## Architecture
 
 The offline messaging system uses a **hybrid storage approach**:
 
-- **PostgreSQL (Supabase)**: Permanent storage and source of truth for all messages
+- **PostgreSQL (Supabase)**: Permanent storage and source of truth for all
+  messages
 - **Redis**: Lightweight message tracking with delivery pointers
-- **Supabase Realtime**: WebSocket-based real-time message delivery for online users
+- **Supabase Realtime**: WebSocket-based real-time message delivery for online
+  users
 
 ## System Components
 
@@ -40,6 +44,7 @@ room:{roomId}:latest_message_id → messageId
 ```
 
 **Key Points:**
+
 - Only stores message IDs, not full content
 - 30-day TTL prevents indefinite growth
 - Can be rebuilt from database if lost
@@ -47,11 +52,13 @@ room:{roomId}:latest_message_id → messageId
 ### 3. Presence Detection
 
 **Client-Side Network Detection:**
+
 - Browser Navigator API (`navigator.onLine`)
 - Network event listeners (`online`, `offline`)
 - Tab visibility monitoring
 
 **WebSocket Connection Status:**
+
 - Supabase Realtime channel subscription
 - Heartbeat every 30 seconds
 - Automatic reconnection on failures
@@ -347,6 +354,7 @@ flowchart TD
 ### Row Level Security (RLS)
 
 Database policies ensure users can only:
+
 - Read messages from rooms they're members of
 - Write messages to rooms they're authorized in
 - Update their own delivery tracking
@@ -361,18 +369,18 @@ Database policies ensure users can only:
 
 ## File Reference
 
-| Component | File Path | Lines |
-|-----------|-----------|-------|
-| Message Schema | `database/schema.sql` | Full file |
-| Send Message API | `app/api/messages/send/route.ts` | 35-56 |
-| Rejoin API | `app/api/rooms/[roomId]/rejoin/route.ts` | Full file |
-| Chat Service | `lib/services/chat-service.ts` | 60-323 |
-| Redis Tracking | `lib/redis/message-tracking/index.ts` | Full file |
-| Network Detection | `hooks/connection/use-network-connectivity.tsx` | Full file |
-| WebSocket Connection | `hooks/connection/use-websocket-connection.tsx` | 40-208 |
-| Missed Messages Hook | `hooks/messages/use-missed-messages.tsx` | Full file |
-| Realtime Chat Hook | `hooks/chat/use-realtime-chat.tsx` | Full file |
-| Message Merging | `hooks/messages/use-message-merging.tsx` | Full file |
+| Component            | File Path                                       | Lines     |
+| -------------------- | ----------------------------------------------- | --------- |
+| Message Schema       | `database/schema.sql`                           | Full file |
+| Send Message API     | `app/api/messages/send/route.ts`                | 35-56     |
+| Rejoin API           | `app/api/rooms/[roomId]/rejoin/route.ts`        | Full file |
+| Chat Service         | `lib/services/chat-service.ts`                  | 60-323    |
+| Redis Tracking       | `lib/redis/message-tracking/index.ts`           | Full file |
+| Network Detection    | `hooks/connection/use-network-connectivity.tsx` | Full file |
+| WebSocket Connection | `hooks/connection/use-websocket-connection.tsx` | 40-208    |
+| Missed Messages Hook | `hooks/messages/use-missed-messages.tsx`        | Full file |
+| Realtime Chat Hook   | `hooks/chat/use-realtime-chat.tsx`              | Full file |
+| Message Merging      | `hooks/messages/use-message-merging.tsx`        | Full file |
 
 ## Future Enhancements
 

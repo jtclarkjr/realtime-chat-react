@@ -2,13 +2,17 @@
 
 ## Overview
 
-The user presence system provides real-time visibility of active users in chat rooms through avatar displays. Users can see who else is currently in a room, with avatars updating dynamically as people join and leave.
+The user presence system provides real-time visibility of active users in chat
+rooms through avatar displays. Users can see who else is currently in a room,
+with avatars updating dynamically as people join and leave.
 
 ### Key Features
 
-- **Real-time presence tracking** - Avatars appear/disappear instantly as users join/leave
+- **Real-time presence tracking** - Avatars appear/disappear instantly as users
+  join/leave
 - **Avatar stack display** - Overlapping avatars with overflow indicators
-- **Current user highlighting** - Your avatar is highlighted with a distinct border
+- **Current user highlighting** - Your avatar is highlighted with a distinct
+  border
 - **Tooltips** - Hover to see full names
 - **Efficient architecture** - Single channel approach, minimal overhead
 - **Automatic cleanup** - Presence removed on disconnect/navigation
@@ -19,7 +23,9 @@ The user presence system provides real-time visibility of active users in chat r
 
 ### Design Philosophy
 
-**Single Channel Integration** - The presence system leverages the existing Supabase WebSocket channel used for messaging rather than creating a separate presence-only channel. This design choice provides:
+**Single Channel Integration** - The presence system leverages the existing
+Supabase WebSocket channel used for messaging rather than creating a separate
+presence-only channel. This design choice provides:
 
 - **Lower resource usage** - One channel instead of two
 - **Simplified state management** - Single connection state to track
@@ -225,6 +231,7 @@ flowchart TD
 ### Scalability
 
 **Current Design:**
+
 - Handles rooms with 5-10 users optimally
 - Gracefully degrades to 50+ users (overflow badge)
 - Performance impact minimal due to:
@@ -233,12 +240,14 @@ flowchart TD
   - Memoized transformations
 
 **Potential Bottlenecks:**
+
 - Very large rooms (100+ users) may cause:
   - Increased sync payload size
   - More frequent re-renders
   - Memory usage from presence state
 
 **Mitigation:**
+
 - Pagination in overflow tooltip
 - Virtual scrolling for large user lists
 - Room size limits (product decision)
@@ -250,12 +259,14 @@ flowchart TD
 ### Why Track on Every Heartbeat?
 
 **Rationale:**
+
 - Supabase presence has a timeout mechanism
 - Periodic tracking keeps user "alive"
 - Detects disconnected clients
 - 30-second interval balances freshness vs. network load
 
 **Alternative:** Track only on join/leave
+
 - Risk: Stale presence if client crashes
 - Risk: False "online" status for zombie connections
 
@@ -264,11 +275,13 @@ flowchart TD
 **User Preference:** Yes, include current user
 
 **Benefits:**
+
 - Confirms you're visible to others
 - Shows your connection status
 - Consistent with design pattern (Figma, Google Docs)
 
 **Implementation:**
+
 - Highlighted with `ring-primary`
 - Sorted first in list
 - Tooltip shows "(you)"
@@ -282,6 +295,7 @@ flowchart TD
 **Scenario:** User's internet disconnects
 
 **Behavior:**
+
 1. WebSocket connection drops
 2. `setIsConnected(false)` triggered
 3. Reconnection logic attempts reconnect
@@ -289,6 +303,7 @@ flowchart TD
 5. Other users' views update when sync event fires
 
 **User Experience:**
+
 - Avatar may temporarily disappear for others
 - Reappears automatically on reconnection
 - No manual intervention needed
@@ -298,6 +313,7 @@ flowchart TD
 ### Integration
 
 **Scenarios:**
+
 1. User joins room → Avatar appears for all
 2. User leaves room → Avatar disappears for all
 3. Multiple users join → Avatars stack properly
@@ -310,4 +326,3 @@ flowchart TD
 ### Related Documentation
 
 - [Supabase Realtime Presence Docs](https://supabase.com/docs/guides/realtime/presence)
-

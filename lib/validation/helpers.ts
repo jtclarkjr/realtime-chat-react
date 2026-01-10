@@ -91,8 +91,7 @@ export function validateQueryParams<T extends z.ZodTypeAny>(
   schema: T
 ):
   | { success: true; data: z.infer<T> }
-  | { success: false; response: NextResponse<ValidationErrorResponse> }
-{
+  | { success: false; response: NextResponse<ValidationErrorResponse> } {
   const { searchParams } = new URL(request.url)
   const params: Record<string, string> = {}
 
@@ -133,8 +132,7 @@ export function validatePathParams<T extends z.ZodTypeAny>(
   schema: T
 ):
   | { success: true; data: z.infer<T> }
-  | { success: false; response: NextResponse<ValidationErrorResponse> }
-{
+  | { success: false; response: NextResponse<ValidationErrorResponse> } {
   const result = schema.safeParse(params)
 
   if (!result.success) {
@@ -167,8 +165,7 @@ export function validateData<T extends z.ZodTypeAny>(
   schema: T
 ):
   | { success: true; data: z.infer<T> }
-  | { success: false; errors: z.ZodError }
-{
+  | { success: false; errors: z.ZodError } {
   const result = schema.safeParse(data)
 
   if (!result.success) {
@@ -178,5 +175,5 @@ export function validateData<T extends z.ZodTypeAny>(
   return { success: true, data: result.data }
 }
 
-export const byteLength = (str: string): number => new TextEncoder().encode(str).length
-
+export const byteLength = (str: string): number =>
+  new TextEncoder().encode(str).length
