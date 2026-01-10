@@ -183,18 +183,14 @@ Be friendly and respectful, but extreme brevity is mandatory.`
           // Only broadcast public AI messages via Supabase Realtime
           // Private messages are only visible to the requesting user
           if (!body.isPrivate) {
-            await supabase.channel(body.roomId).httpSend('broadcast', {
-              type: 'broadcast',
-              event: 'message',
-              payload: {
-                id: aiMessage.id,
-                content: aiMessage.content,
-                user: AI_ASSISTANT,
-                createdAt: aiMessage.createdAt,
-                roomId: body.roomId,
-                isAI: true,
-                isPrivate: false
-              }
+            await supabase.channel(body.roomId).httpSend('message', {
+              id: aiMessage.id,
+              content: aiMessage.content,
+              user: AI_ASSISTANT,
+              createdAt: aiMessage.createdAt,
+              roomId: body.roomId,
+              isAI: true,
+              isPrivate: false
             })
           }
 
