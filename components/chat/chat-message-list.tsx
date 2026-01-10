@@ -1,7 +1,8 @@
 'use client'
 
-import { forwardRef } from 'react'
+import { forwardRef, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { ChatMessageItem } from '@/components/chat-message'
 import { ScrollDateIndicator } from '@/components/chat'
 import { useScrollDateDetection } from '@/hooks/ui'
@@ -36,8 +37,32 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
     },
     ref
   ) => {
-    const { scrollDate, isScrolling, handleScroll } = useScrollDateDetection({
-      messages
+    const { scrollDate, isScrolling, handleScroll } = useScrollDateDetection()
+    const filteredMessages = useMemo(
+      () => messages.filter((message) => !message.isDeleted),
+      [messages]
+    )
+    const enableVirtualization = filteredMessages.length > 150
+    const enableAnimations = filteredMessages.length < 200
+    const scrollContainerRef = useRef<HTMLDivElement | null>(null)
+
+    const setCombinedRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        scrollContainerRef.current = node
+        if (typeof ref === 'function') {
+          ref(node)
+        } else if (ref) {
+          ref.current = node
+        }
+      },
+      [ref]
+    )
+
+    const rowVirtualizer = useVirtualizer({
+      count: filteredMessages.length,
+      getScrollElement: () => scrollContainerRef.current,
+      estimateSize: () => 72,
+      overscan: 8
     })
 
     const handleCombinedScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -49,7 +74,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
       <>
         <ScrollDateIndicator date={scrollDate} isVisible={isScrolling} />
         <div
-          ref={ref}
+          ref={setCombinedRef}
           className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-4"
           role="log"
           aria-label="Chat messages"
@@ -66,42 +91,38 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
             </div>
           ) : null}
           {(initialMessagesLength > 0 || (!loading && isConnected)) && (
-            <AnimatePresence mode="popLayout" initial={false}>
-              <div className="space-y-1 sm:space-y-2">
-                {messages
-                  .filter((message) => !message.isDeleted)
-                  .map((message, index, filteredMessages) => {
+            <>
+              {enableVirtualization ? (
+                <div
+                  className="relative"
+                  style={{ height: rowVirtualizer.getTotalSize() }}
+                >
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const message = filteredMessages[virtualRow.index]
+                    if (!message) return null
                     const prevMessage =
-                      index > 0 ? filteredMessages[index - 1] : null
+                      virtualRow.index > 0
+                        ? filteredMessages[virtualRow.index - 1]
+                        : null
                     const showHeader =
                       !prevMessage ||
                       prevMessage.user.name !== message.user.name
-                    const shouldAnimate = !message.isOptimistic
 
-                    return shouldAnimate ? (
-                      <motion.div
+                    return (
+                      <div
                         key={message.id}
+                        ref={rowVirtualizer.measureElement}
+                        className="pb-3 sm:pb-4"
                         data-message-id={message.id}
-                        exit={{
-                          opacity: 0,
-                          height: 0,
-                          marginTop: 0,
-                          marginBottom: 0,
-                          transition: { duration: 0.3, ease: 'easeInOut' }
+                        data-message-date={message.createdAt || ''}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          transform: `translateY(${virtualRow.start}px)`
                         }}
                       >
-                        <ChatMessageItem
-                          message={message}
-                          isOwnMessage={message.user.name === username}
-                          showHeader={showHeader}
-                          currentUserId={userId}
-                          onRetry={onRetry}
-                          onUnsend={onUnsend}
-                          isUnsending={isUnsending}
-                        />
-                      </motion.div>
-                    ) : (
-                      <div key={message.id} data-message-id={message.id}>
                         <ChatMessageItem
                           message={message}
                           isOwnMessage={message.user.name === username}
@@ -114,8 +135,68 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                       </div>
                     )
                   })}
-              </div>
-            </AnimatePresence>
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <div className="flex flex-col">
+                    {filteredMessages.map(
+                      (message, index, currentMessages) => {
+                        const prevMessage =
+                          index > 0 ? currentMessages[index - 1] : null
+                        const showHeader =
+                          !prevMessage ||
+                          prevMessage.user.name !== message.user.name
+                        const shouldAnimate =
+                          enableAnimations && !message.isOptimistic
+
+                        return shouldAnimate ? (
+                          <motion.div
+                            key={message.id}
+                            className="pb-3 sm:pb-4"
+                            data-message-id={message.id}
+                            data-message-date={message.createdAt || ''}
+                            exit={{
+                              opacity: 0,
+                              height: 0,
+                              marginTop: 0,
+                              marginBottom: 0,
+                              transition: { duration: 0.3, ease: 'easeInOut' }
+                            }}
+                          >
+                            <ChatMessageItem
+                              message={message}
+                              isOwnMessage={message.user.name === username}
+                              showHeader={showHeader}
+                              currentUserId={userId}
+                              onRetry={onRetry}
+                              onUnsend={onUnsend}
+                              isUnsending={isUnsending}
+                            />
+                          </motion.div>
+                        ) : (
+                          <div
+                            key={message.id}
+                            className="pb-3 sm:pb-4"
+                            data-message-id={message.id}
+                            data-message-date={message.createdAt || ''}
+                          >
+                            <ChatMessageItem
+                              message={message}
+                              isOwnMessage={message.user.name === username}
+                              showHeader={showHeader}
+                              currentUserId={userId}
+                              onRetry={onRetry}
+                              onUnsend={onUnsend}
+                              isUnsending={isUnsending}
+                            />
+                          </div>
+                        )
+                      }
+                    )}
+                  </div>
+                </AnimatePresence>
+              )}
+            </>
           )}
         </div>
       </>

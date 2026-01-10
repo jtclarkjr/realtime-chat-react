@@ -19,47 +19,23 @@ export function useMessageMerging({
   deletedMessageIds = new Set()
 }: UseMessageMergingProps) {
   const allMessages = useMemo(() => {
-    const mergedMessages = [...initialMessages, ...realtimeMessages]
+    const messageById = new Map<string, ChatMessage>()
+    const streamingMessageIds = new Set(
+      streamingMessages.map((message) => message.id)
+    )
+    const fallbackTime = Date.now()
 
-    // Handle streaming messages and potential duplicates
-    streamingMessages.forEach((streamingMessage) => {
-      // Check if there's already a broadcast message with the same ID
-      const existingBroadcastMessage = mergedMessages.find(
-        (msg) => msg.id === streamingMessage.id && msg !== streamingMessage
-      )
+    const isStreamingMessage = (message: ChatMessage) =>
+      message.isStreaming || streamingMessageIds.has(message.id)
 
-      if (existingBroadcastMessage && !streamingMessage.isPrivate) {
-        // Public message: broadcast exists, don't add streaming message
-        // The broadcast message is already in mergedMessages
-      } else {
-        // Either no broadcast yet, or this is a private message (which won't have broadcasts)
-        mergedMessages.push(streamingMessage)
-      }
-    })
+    const shouldIncludeMessage = (message: ChatMessage) => {
+      if (!message?.id) return false
+      if (message.isDeleted || deletedMessageIds.has(message.id)) return false
+      if (!message.user?.name) return false
 
-    // Remove duplicates based on message id and filter out invalid messages
-    const uniqueMessages = mergedMessages.filter((message, index, self) => {
-      if (!message) return false
-      if (!message.id) return false
+      const isStreaming = isStreamingMessage(message)
+      if (!message.content?.trim() && !isStreaming) return false
 
-      // Filter out deleted messages (check both isDeleted flag and deletedMessageIds set)
-      if (message.isDeleted || deletedMessageIds.has(message.id)) {
-        return false
-      }
-
-      // Filter out messages without content or invalid structure
-      const isStreamingMessage = streamingMessages.some((sm) => sm === message)
-      if (
-        !message ||
-        !message.id ||
-        (!message.content?.trim() && !isStreamingMessage) || // Allow empty content for streaming messages
-        !message.user?.name
-      ) {
-        return false
-      }
-
-      // Filter out private messages that don't belong to current user
-      // Private messages should only be visible to the user who requested them OR the user who sent them
       if (
         message.isPrivate &&
         message.requesterId !== userId &&
@@ -68,33 +44,36 @@ export function useMessageMerging({
         return false
       }
 
-      // For messages with the same ID, prefer non-streaming (broadcast) messages
-      const duplicateIndex = self.findIndex((m) => m?.id === message.id)
-      if (duplicateIndex !== index) {
-        // This is a duplicate - prefer broadcast messages over streaming
-        const firstOccurrence = self[duplicateIndex]
-        const currentIsStreaming =
-          message.isStreaming || streamingMessages.some((sm) => sm === message)
-        const firstIsStreaming =
-          firstOccurrence?.isStreaming ||
-          streamingMessages.some((sm) => sm === firstOccurrence)
+      return true
+    }
 
-        if (currentIsStreaming && !firstIsStreaming) {
-          return false // Remove streaming message in favor of broadcast
-        }
-        if (firstIsStreaming && !currentIsStreaming) {
-          return true // Keep broadcast message over streaming
-        }
+    const upsertMessage = (message: ChatMessage) => {
+      if (!shouldIncludeMessage(message)) return
+
+      const existing = messageById.get(message.id)
+      if (!existing) {
+        messageById.set(message.id, message)
+        return
       }
 
-      return duplicateIndex === index // Keep first occurrence for non-conflicting cases
-    })
+      const existingIsStreaming = isStreamingMessage(existing)
+      const currentIsStreaming = isStreamingMessage(message)
+      if (existingIsStreaming && !currentIsStreaming) {
+        messageById.set(message.id, message)
+      }
+    }
+
+    initialMessages.forEach(upsertMessage)
+    realtimeMessages.forEach(upsertMessage)
+    streamingMessages.forEach(upsertMessage)
+
+    const uniqueMessages = Array.from(messageById.values())
 
     // Sort by creation date with null checks
     const sortedMessages = uniqueMessages.sort((a, b) => {
-      const dateA = a.createdAt || new Date().toISOString()
-      const dateB = b.createdAt || new Date().toISOString()
-      return new Date(dateA).getTime() - new Date(dateB).getTime()
+      const timeA = a.createdAt ? Date.parse(a.createdAt) : fallbackTime
+      const timeB = b.createdAt ? Date.parse(b.createdAt) : fallbackTime
+      return timeA - timeB
     })
 
     return sortedMessages
