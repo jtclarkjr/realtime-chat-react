@@ -110,9 +110,10 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
 
                     return (
                       <div
-                        key={message.id}
+                        key={virtualRow.key}
                         ref={rowVirtualizer.measureElement}
                         className="pb-3 sm:pb-4"
+                        data-index={virtualRow.index}
                         data-message-id={message.id}
                         data-message-date={message.createdAt || ''}
                         style={{
