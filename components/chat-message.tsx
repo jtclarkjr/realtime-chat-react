@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '@/lib/utils'
 import type { ChatMessage } from '@/lib/types/database'
 import {
@@ -18,7 +19,7 @@ interface ChatMessageItemProps {
   isUnsending?: (messageId: string) => boolean
 }
 
-export const ChatMessageItem = ({
+const ChatMessageItemComponent = ({
   message,
   isOwnMessage,
   showHeader,
@@ -52,7 +53,7 @@ export const ChatMessageItem = ({
 
   return (
     <div
-      className={`flex mb-3 sm:mb-4 ${getMessageAlignment()}`}
+      className={`flex ${getMessageAlignment()}`}
       role="article"
       aria-label={`Message from ${message.user.name}`}
     >
@@ -106,3 +107,6 @@ export const ChatMessageItem = ({
     </div>
   )
 }
+
+export const ChatMessageItem = memo(ChatMessageItemComponent)
+ChatMessageItem.displayName = 'ChatMessageItem'
