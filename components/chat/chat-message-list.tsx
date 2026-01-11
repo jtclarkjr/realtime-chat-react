@@ -139,60 +139,58 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
               ) : (
                 <AnimatePresence mode="popLayout" initial={false}>
                   <div className="flex flex-col">
-                    {filteredMessages.map(
-                      (message, index, currentMessages) => {
-                        const prevMessage =
-                          index > 0 ? currentMessages[index - 1] : null
-                        const showHeader =
-                          !prevMessage ||
-                          prevMessage.user.name !== message.user.name
-                        const shouldAnimate =
-                          enableAnimations && !message.isOptimistic
+                    {filteredMessages.map((message, index, currentMessages) => {
+                      const prevMessage =
+                        index > 0 ? currentMessages[index - 1] : null
+                      const showHeader =
+                        !prevMessage ||
+                        prevMessage.user.name !== message.user.name
+                      const shouldAnimate =
+                        enableAnimations && !message.isOptimistic
 
-                        return shouldAnimate ? (
-                          <motion.div
-                            key={message.id}
-                            className="pb-3 sm:pb-4"
-                            data-message-id={message.id}
-                            data-message-date={message.createdAt || ''}
-                            exit={{
-                              opacity: 0,
-                              height: 0,
-                              marginTop: 0,
-                              marginBottom: 0,
-                              transition: { duration: 0.3, ease: 'easeInOut' }
-                            }}
-                          >
-                            <ChatMessageItem
-                              message={message}
-                              isOwnMessage={message.user.name === username}
-                              showHeader={showHeader}
-                              currentUserId={userId}
-                              onRetry={onRetry}
-                              onUnsend={onUnsend}
-                              isUnsending={isUnsending}
-                            />
-                          </motion.div>
-                        ) : (
-                          <div
-                            key={message.id}
-                            className="pb-3 sm:pb-4"
-                            data-message-id={message.id}
-                            data-message-date={message.createdAt || ''}
-                          >
-                            <ChatMessageItem
-                              message={message}
-                              isOwnMessage={message.user.name === username}
-                              showHeader={showHeader}
-                              currentUserId={userId}
-                              onRetry={onRetry}
-                              onUnsend={onUnsend}
-                              isUnsending={isUnsending}
-                            />
-                          </div>
-                        )
-                      }
-                    )}
+                      return shouldAnimate ? (
+                        <motion.div
+                          key={message.id}
+                          className="pb-3 sm:pb-4"
+                          data-message-id={message.id}
+                          data-message-date={message.createdAt || ''}
+                          exit={{
+                            opacity: 0,
+                            height: 0,
+                            marginTop: 0,
+                            marginBottom: 0,
+                            transition: { duration: 0.3, ease: 'easeInOut' }
+                          }}
+                        >
+                          <ChatMessageItem
+                            message={message}
+                            isOwnMessage={message.user.name === username}
+                            showHeader={showHeader}
+                            currentUserId={userId}
+                            onRetry={onRetry}
+                            onUnsend={onUnsend}
+                            isUnsending={isUnsending}
+                          />
+                        </motion.div>
+                      ) : (
+                        <div
+                          key={message.id}
+                          className="pb-3 sm:pb-4"
+                          data-message-id={message.id}
+                          data-message-date={message.createdAt || ''}
+                        >
+                          <ChatMessageItem
+                            message={message}
+                            isOwnMessage={message.user.name === username}
+                            showHeader={showHeader}
+                            currentUserId={userId}
+                            onRetry={onRetry}
+                            onUnsend={onUnsend}
+                            isUnsending={isUnsending}
+                          />
+                        </div>
+                      )
+                    })}
                   </div>
                 </AnimatePresence>
               )}

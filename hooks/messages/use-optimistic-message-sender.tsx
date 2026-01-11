@@ -105,8 +105,7 @@ export function useOptimisticMessageSender({
         ...message,
         isOptimisticConfirmed: true,
         serverId: result.message.id,
-        serverTimestamp:
-          result.message.created_at || new Date().toISOString(),
+        serverTimestamp: result.message.created_at || new Date().toISOString(),
         isFailed: false,
         isRetrying: false,
         isPending: false
