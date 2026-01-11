@@ -5,6 +5,9 @@ import type { ChatMessage } from '@/lib/types/database'
 import { useMessageSender } from './use-message-sender'
 import { useSendMessage } from '@/lib/query/mutations/use-send-message'
 
+const MAX_RETRY_ATTEMPTS = 2
+const RETRY_DELAY_MS = 1000
+
 interface UseOptimisticMessageSenderProps {
   roomId: string
   userId: string
@@ -45,7 +48,7 @@ export function useOptimisticMessageSender({
   // Get queue-based sender for offline scenarios
   const {
     sendMessage: sendMessageWithQueue,
-    retryMessage,
+    retryMessage: retryMessageWithQueue,
     queueStatus,
     clearFailedMessages
   } = useMessageSender({
@@ -57,90 +60,194 @@ export function useOptimisticMessageSender({
     onMessageUpdate: onConfirmedMessageUpdate
   })
 
+  const updateMessageById = useCallback(
+    (
+      messageId: string,
+      updater: (message: ChatMessage) => ChatMessage
+    ): void => {
+      onConfirmedMessageUpdate((current) =>
+        current.map((message) =>
+          message.id === messageId ? updater(message) : message
+        )
+      )
+    },
+    [onConfirmedMessageUpdate]
+  )
+
+  const applySuccess = useCallback(
+    (
+      optimisticId: string,
+      result: { message: { id: string; created_at?: string } },
+      isPrivate: boolean
+    ) => {
+      if (isPrivate) {
+        onConfirmedMessageUpdate((current) =>
+          current.map((msg) =>
+            msg.id === optimisticId
+              ? {
+                  ...msg,
+                  id: result.message.id,
+                  createdAt:
+                    result.message.created_at || new Date().toISOString(),
+                  isOptimistic: false,
+                  isOptimisticConfirmed: false,
+                  isFailed: false,
+                  isRetrying: false,
+                  isPending: false
+                }
+              : msg
+          )
+        )
+        return
+      }
+
+      updateMessageById(optimisticId, (message) => ({
+        ...message,
+        isOptimisticConfirmed: true,
+        serverId: result.message.id,
+        serverTimestamp:
+          result.message.created_at || new Date().toISOString(),
+        isFailed: false,
+        isRetrying: false,
+        isPending: false
+      }))
+    },
+    [onConfirmedMessageUpdate, updateMessageById]
+  )
+
+  const applyFailure = useCallback(
+    (optimisticId: string, attemptsMade: number) => {
+      updateMessageById(optimisticId, (message) => ({
+        ...message,
+        isFailed: true,
+        isRetrying: false,
+        isPending: false,
+        isQueued: false,
+        isOptimistic: false,
+        retryAttempts: attemptsMade
+      }))
+    },
+    [updateMessageById]
+  )
+
+  const sendWithRetries = useCallback(
+    async ({
+      optimisticId,
+      content,
+      isPrivate
+    }: {
+      optimisticId: string
+      content: string
+      isPrivate: boolean
+    }): Promise<{
+      result: {
+        success: boolean
+        message: { id: string; created_at?: string }
+      } | null
+      attemptsMade: number
+    }> => {
+      let lastResult: {
+        success: boolean
+        message: { id: string; created_at?: string }
+      } | null = null
+      let attemptsMade = 0
+
+      for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
+        if (attempt > 0) {
+          updateMessageById(optimisticId, (message) => ({
+            ...message,
+            isRetrying: true,
+            isPending: true,
+            isFailed: false,
+            isOptimistic: true,
+            optimisticTimestamp: Date.now(),
+            retryAttempts: attempt
+          }))
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS))
+        }
+
+        attemptsMade = attempt + 1
+
+        try {
+          lastResult = await sendMessageMutation.mutateAsync({
+            roomId: roomId,
+            userId,
+            username,
+            content,
+            isPrivate,
+            optimisticId
+          })
+        } catch (error) {
+          lastResult = null
+        }
+
+        if (lastResult && lastResult.success) {
+          return { result: lastResult, attemptsMade }
+        }
+      }
+
+      return { result: lastResult, attemptsMade }
+    },
+    [roomId, userId, username, sendMessageMutation, updateMessageById]
+  )
+
   // Create unified message sender function
   const sendMessage = useCallback(
     async (content: string, isPrivate = false): Promise<string | null> => {
       if (!content.trim()) return null
+      const trimmedContent = content.trim()
 
       // If offline, delegate to queue-based sender
       if (!isConnected) {
-        return await sendMessageWithQueue(content, isPrivate)
+        return await sendMessageWithQueue(trimmedContent, isPrivate)
       }
 
+      const optimisticId = crypto.randomUUID()
+      const baseMessage: ChatMessage = {
+        id: optimisticId,
+        content: trimmedContent,
+        user: {
+          id: userId,
+          name: username,
+          avatar_url: userAvatarUrl
+        },
+        createdAt: new Date().toISOString(),
+        roomId: roomId,
+        isAI: false,
+        isPrivate,
+        requesterId: isPrivate ? userId : undefined,
+        isPending: false
+      }
+
+      const optimisticMessage: ChatMessage = {
+        ...baseMessage,
+        isPending: false,
+        isQueued: false,
+        isRetrying: false,
+        isFailed: false,
+        isOptimistic: true,
+        optimisticTimestamp: Date.now()
+      }
+
+      onConfirmedMessageUpdate((current) => [...current, optimisticMessage])
+
       try {
-        // Send to server using React Query mutation
-        const result = await sendMessageMutation.mutateAsync({
-          roomId: roomId,
-          userId,
-          username,
-          content: content.trim(),
+        const sendResult = await sendWithRetries({
+          optimisticId,
+          content: trimmedContent,
           isPrivate
         })
 
-        if (!result.success) {
-          // If failed, show failed message with server's message ID (or generate one)
-          const failedMessage: ChatMessage = {
-            id: result.message?.id || crypto.randomUUID(),
-            content: content.trim(),
-            user: {
-              id: userId,
-              name: username,
-              avatar_url: userAvatarUrl
-            },
-            createdAt: new Date().toISOString(),
-            roomId: roomId,
-            isAI: false,
-            isPrivate,
-            requesterId: isPrivate ? userId : undefined,
-            isPending: false,
-            isFailed: true,
-            isOptimistic: false
-          }
-          onConfirmedMessageUpdate((current) => [...current, failedMessage])
-        } else if (isPrivate && result.message) {
-          // For private messages, add to local state since they won't be broadcast
-          const successMessage: ChatMessage = {
-            id: result.message.id,
-            content: content.trim(),
-            user: {
-              id: userId,
-              name: username,
-              avatar_url: userAvatarUrl
-            },
-            createdAt: result.message.created_at || new Date().toISOString(),
-            roomId: roomId,
-            isAI: false,
-            isPrivate: true,
-            requesterId: userId,
-            isPending: false,
-            isFailed: false,
-            isOptimistic: false
-          }
-          onConfirmedMessageUpdate((current) => [...current, successMessage])
+        if (sendResult?.result && sendResult.result.success) {
+          applySuccess(optimisticId, sendResult.result, isPrivate)
+          return sendResult.result.message?.id || null
         }
 
-        return result.success ? result.message?.id : null
+        applyFailure(optimisticId, sendResult?.attemptsMade ?? 1)
+        return null
       } catch (error) {
         console.error('Network error sending message:', error)
-        // Show failed message on network error (generate temp ID since we don't have server ID)
-        const failedMessage: ChatMessage = {
-          id: crypto.randomUUID(),
-          content: content.trim(),
-          user: {
-            id: userId,
-            name: username,
-            avatar_url: userAvatarUrl
-          },
-          createdAt: new Date().toISOString(),
-          roomId: roomId,
-          isAI: false,
-          isPrivate,
-          requesterId: isPrivate ? userId : undefined,
-          isPending: false,
-          isFailed: true,
-          isOptimistic: false
-        }
-        onConfirmedMessageUpdate((current) => [...current, failedMessage])
+        applyFailure(optimisticId, MAX_RETRY_ATTEMPTS)
         return null
       }
     },
@@ -151,8 +258,57 @@ export function useOptimisticMessageSender({
       userAvatarUrl,
       isConnected,
       sendMessageWithQueue,
-      onConfirmedMessageUpdate,
-      sendMessageMutation
+      sendWithRetries,
+      applySuccess,
+      applyFailure
+    ]
+  )
+
+  const retryMessage = useCallback(
+    async (messageId: string): Promise<boolean> => {
+      const message = confirmedMessages.find((msg) => msg.id === messageId)
+
+      if (!message || !message.isFailed) {
+        return await retryMessageWithQueue(messageId)
+      }
+
+      if (!isConnected) {
+        return await retryMessageWithQueue(messageId)
+      }
+
+      updateMessageById(messageId, (current) => ({
+        ...current,
+        isFailed: false,
+        isRetrying: true,
+        isPending: true,
+        isQueued: false,
+        isOptimistic: true,
+        isOptimisticConfirmed: false,
+        optimisticTimestamp: Date.now()
+      }))
+
+      const sendResult = await sendWithRetries({
+        optimisticId: messageId,
+        content: message.content,
+        isPrivate: !!message.isPrivate
+      })
+
+      if (sendResult?.result && sendResult.result.success) {
+        applySuccess(messageId, sendResult.result, !!message.isPrivate)
+        return true
+      }
+
+      applyFailure(messageId, sendResult?.attemptsMade ?? 1)
+      return false
+    },
+    [
+      confirmedMessages,
+      isConnected,
+      retryMessageWithQueue,
+      sendWithRetries,
+      applySuccess,
+      applyFailure,
+      updateMessageById
     ]
   )
 
