@@ -159,6 +159,8 @@ export function useOptimisticMessageSender({
             isRetrying: true,
             isPending: true,
             isFailed: false,
+            isOptimistic: true,
+            optimisticTimestamp: Date.now(),
             retryAttempts: attempt
           }))
           await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS))
@@ -279,7 +281,10 @@ export function useOptimisticMessageSender({
         isFailed: false,
         isRetrying: true,
         isPending: true,
-        isQueued: false
+        isQueued: false,
+        isOptimistic: true,
+        isOptimisticConfirmed: false,
+        optimisticTimestamp: Date.now()
       }))
 
       const sendResult = await sendWithRetries({
