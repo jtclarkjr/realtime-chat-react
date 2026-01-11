@@ -2,10 +2,9 @@
 
 import { forwardRef, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useVirtualizer } from '@tanstack/react-virtual'
 import { ChatMessageItem } from '@/components/chat-message'
 import { ScrollDateIndicator } from '@/components/chat'
-import { useScrollDateDetection } from '@/hooks/ui'
+import { useScrollDateDetection, useVirtualizer } from '@/hooks/ui'
 import type { ChatMessage } from '@/lib/types/database'
 
 interface ChatMessageListProps {

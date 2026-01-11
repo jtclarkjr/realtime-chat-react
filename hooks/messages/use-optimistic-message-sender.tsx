@@ -177,7 +177,7 @@ export function useOptimisticMessageSender({
             isPrivate,
             optimisticId
           })
-        } catch (error) {
+        } catch {
           lastResult = null
         }
 
@@ -260,7 +260,8 @@ export function useOptimisticMessageSender({
       sendMessageWithQueue,
       sendWithRetries,
       applySuccess,
-      applyFailure
+      applyFailure,
+      onConfirmedMessageUpdate
     ]
   )
 
