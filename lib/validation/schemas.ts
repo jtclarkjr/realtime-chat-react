@@ -42,7 +42,8 @@ export const sendMessageSchema = z
       }
     ),
     isPrivate: z.boolean().optional(),
-    requesterId: uuidSchema.optional()
+    requesterId: uuidSchema.optional(),
+    optimisticId: uuidSchema.optional()
   })
   .strict() // Reject unknown fields
 

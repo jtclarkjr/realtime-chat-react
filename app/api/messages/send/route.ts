@@ -3,7 +3,7 @@ import { ChatService } from '@/lib/services/chat-service'
 import { userService } from '@/lib/services/user-service'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
 import { sendMessageSchema, validateRequestBody } from '@/lib/validation'
-import type { SendMessageRequest } from '@/lib/types/database'
+import type { SendMessageRequest } from '@/lib/types/api'
 
 export const POST = withAuth(
   async (request: NextRequest, { user, supabase }) => {
@@ -25,7 +25,13 @@ export const POST = withAuth(
       }
 
       const chatService = new ChatService()
-      const message = await chatService.sendMessage(body)
+      const message = await chatService.sendMessage({
+        roomId: body.roomId,
+        userId: body.userId,
+        username: body.username,
+        content: body.content,
+        isPrivate: body.isPrivate
+      })
 
       // Only broadcast non-private messages via Supabase Realtime
       if (!body.isPrivate) {
