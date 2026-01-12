@@ -27,23 +27,38 @@ export class UserService {
       const { data: user, error } =
         await this.supabase.auth.admin.getUserById(userId)
 
-      if (error || !user.user) {
-        console.warn(`Could not fetch user profile for ${userId}:`, error)
-        return null
+      if (!error && user.user) {
+        const profile: UserProfile = {
+          id: user.user.id,
+          full_name: user.user.user_metadata?.full_name || null,
+          avatar_url: user.user.user_metadata?.avatar_url || null
+        }
+
+        // Cache the result
+        this.cacheUser(userId, profile)
+        return profile
       }
 
-      const profile: UserProfile = {
-        id: user.user.id,
-        full_name: user.user.user_metadata?.full_name || null,
-        avatar_url: user.user.user_metadata?.avatar_url || null
+      if (error) {
+        // Only log non-JWT errors, or all errors in production
+        const isJWTError = error.message?.includes('invalid JWT') || error.message?.includes('bad_jwt')
+        const shouldLog = !isJWTError || process.env.NODE_ENV !== 'development'
+
+        if (shouldLog) {
+          console.warn(`Could not fetch user profile for ${userId}:`, error)
+        }
       }
 
-      // Cache the result
-      this.cacheUser(userId, profile)
-
-      return profile
+      // Return null - avatar is optional, we already have username from get_user_display_name
+      return null
     } catch (error) {
-      console.error('Error fetching user profile:', error)
+      // Don't log error if it's a JWT issue in local dev - it's expected
+      if (
+        !(error instanceof Error && error.message?.includes('invalid JWT')) ||
+        process.env.NODE_ENV !== 'development'
+      ) {
+        console.error('Error fetching user profile:', error)
+      }
       return null
     }
   }

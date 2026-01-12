@@ -8,11 +8,22 @@ import { DiscordIcon, GitHubIcon, AppleIcon } from '@/components/ui/icons'
 import {
   signInWithDiscord,
   signInWithGitHub,
-  signInWithApple
+  signInWithApple,
+  signInWithEmail,
+  signUpWithEmail
 } from '@/lib/auth/client'
+import { Input } from '@/components/ui/input'
+import { useRouter } from 'next/navigation'
+
+const isEmailAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_EMAIL_AUTH === 'true'
 
 export function LoginClient() {
   const [loading, setLoading] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   // Handle clearing loading state when returning to the page
   useEffect(() => {
@@ -94,8 +105,112 @@ export function LoginClient() {
   const handleGitHubSignIn = () => handleOAuthSignIn('github', signInWithGitHub)
   const handleAppleSignIn = () => handleOAuthSignIn('apple', signInWithApple)
 
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setLoading('email')
+
+    try {
+      const { data, error: authError } = isSignUp
+        ? await signUpWithEmail(email, password)
+        : await signInWithEmail(email, password)
+
+      if (authError) {
+        setError(authError.message)
+        setLoading(null)
+        return
+      }
+
+      if (isSignUp && data.user) {
+        setError('Check your email to confirm your account!')
+        setLoading(null)
+        return
+      }
+
+      // Successful sign in - redirect
+      router.push('/')
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      setLoading(null)
+    }
+  }
+
   return (
     <div className="space-y-4">
+      {isEmailAuthEnabled && (
+        <>
+          <form onSubmit={handleEmailAuth} className="space-y-3">
+            <div className="space-y-2">
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={!!loading}
+                className="w-full"
+              />
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={!!loading}
+                className="w-full"
+                minLength={6}
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+            )}
+
+            <Button
+              type="submit"
+              disabled={!!loading}
+              variant="default"
+              size="xl"
+            >
+              {loading === 'email' ? (
+                <span className="flex items-center gap-2">
+                  <Spinner />
+                  {isSignUp ? 'Signing up...' : 'Signing in...'}
+                </span>
+              ) : (
+                <span>{isSignUp ? 'Sign up' : 'Sign in'} with Email</span>
+              )}
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp)
+                setError(null)
+              }}
+              disabled={!!loading}
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors w-full text-center"
+            >
+              {isSignUp
+                ? 'Already have an account? Sign in'
+                : "Don't have an account? Sign up"}
+            </button>
+          </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-300 dark:border-gray-700" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white dark:bg-gray-950 px-2 text-gray-500 dark:text-gray-400">
+                Or continue with
+              </span>
+            </div>
+          </div>
+        </>
+      )}
+
       <Button
         onClick={handleDiscordSignIn}
         disabled={!!loading}
