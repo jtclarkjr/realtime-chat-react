@@ -41,7 +41,9 @@ export class UserService {
 
       if (error) {
         // Only log non-JWT errors, or all errors in production
-        const isJWTError = error.message?.includes('invalid JWT') || error.message?.includes('bad_jwt')
+        const isJWTError =
+          error.message?.includes('invalid JWT') ||
+          error.message?.includes('bad_jwt')
         const shouldLog = !isJWTError || process.env.NODE_ENV !== 'development'
 
         if (shouldLog) {

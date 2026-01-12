@@ -1,6 +1,7 @@
 # Local Supabase Setup Guide
 
-This guide shows you how to run Supabase locally instead of using the hosted cloud version. Local development is useful for:
+This guide shows you how to run Supabase locally instead of using the hosted
+cloud version. Local development is useful for:
 
 - **Faster development** - No network latency
 - **Offline development** - Work without internet
@@ -75,6 +76,7 @@ After successful startup, you'll see output like this:
 ```
 
 **Important URLs:**
+
 - **Supabase Studio**: http://127.0.0.1:54323 (Database GUI)
 - **API**: http://127.0.0.1:54321
 - **Database**: postgresql://postgres:postgres@127.0.0.1:54322/postgres
@@ -82,7 +84,8 @@ After successful startup, you'll see output like this:
 
 ## Step 3: Apply Database Migrations
 
-The project includes SQL schema files that need to be applied to your local database.
+The project includes SQL schema files that need to be applied to your local
+database.
 
 ### Apply Rooms Schema
 
@@ -123,7 +126,8 @@ You should see:
 
 ## Step 4: Configure Environment Variables
 
-Update your `.env.local` (or create `.env.development.local`) with local Supabase credentials:
+Update your `.env.local` (or create `.env.development.local`) with local
+Supabase credentials:
 
 ```bash
 # Supabase Configuration - Local Development
@@ -155,8 +159,12 @@ ENV=dev
 
 ### Important Notes:
 
-- **JWT Keys**: After running `supabase start`, get your keys from the output. Look for the anon and service_role keys in JWT format (starting with `eyJ...`). **DO NOT** use the v2 format keys (starting with `sb_publishable_...`).
-- **Email Auth Flag**: Set `NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true` to enable email/password login (local only)
+- **JWT Keys**: After running `supabase start`, get your keys from the output.
+  Look for the anon and service*role keys in JWT format (starting with
+  `eyJ...`). **DO NOT** use the v2 format keys (starting with
+  `sb_publishable*...`).
+- **Email Auth Flag**: Set `NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true` to enable
+  email/password login (local only)
 - **Production**: Use different keys from your hosted Supabase project
 
 ## Step 5: Start the Application
@@ -181,7 +189,8 @@ bun dev
 
 4. **Open the app**: http://localhost:3000
 
-You should see the login page with email/password fields (because `NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true`).
+You should see the login page with email/password fields (because
+`NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true`).
 
 ## Step 6: Create a Test User
 
@@ -190,7 +199,8 @@ You should see the login page with email/password fields (because `NEXT_PUBLIC_E
 1. Go to http://localhost:3000/login
 2. Enter an email and password
 3. Click "Sign up with Email"
-4. For local dev, check Mailpit at http://127.0.0.1:54324 for the confirmation email
+4. For local dev, check Mailpit at http://127.0.0.1:54324 for the confirmation
+   email
 5. Click the confirmation link
 6. Sign in with your email and password
 
@@ -240,16 +250,16 @@ EOF
 
 ## Local vs Hosted Supabase
 
-| Feature | Local Supabase | Hosted Supabase |
-|---------|----------------|-----------------|
-| **Setup** | Requires Docker & CLI | Just create project |
-| **Authentication** | Email/password (simple) | OAuth providers (GitHub, Discord, etc.) |
-| **Database** | PostgreSQL in Docker | Managed PostgreSQL |
-| **Cost** | Free (local resources) | Free tier, then paid |
-| **Email** | Mailpit (no real emails) | Real email delivery |
-| **Backups** | Manual | Automatic |
-| **Scaling** | Local machine limits | Cloud-scale |
-| **Offline** | Works offline | Requires internet |
+| Feature            | Local Supabase           | Hosted Supabase                         |
+| ------------------ | ------------------------ | --------------------------------------- |
+| **Setup**          | Requires Docker & CLI    | Just create project                     |
+| **Authentication** | Email/password (simple)  | OAuth providers (GitHub, Discord, etc.) |
+| **Database**       | PostgreSQL in Docker     | Managed PostgreSQL                      |
+| **Cost**           | Free (local resources)   | Free tier, then paid                    |
+| **Email**          | Mailpit (no real emails) | Real email delivery                     |
+| **Backups**        | Manual                   | Automatic                               |
+| **Scaling**        | Local machine limits     | Cloud-scale                             |
+| **Offline**        | Works offline            | Requires internet                       |
 
 ## Common Commands
 
@@ -312,6 +322,7 @@ supabase start
 **Problem**: Mismatch between environment keys and Supabase instance
 
 **Solution**:
+
 1. Verify you're using the local JWT keys (see Step 4)
 2. Restart your dev server:
    ```bash
@@ -324,9 +335,12 @@ supabase start
 **Problem**: Service role key not configured correctly
 
 **Solution**:
-1. Check that `SUPABASE_SERVICE_ROLE_KEY` in your `.env.local` matches the key from Step 4
+
+1. Check that `SUPABASE_SERVICE_ROLE_KEY` in your `.env.local` matches the key
+   from Step 4
 2. Restart the dev server
-3. Check server console logs for `[Service Client] Initializing with: ...` - should show `eyJhbGciOiJIUzI1NiI...`
+3. Check server console logs for `[Service Client] Initializing with: ...` -
+   should show `eyJhbGciOiJIUzI1NiI...`
 
 ### Issue: Tables don't exist
 
@@ -355,6 +369,7 @@ PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f databa
 You can maintain separate environment files:
 
 **`.env.local`** (hosted Supabase):
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_hosted_anon_key
@@ -363,6 +378,7 @@ NEXT_PUBLIC_ENABLE_EMAIL_AUTH=false  # OAuth only
 ```
 
 **`.env.development.local`** (local Supabase):
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -370,12 +386,14 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true  # Email auth for local
 ```
 
-Next.js loads `.env.development.local` in development, which takes precedence over `.env.local`.
+Next.js loads `.env.development.local` in development, which takes precedence
+over `.env.local`.
 
 ## Additional Resources
 
 - **Supabase CLI Docs**: https://supabase.com/docs/guides/cli
-- **Local Development Guide**: https://supabase.com/docs/guides/cli/local-development
+- **Local Development Guide**:
+  https://supabase.com/docs/guides/cli/local-development
 - **Supabase Studio**: http://127.0.0.1:54323 (local GUI)
 - **Mailpit**: http://127.0.0.1:54324 (test emails)
 
@@ -384,6 +402,7 @@ Next.js loads `.env.development.local` in development, which takes precedence ov
 After setting up local Supabase:
 
 1. **Create the AI user** (if using AI features):
+
    ```bash
    curl -X POST http://localhost:3000/api/setup/ai-user
    ```

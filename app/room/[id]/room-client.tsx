@@ -26,10 +26,11 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const userId = user.id
 
   // Get display name with same fallback logic as server (matches get_user_display_name function)
-  const displayName = user?.user_metadata?.display_name ||
-                      user?.user_metadata?.full_name ||
-                      user?.email ||
-                      'Anonymous User'
+  const displayName =
+    user?.user_metadata?.display_name ||
+    user?.user_metadata?.full_name ||
+    user?.email ||
+    'Anonymous User'
 
   // Handle presence changes
   const handlePresenceChange = useCallback((users: PresenceState) => {

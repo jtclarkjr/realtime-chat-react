@@ -46,8 +46,10 @@ Features instant messaging, message persistence, and reconnection handling.
 - Bun package manager
 - Docker and Docker Compose (for Redis) - Local DB only
 - **Supabase**: Choose one option below
-  - **Option A**: Supabase cloud account and project (recommended for using a prod/dev branch)
-  - **Option B**: Local Supabase via Docker (recommended for development) - [Setup Guide](docs/LOCAL_SUPABASE_SETUP.md)
+  - **Option A**: Supabase cloud account and project (recommended for using a
+    prod/dev branch)
+  - **Option B**: Local Supabase via Docker (recommended for development) -
+    [Setup Guide](docs/LOCAL_SUPABASE_SETUP.md)
 - Anthropic account (for AI assistant - optional)
 - Vercel account (for deployment)
 
@@ -86,7 +88,8 @@ ENV=dev
 # KV_URL=your_vercel_kv_url
 ```
 
-📖 **See [Local Supabase Setup Guide](docs/LOCAL_SUPABASE_SETUP.md) for complete instructions**
+📖 **See [Local Supabase Setup Guide](docs/LOCAL_SUPABASE_SETUP.md) for complete
+instructions**
 
 ## Authentication Setup
 
@@ -273,15 +276,18 @@ You have two options for setting up Supabase:
 2. Go to SQL Editor in your Supabase Dashboard
 3. Run `/database/rooms_schema.sql`
 4. Run `/database/schema.sql`
-5. Copy your project URL and keys to `.env.local` (see Environment Setup section)
+5. Copy your project URL and keys to `.env.local` (see Environment Setup
+   section)
 
 ### Option B: Local Supabase (Docker)
 
-**Recommended for development** - Run Supabase locally with Docker for faster development, offline work, and simple email authentication.
+**Recommended for development** - Run Supabase locally with Docker for faster
+development, offline work, and simple email authentication.
 
 📖 **[Complete Local Setup Guide →](docs/LOCAL_SUPABASE_SETUP.md)**
 
 Quick start:
+
 ```bash
 # Install Supabase CLI
 brew install supabase/tap/supabase
