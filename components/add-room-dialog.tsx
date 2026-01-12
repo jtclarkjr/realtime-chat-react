@@ -213,7 +213,7 @@ export function AddRoomDialog({
             />
             {generateRoomMutation.isPending
               ? 'Generating...'
-              : 'Generate with AI'}
+              : 'Generate'}
           </Button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
