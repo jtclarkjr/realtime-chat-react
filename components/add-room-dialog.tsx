@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Sparkles } from 'lucide-react'
 import { useGenerateRoom, useCreateRoom } from '@/lib/query/mutations'
+import { roomNameSchema } from '@/lib/validation/schemas'
 import type { DatabaseRoom } from '@/lib/types/database'
 
 interface AddRoomDialogProps {
@@ -32,6 +33,8 @@ export function AddRoomDialog({
   const [roomName, setRoomName] = useState<string>('')
   const [description, setDescription] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
+  const [hasMetMinNameLength, setHasMetMinNameLength] =
+    useState<boolean>(false)
   const generateRoomMutation = useGenerateRoom()
   const createRoomMutation = useCreateRoom()
 
@@ -42,31 +45,49 @@ export function AddRoomDialog({
     )
   }
 
-  // Real-time validation
-  const validateRoomName = (name: string): string | null => {
-    const trimmedName = name.trim()
+  // IIFE used to keep the logic scoped near the render
+  const roomNameError = (() => {
+    const trimmedName = roomName.trim()
     if (!trimmedName) {
-      return 'Room name is required'
+      return null
     }
-    if (trimmedName.length < 2) {
-      return 'Room name must be at least 2 characters'
+
+    const result = roomNameSchema.safeParse(roomName)
+    if (!result.success) {
+      const issue = result.error.issues[0]
+      const isMinError =
+        issue?.code === 'too_small' && issue.minimum === 2
+
+      if (!hasMetMinNameLength && isMinError) {
+        return null
+      }
+
+      return issue?.message || 'Invalid room name'
     }
-    if (trimmedName.length > 50) {
-      return 'Room name must be less than 50 characters'
-    }
-    if (roomNameExists(trimmedName)) {
+
+    if (roomNameExists(result.data)) {
       return 'A room with this name already exists'
     }
+
     return null
-  }
+  })()
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     e.stopPropagation() // Prevent bubbling to parent form
 
     // Use the validation function for consistency
-    const validationError = validateRoomName(roomName)
-    if (validationError) {
+    const validationResult = roomNameSchema.safeParse(roomName)
+    let validationError: string | null = null
+
+    if (!validationResult.success) {
+      validationError =
+        validationResult.error.issues[0]?.message || 'Invalid room name'
+    } else if (roomNameExists(validationResult.data)) {
+      validationError = 'A room with this name already exists'
+    }
+
+    if (validationError || !validationResult.success) {
       // Don't set error state - validation error is already shown under input
       return
     }
@@ -75,7 +96,7 @@ export function AddRoomDialog({
       setError(null)
 
       const result = await createRoomMutation.mutateAsync({
-        name: roomName.trim(),
+        name: validationResult.data,
         description: description.trim() || undefined
       })
 
@@ -113,6 +134,7 @@ export function AddRoomDialog({
     setRoomName('')
     setDescription('')
     setError(null)
+    setHasMetMinNameLength(false)
   }
 
   const handleCancel = (): void => {
@@ -205,7 +227,11 @@ export function AddRoomDialog({
               placeholder="e.g., general, random, team-chat"
               value={roomName}
               onChange={(e) => {
-                setRoomName(e.target.value)
+                const nextValue = e.target.value
+                setRoomName(nextValue)
+                if (nextValue.trim().length >= 2) {
+                  setHasMetMinNameLength(true)
+                }
                 // Clear any previous API errors when user starts typing
                 // Validation errors are shown under the input field, not in bottom error area
                 setError(null)
@@ -215,14 +241,14 @@ export function AddRoomDialog({
               }
               required
               className={`w-full ${
-                roomName.trim() && roomNameExists(roomName)
+                roomNameError
                   ? 'border-destructive focus:border-destructive'
                   : ''
               }`}
             />
-            {roomName.trim() && roomNameExists(roomName) && (
+            {roomNameError && (
               <p className="text-xs text-destructive mt-1">
-                A room with this name already exists
+                {roomNameError}
               </p>
             )}
           </div>
@@ -268,7 +294,7 @@ export function AddRoomDialog({
                 createRoomMutation.isPending ||
                 generateRoomMutation.isPending ||
                 !roomName.trim() ||
-                roomNameExists(roomName)
+                !!roomNameError
               }
             >
               {createRoomMutation.isPending ? 'Creating...' : 'Create Room'}

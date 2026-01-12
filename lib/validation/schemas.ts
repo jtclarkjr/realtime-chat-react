@@ -86,6 +86,17 @@ export const createRoomSchema = z
   })
   .strict()
 
+export const roomNameSchema = z
+  .string()
+  .transform((val) => val.trim().normalize('NFC'))
+  .pipe(
+    z
+      .string()
+      .min(1, 'Room name is required')
+      .min(2, 'Room name must be at least 2 characters')
+      .max(50, 'Room name must be less than 50 characters')
+  )
+
 export const deleteRoomSchema = z
   .object({
     id: uuidSchema
