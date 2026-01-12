@@ -33,8 +33,7 @@ export function AddRoomDialog({
   const [roomName, setRoomName] = useState<string>('')
   const [description, setDescription] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
-  const [hasMetMinNameLength, setHasMetMinNameLength] =
-    useState<boolean>(false)
+  const [hasMetMinNameLength, setHasMetMinNameLength] = useState<boolean>(false)
   const generateRoomMutation = useGenerateRoom()
   const createRoomMutation = useCreateRoom()
 
@@ -55,8 +54,7 @@ export function AddRoomDialog({
     const result = roomNameSchema.safeParse(roomName)
     if (!result.success) {
       const issue = result.error.issues[0]
-      const isMinError =
-        issue?.code === 'too_small' && issue.minimum === 2
+      const isMinError = issue?.code === 'too_small' && issue.minimum === 2
 
       if (!hasMetMinNameLength && isMinError) {
         return null
@@ -211,9 +209,7 @@ export function AddRoomDialog({
                 generateRoomMutation.isPending ? 'animate-spin' : ''
               }`}
             />
-            {generateRoomMutation.isPending
-              ? 'Generating...'
-              : 'Generate'}
+            {generateRoomMutation.isPending ? 'Generating...' : 'Generate'}
           </Button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -247,9 +243,7 @@ export function AddRoomDialog({
               }`}
             />
             {roomNameError && (
-              <p className="text-xs text-destructive mt-1">
-                {roomNameError}
-              </p>
+              <p className="text-xs text-destructive mt-1">{roomNameError}</p>
             )}
           </div>
           <div className="space-y-2">
