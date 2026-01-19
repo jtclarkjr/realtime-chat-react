@@ -1,9 +1,16 @@
 'use client'
 
-import { forwardRef, useCallback, useMemo, useRef } from 'react'
+import {
+  forwardRef,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  useEffect
+} from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChatMessageItem } from '@/components/chat-message'
-import { ScrollDateIndicator } from '@/components/chat'
+import { ScrollDateIndicator, NewMessagesDivider } from '@/components/chat'
 import { useScrollDateDetection, useVirtualizer } from '@/hooks/ui'
 import type { ChatMessage } from '@/lib/types/database'
 
@@ -18,6 +25,9 @@ interface ChatMessageListProps {
   onUnsend?: (messageId: string) => void
   isUnsending?: (messageId: string) => boolean
   onUserScroll?: () => void
+  lastReadMessageId?: string | null
+  lastReadTimestamp?: string | null
+  currentSessionId?: string
 }
 
 export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
@@ -32,7 +42,10 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
       onRetry,
       onUnsend,
       isUnsending,
-      onUserScroll
+      onUserScroll,
+      lastReadMessageId,
+      lastReadTimestamp,
+      currentSessionId
     },
     ref
   ) => {
@@ -44,6 +57,9 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
     const enableVirtualization = filteredMessages.length > 150
     const enableAnimations = filteredMessages.length < 200
     const scrollContainerRef = useRef<HTMLDivElement | null>(null)
+    const [initialDividerMessageId, setInitialDividerMessageId] = useState<
+      string | null
+    >(null)
 
     const setCombinedRef = useCallback(
       (node: HTMLDivElement | null) => {
@@ -68,6 +84,68 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
       handleScroll(e)
       onUserScroll?.()
     }
+
+    // Determine if we should show the divider and where
+    const { shouldShowDivider, dividerAfterMessageId } = useMemo(() => {
+      if (!lastReadMessageId || !lastReadTimestamp || !currentSessionId) {
+        return { shouldShowDivider: false, dividerAfterMessageId: null }
+      }
+
+      const lastReadIndex = filteredMessages.findIndex(
+        (msg) => msg.id === lastReadMessageId
+      )
+
+      // No divider if last read message not found or is the last message
+      if (
+        lastReadIndex === -1 ||
+        lastReadIndex === filteredMessages.length - 1
+      ) {
+        return { shouldShowDivider: false, dividerAfterMessageId: null }
+      }
+
+      // Check if there are new messages after the last read message
+      const hasNewMessages = lastReadIndex < filteredMessages.length - 1
+
+      if (!hasNewMessages) {
+        return { shouldShowDivider: false, dividerAfterMessageId: null }
+      }
+
+      // Check if the new messages are from a different day
+      // const lastReadDate = new Date(lastReadTimestamp)
+      // const firstNewMessage = filteredMessages[lastReadIndex + 1]
+      // const firstNewMessageDate = new Date(firstNewMessage.createdAt)
+
+      // const isDifferentDay =
+      //   lastReadDate.getFullYear() !== firstNewMessageDate.getFullYear() ||
+      //   lastReadDate.getMonth() !== firstNewMessageDate.getMonth() ||
+      //   lastReadDate.getDate() !== firstNewMessageDate.getDate()
+
+      // Temporarily show divider for all new messages (for testing)
+      const isDifferentDay = true
+
+      return {
+        shouldShowDivider: isDifferentDay,
+        dividerAfterMessageId: isDifferentDay ? lastReadMessageId : null
+      }
+    }, [
+      filteredMessages,
+      lastReadMessageId,
+      lastReadTimestamp,
+      currentSessionId
+    ])
+
+    // Capture the initial divider state only on mount
+    useEffect(() => {
+      if (shouldShowDivider && dividerAfterMessageId) {
+        setInitialDividerMessageId(dividerAfterMessageId)
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    // Only show divider if it was present on initial load (not for new messages during session)
+    // Use initialDividerMessageId as the stable position, don't depend on recalculated dividerAfterMessageId
+    const showDivider =
+      initialDividerMessageId !== null && currentSessionId !== null
 
     return (
       <>
@@ -106,6 +184,8 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                     const showHeader =
                       !prevMessage ||
                       prevMessage.user.name !== message.user.name
+                    const showDividerAfterThis =
+                      showDivider && message.id === initialDividerMessageId
 
                     return (
                       <div
@@ -132,6 +212,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                           onUnsend={onUnsend}
                           isUnsending={isUnsending}
                         />
+                        {showDividerAfterThis && <NewMessagesDivider />}
                       </div>
                     )
                   })}
@@ -147,6 +228,8 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                         prevMessage.user.name !== message.user.name
                       const shouldAnimate =
                         enableAnimations && !message.isOptimistic
+                      const showDividerAfterThis =
+                        showDivider && message.id === initialDividerMessageId
 
                       return shouldAnimate ? (
                         <motion.div
@@ -171,6 +254,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                             onUnsend={onUnsend}
                             isUnsending={isUnsending}
                           />
+                          {showDividerAfterThis && <NewMessagesDivider />}
                         </motion.div>
                       ) : (
                         <div
@@ -188,6 +272,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                             onUnsend={onUnsend}
                             isUnsending={isUnsending}
                           />
+                          {showDividerAfterThis && <NewMessagesDivider />}
                         </div>
                       )
                     })}
