@@ -208,12 +208,12 @@ sequenceDiagram
     API->>Redis: UPDATE latest_message_id
     API->>RT: BROADCAST to room
 
-    RT-->>UI: onMessage({id: msg-456})
-    RT-->>Others: onMessage({id: msg-456})
+    RT-->>UI: onMessage({id: msg-456, clientMsgId: temp-uuid-123})
+    RT-->>Others: onMessage({id: msg-456, clientMsgId: temp-uuid-123})
 
     Note over UI: Deduplication Logic
-    UI->>UI: Find optimistic with<br/>same content + user<br/>within 5s
-    UI->>UI: Replace temp-uuid-123<br/>with msg-456
+    UI->>UI: Match by clientMsgId<br/>temp-uuid-123
+    UI->>UI: Replace optimistic<br/>with confirmed msg-456
 
     API-->>Mutation: {success, message}
     Note over Mutation: Don't update optimistic<br/>Broadcast handles it
@@ -221,6 +221,28 @@ sequenceDiagram
     Others->>API: POST /mark-received
     API->>Redis: UPDATE user:last_received
 ```
+
+### Message Deduplication Strategy
+
+The application uses a **deterministic deduplication approach** based on client-generated message IDs:
+
+**How it works:**
+1. Client generates a unique `optimisticId` (UUID) when sending a message
+2. Server receives the message, stores it with a new server-generated `id`
+3. Server echoes back the `optimisticId` as `clientMsgId` in the broadcast
+4. Client matches the broadcast message to the optimistic message using `clientMsgId`
+5. Optimistic message is replaced with the confirmed server message
+
+**Why this approach:**
+- **Deterministic**: Matching is exact, based on UUIDs, not heuristics
+- **Handles duplicates**: Users can send identical messages (e.g., "ok", "👍") without deduplication failures
+- **Simple**: No time-window comparisons or content matching needed
+- **Interview-friendly**: Clean, predictable reconciliation logic
+
+**Previous approach (problematic):**
+- Matched optimistic messages by "same content + user + within 5s"
+- Failed when users sent repeated identical messages
+- Time-based matching was unreliable with network delays
 
 ### Missed Messages on Reconnect
 
