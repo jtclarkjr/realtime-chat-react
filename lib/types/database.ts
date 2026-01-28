@@ -77,6 +77,7 @@ export interface ChatMessage {
   optimisticTimestamp?: number
   serverId?: string
   serverTimestamp?: string
+  clientMsgId?: string // Client-generated ID for deterministic deduplication
 }
 
 // Response types

@@ -208,12 +208,12 @@ sequenceDiagram
     API->>Redis: UPDATE latest_message_id
     API->>RT: BROADCAST to room
 
-    RT-->>UI: onMessage({id: msg-456})
-    RT-->>Others: onMessage({id: msg-456})
+    RT-->>UI: onMessage({id: msg-456, clientMsgId: temp-uuid-123})
+    RT-->>Others: onMessage({id: msg-456, clientMsgId: temp-uuid-123})
 
     Note over UI: Deduplication Logic
-    UI->>UI: Find optimistic with<br/>same content + user<br/>within 5s
-    UI->>UI: Replace temp-uuid-123<br/>with msg-456
+    UI->>UI: Match by clientMsgId<br/>temp-uuid-123
+    UI->>UI: Replace optimistic<br/>with confirmed msg-456
 
     API-->>Mutation: {success, message}
     Note over Mutation: Don't update optimistic<br/>Broadcast handles it
@@ -221,6 +221,45 @@ sequenceDiagram
     Others->>API: POST /mark-received
     API->>Redis: UPDATE user:last_received
 ```
+
+### Message Deduplication Strategy
+
+The application uses a **hybrid deduplication approach** with primary
+deterministic matching and fallback heuristics:
+
+**Primary Path: clientMsgId Matching (Real-time Broadcasts)**
+
+1. Client generates a unique `optimisticId` (UUID) when sending a message
+2. Server receives the message, stores it with a new server-generated `id`
+3. Server echoes back the `optimisticId` as `clientMsgId` in the WebSocket
+   broadcast
+4. Client matches the broadcast message to the optimistic message using
+   `clientMsgId`
+5. Optimistic message is replaced with the confirmed server message
+
+**Fallback Path: Content + Timestamp Heuristic (Missed Messages from DB)**
+
+1. If broadcast is missed (network issue, brief disconnect), message won't have
+   `clientMsgId`
+2. On reconnect, missed messages are fetched from database (no `clientMsgId` in
+   DB)
+3. Client falls back to matching by: same content + same user + within 5 seconds
+4. This preserves deduplication when the deterministic path isn't available
+
+**Why this hybrid approach:**
+
+- **Primary**: Deterministic UUID matching handles repeated identical messages
+  ("ok", "👍")
+- **Fallback**: Content/timestamp heuristic prevents duplicates when broadcasts
+  are missed
+- **Resilient**: Works correctly in both real-time and reconnection scenarios
+
+**Edge cases handled:**
+
+- User sends repeated identical messages → Primary path handles it
+- Broadcast missed, DB fetch on reconnect → Fallback path handles it
+- Multiple "ok" messages in quick succession → Primary path distinguishes by
+  UUID
 
 ### Missed Messages on Reconnect
 
