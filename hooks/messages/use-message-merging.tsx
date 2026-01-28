@@ -30,7 +30,12 @@ export function useMessageMerging({
 
     const shouldIncludeMessage = (message: ChatMessage) => {
       if (!message?.id) return false
-      if (message.isDeleted || deletedMessageIds.has(message.id)) return false
+      if (
+        message.isDeleted ||
+        deletedMessageIds.has(message.id) ||
+        (message.serverId && deletedMessageIds.has(message.serverId))
+      )
+        return false
       if (!message.user?.name) return false
 
       const isStreaming = isStreamingMessage(message)

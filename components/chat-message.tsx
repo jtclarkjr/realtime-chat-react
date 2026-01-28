@@ -96,7 +96,11 @@ const ChatMessageItemComponent = ({
               isPrivateForCurrentUser={isPrivateForCurrentUser}
               isStreaming={isStreaming}
               onUnsend={onUnsend}
-              isUnsending={isUnsending ? isUnsending(message.id) : false}
+              isUnsending={
+                isUnsending
+                  ? isUnsending(message.serverId || message.id)
+                  : false
+              }
             />
 
             {/* Status indicators for user's own messages */}

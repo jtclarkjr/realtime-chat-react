@@ -72,7 +72,7 @@ export const MessageBubble = ({
   if (canUnsend && onUnsend) {
     return (
       <MessageOptions
-        messageId={message.id}
+        messageId={message.serverId || message.id}
         onUnsend={onUnsend}
         isUnsending={isUnsending}
         canUnsend={canUnsend}

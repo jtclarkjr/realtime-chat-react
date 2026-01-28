@@ -56,6 +56,7 @@ export function useWebSocketConnection({
         }
       })
       .on('broadcast', { event: EVENT_MESSAGE_TYPE }, (payload) => {
+        // Supabase broadcast wraps data in payload.payload
         const receivedMessage = payload.payload as ChatMessage
         // Reset missed heartbeats when we receive a message
         missedHeartbeats = 0
@@ -70,7 +71,7 @@ export function useWebSocketConnection({
         }
       })
       .on('broadcast', { event: 'message_unsent' }, (payload) => {
-        // Handle message unsend events
+        // Handle message unsend events - Supabase broadcast wraps data in payload.payload
         const { messageId } = payload.payload as { messageId: string }
         if (messageId && onMessageUnsent) {
           onMessageUnsent(messageId)
