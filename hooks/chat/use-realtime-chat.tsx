@@ -85,10 +85,12 @@ export function useRealtimeChat({
     // Track deleted message IDs globally
     setDeletedMessageIds((prev) => new Set(prev).add(messageId))
 
-    // Update confirmed messages
+    // Update confirmed messages - check both id and serverId
     setConfirmedMessages((current) =>
       current.map((msg) =>
-        msg.id === messageId ? { ...msg, isDeleted: true } : msg
+        msg.id === messageId || msg.serverId === messageId
+          ? { ...msg, isDeleted: true }
+          : msg
       )
     )
   }, [])
@@ -244,7 +246,7 @@ export function useRealtimeChat({
     // Also update confirmed messages if the message exists there
     setConfirmedMessages((current) =>
       current.map((msg) =>
-        msg.id === messageId
+        msg.id === messageId || msg.serverId === messageId
           ? {
               ...msg,
               isDeleted: true,
