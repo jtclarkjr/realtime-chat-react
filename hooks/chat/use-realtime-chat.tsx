@@ -139,58 +139,67 @@ export function useRealtimeChat({
     const combinedMessages = [...updatedMissedMessages, ...optimisticMessages]
     const messageMap = new Map<string, ChatMessage>()
 
-    // Deduplication by message ID and content similarity
+    // Deduplication by message ID and clientMsgId
     combinedMessages.forEach((message) => {
       const existingMessage = messageMap.get(message.id)
 
       if (!existingMessage) {
-        // Check if this is a broadcast replacing an optimistic message
-        // Look for optimistic messages with same content and recent timestamp (within 5 seconds)
+        // Check if this is a broadcast/confirmed message replacing an optimistic message
         if (!message.isOptimistic) {
-          const messageTime = new Date(message.createdAt || 0).getTime()
           let replacedOptimistic = false
 
-          for (const [existingId, existing] of messageMap.entries()) {
-            if (
-              existing.isOptimistic &&
-              existing.content === message.content &&
-              existing.user.id === message.user.id
-            ) {
-              const existingTime = new Date(existing.createdAt || 0).getTime()
-              const timeDiff = Math.abs(messageTime - existingTime)
+          // Primary: Use clientMsgId for deterministic reconciliation (real-time broadcasts)
+          if (message.clientMsgId) {
+            const optimisticMessage = messageMap.get(message.clientMsgId)
 
-              // If within 5 seconds, consider it the same message
-              if (timeDiff < 5000) {
-                // Check if optimistic message was already confirmed
-                // If so, just update the ID instead of replacing entirely
-                if (
-                  existing.isOptimisticConfirmed &&
-                  existing.serverId === message.id
-                ) {
-                  // This is the server confirmation - smoothly transition
+            if (optimisticMessage?.isOptimistic) {
+              // Deterministic match found - replace optimistic with confirmed
+              messageMap.delete(message.clientMsgId)
+              messageMap.set(message.id, {
+                ...message,
+                isOptimistic: false,
+                isOptimisticConfirmed: false
+              })
+              replacedOptimistic = true
+            }
+          }
+
+          // Fallback: Use content/timestamp heuristic when clientMsgId is absent
+          // (handles missed messages fetched from DB on reconnect)
+          if (!replacedOptimistic) {
+            const messageTime = new Date(message.createdAt || 0).getTime()
+
+            for (const [existingId, existing] of messageMap.entries()) {
+              if (
+                existing.isOptimistic &&
+                existing.content === message.content &&
+                existing.user.id === message.user.id
+              ) {
+                const existingTime = new Date(existing.createdAt || 0).getTime()
+                const timeDiff = Math.abs(messageTime - existingTime)
+
+                // If within 5 seconds, consider it the same message
+                if (timeDiff < 5000) {
+                  // Replace optimistic with confirmed message
+                  messageMap.delete(existingId)
                   messageMap.set(message.id, {
-                    ...existing,
                     ...message,
-                    id: message.id,
                     isOptimistic: false,
                     isOptimisticConfirmed: false
                   })
-                  messageMap.delete(existingId)
-                } else {
-                  // Regular optimistic replacement
-                  messageMap.delete(existingId)
-                  messageMap.set(message.id, message)
+                  replacedOptimistic = true
+                  break
                 }
-                replacedOptimistic = true
-                break
               }
             }
           }
 
+          // No match found - add as new message
           if (!replacedOptimistic) {
             messageMap.set(message.id, message)
           }
         } else {
+          // This is an optimistic message - add it
           messageMap.set(message.id, message)
         }
       } else {
