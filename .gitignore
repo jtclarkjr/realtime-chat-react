@@ -10,6 +10,8 @@
 !.yarn/releases
 !.yarn/versions
 supabase
+!lib/supabase/
+!lib/supabase/client-auth.ts
 
 # testing
 /coverage
