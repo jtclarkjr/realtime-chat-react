@@ -245,9 +245,9 @@ The application uses a **hybrid deduplication approach** with primary determinis
 - **Resilient**: Works correctly in both real-time and reconnection scenarios
 
 **Edge cases handled:**
-- ✅ User sends repeated identical messages → Primary path handles it
-- ✅ Broadcast missed, DB fetch on reconnect → Fallback path handles it
-- ✅ Multiple "ok" messages in quick succession → Primary path distinguishes by UUID
+- User sends repeated identical messages → Primary path handles it
+- Broadcast missed, DB fetch on reconnect → Fallback path handles it
+- Multiple "ok" messages in quick succession → Primary path distinguishes by UUID
 
 ### Missed Messages on Reconnect
 
