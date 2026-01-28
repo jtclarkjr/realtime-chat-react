@@ -5,37 +5,35 @@ import { UserAvatar } from '@/components/ui/user-avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { RoomSelector } from '@/components/room-selector'
 import { PageTransition } from '@/components/page-transition'
-import { LoadingTransition } from '@/components/loading-transition'
 import { useUserStore } from '@/lib/stores/user-store'
 import { useRoomStore } from '@/lib/stores/room-store'
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/lib/auth/context'
-import { signOut } from '@/lib/auth/client'
 import { useRouter } from 'next/navigation'
 import type { DatabaseRoom } from '@/lib/types/database'
+import { signOutAction } from '@/lib/actions/auth-actions'
+
+interface UserData {
+  id: string
+  username: string
+  avatarUrl?: string
+}
 
 interface HomeClientProps {
   initialRooms: DatabaseRoom[]
   initialDefaultRoomId: string | null
+  user: UserData
 }
 
 export function HomeClient({
   initialRooms,
-  initialDefaultRoomId
+  initialDefaultRoomId,
+  user
 }: HomeClientProps) {
-  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState<boolean>(false)
 
   const { userId } = useUserStore()
   const { selectedRoomId, setSelectedRoomId } = useRoomStore()
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
-    }
-  }, [user, authLoading, router])
 
   // Set default selected room if none is selected and we have initial rooms
   useEffect(() => {
@@ -59,20 +57,11 @@ export function HomeClient({
   }
 
   const handleLogout = async () => {
-    router.push('/login')
-    signOut().catch((error) => {
+    try {
+      await signOutAction()
+    } catch (error) {
       console.error('Error signing out:', error)
-    })
-  }
-
-  // Don't render until we have auth state
-  if (authLoading) {
-    return <LoadingTransition message="Loading..." />
-  }
-
-  // If no user or userId, let redirect effect handle it without showing loader
-  if (!user || !userId) {
-    return null
+    }
   }
 
   // Disable navigating state for now; put back later
@@ -97,14 +86,12 @@ export function HomeClient({
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-3 flex-1">
                   <UserAvatar
-                    src={user.user_metadata?.avatar_url}
-                    alt={user.user_metadata?.full_name || 'User avatar'}
+                    src={user.avatarUrl}
+                    alt={user.username}
                     size="md"
                   />
                   <div>
-                    <div className="font-medium">
-                      {user.user_metadata?.full_name || 'Anonymous User'}
-                    </div>
+                    <div className="font-medium">{user.username}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-4">

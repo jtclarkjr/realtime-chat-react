@@ -20,7 +20,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
 
   // Check authentication server-side
   const headersList = await headers()
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   const request = new Request(baseUrl, {
     headers: Object.fromEntries(headersList.entries())
   })
@@ -34,6 +34,17 @@ export default async function RoomPage({ params }: RoomPageProps) {
     redirect('/login')
   }
 
+  // Extract only the data we need for the client
+  const userData = {
+    id: user.id,
+    username:
+      user.user_metadata?.display_name ||
+      user.user_metadata?.full_name ||
+      user.email?.split('@')[0] ||
+      'Anonymous User',
+    avatarUrl: user.user_metadata?.avatar_url
+  }
+
   // Fetch initial room data and messages server-side with user context for privacy
   const { room, messages } = await getRoomDataWithMessages(id, user.id)
 
@@ -44,7 +55,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
 
   return (
     <section className="md:border-l md:border-r bg-background md:max-w-5xl md:mx-auto">
-      <RoomClient room={room} initialMessages={messages} user={user} />
+      <RoomClient room={room} initialMessages={messages} user={userData} />
     </section>
   )
 }

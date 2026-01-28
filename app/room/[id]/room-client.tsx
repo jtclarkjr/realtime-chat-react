@@ -8,12 +8,17 @@ import { RealtimePresenceAvatars } from '@/components/presence'
 import { useEffect, useState, useCallback } from 'react'
 import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import type { PresenceState } from '@/lib/types/presence'
-import type { User } from '@supabase/supabase-js'
+
+interface UserData {
+  id: string
+  username: string
+  avatarUrl?: string
+}
 
 interface RoomClientProps {
   room: DatabaseRoom
   initialMessages: ChatMessageWithDB[]
-  user: User
+  user: UserData
 }
 
 export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
@@ -24,13 +29,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
 
   // Use the authenticated user's ID instead of generating a new one
   const userId = user.id
-
-  // Get display name with same fallback logic as server (matches get_user_display_name function)
-  const displayName =
-    user?.user_metadata?.display_name ||
-    user?.user_metadata?.full_name ||
-    user?.email ||
-    'Anonymous User'
+  const displayName = user.username
 
   // Handle presence changes
   const handlePresenceChange = useCallback((users: PresenceState) => {
@@ -76,7 +75,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
               presenceUsers={presenceUsers}
               currentUserId={userId}
               currentUserName={displayName}
-              currentUserAvatar={user?.user_metadata?.avatar_url}
+              currentUserAvatar={user.avatarUrl}
             />
           </div>
           <h1 className="text-base sm:text-lg font-semibold flex-1 text-center">
@@ -97,7 +96,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
           roomId={room.id}
           username={displayName}
           userId={userId}
-          userAvatarUrl={user?.user_metadata?.avatar_url}
+          userAvatarUrl={user.avatarUrl}
           onPresenceChange={handlePresenceChange}
           messages={initialMessages.map((message) => ({
             ...message,
