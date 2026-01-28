@@ -243,7 +243,6 @@ The application uses a **hybrid deduplication approach** with primary determinis
 - **Primary**: Deterministic UUID matching handles repeated identical messages ("ok", "👍")
 - **Fallback**: Content/timestamp heuristic prevents duplicates when broadcasts are missed
 - **Resilient**: Works correctly in both real-time and reconnection scenarios
-- **Interview-friendly**: Shows understanding of edge cases and graceful degradation
 
 **Edge cases handled:**
 - ✅ User sends repeated identical messages → Primary path handles it
