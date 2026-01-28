@@ -44,17 +44,23 @@ Features instant messaging, message persistence, and reconnection handling.
 
 - Node.js 22+ (vercel does not support Node 24 currently)
 - Bun package manager
-- Docker and Docker Compose (for local Redis development)
-- Supabase account and project
+- Docker and Docker Compose (for Redis) - Local DB only
+- **Supabase**: Choose one option below
+  - **Option A**: Supabase cloud account and project (recommended for using a
+    prod/dev branch)
+  - **Option B**: Local Supabase via Docker (recommended for development) -
+    [Setup Guide](docs/LOCAL_SUPABASE_SETUP.md)
 - Anthropic account (for AI assistant - optional)
 - Vercel account (for deployment)
 
 ## Environment Setup
 
-1. Create a `.env.local` file in the root directory:
+Create a `.env.local` file in the root directory:
+
+### For Hosted Supabase (Cloud)
 
 ```bash
-# Supabase Configuration
+# Supabase Configuration (from your Supabase project settings)
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
@@ -81,6 +87,9 @@ ENV=dev
 # KV_REST_API_READ_ONLY_TOKEN=your_vercel_kv_read_only_token
 # KV_URL=your_vercel_kv_url
 ```
+
+📖 **See [Local Supabase Setup Guide](docs/LOCAL_SUPABASE_SETUP.md) for complete
+instructions**
 
 ## Authentication Setup
 
@@ -259,11 +268,37 @@ For production deployment:
 
 ## Database Setup
 
-Set up the following tables in your Supabase database:
+You have two options for setting up Supabase:
 
-`/database/schema.sql`
+### Option A: Hosted Supabase (Cloud)
 
-`/database/rooms_schema.sql`
+1. Create a Supabase project at https://supabase.com
+2. Go to SQL Editor in your Supabase Dashboard
+3. Run `/database/rooms_schema.sql`
+4. Run `/database/schema.sql`
+5. Copy your project URL and keys to `.env.local` (see Environment Setup
+   section)
+
+### Option B: Local Supabase (Docker)
+
+**Recommended for development** - Run Supabase locally with Docker for faster
+development, offline work, and simple email authentication.
+
+📖 **[Complete Local Setup Guide →](docs/LOCAL_SUPABASE_SETUP.md)**
+
+Quick start:
+
+```bash
+# Install Supabase CLI
+brew install supabase/tap/supabase
+
+# Start Supabase locally
+supabase start
+
+# Apply database migrations
+PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f database/rooms_schema.sql
+PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f database/schema.sql
+```
 
 ## Installation
 

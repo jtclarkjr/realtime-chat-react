@@ -43,7 +43,9 @@ export const POST = withAuth(
           user: {
             ...message.user,
             avatar_url: senderProfile?.avatar_url || undefined
-          }
+          },
+          // Echo back the client-generated ID for deterministic deduplication
+          clientMsgId: body.optimisticId
         }
 
         await supabase

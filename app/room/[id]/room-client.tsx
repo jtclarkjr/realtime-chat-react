@@ -25,6 +25,13 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   // Use the authenticated user's ID instead of generating a new one
   const userId = user.id
 
+  // Get display name with same fallback logic as server (matches get_user_display_name function)
+  const displayName =
+    user?.user_metadata?.display_name ||
+    user?.user_metadata?.full_name ||
+    user?.email ||
+    'Anonymous User'
+
   // Handle presence changes
   const handlePresenceChange = useCallback((users: PresenceState) => {
     setPresenceUsers(users)
@@ -68,7 +75,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
             <RealtimePresenceAvatars
               presenceUsers={presenceUsers}
               currentUserId={userId}
-              currentUserName={user?.user_metadata?.full_name || 'Anonymous'}
+              currentUserName={displayName}
               currentUserAvatar={user?.user_metadata?.avatar_url}
             />
           </div>
@@ -88,7 +95,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
       <div className="flex-1 overflow-hidden">
         <RealtimeChat
           roomId={room.id}
-          username={user?.user_metadata?.full_name || 'Anonymous User'}
+          username={displayName}
           userId={userId}
           userAvatarUrl={user?.user_metadata?.avatar_url}
           onPresenceChange={handlePresenceChange}
