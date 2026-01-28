@@ -266,6 +266,18 @@ For production deployment:
 3. Deploy the updated code
 4. Remove the setup endpoint from production
 
+### Security Considerations
+
+**Important**: The `/api/ai/generate` endpoint consumes AI tokens from your Agent account. It is strongly recommended to implement rate limiting on this endpoint to prevent abuse and control costs.
+
+Consider implementing:
+- Per-user rate limits (e.g., max requests per minute/hour)
+- Request quotas per user or IP address
+- Authentication checks to ensure only authorized users can access the endpoint
+- Monitoring and alerting for unusual usage patterns
+
+**Vercel Deployment**: If deploying on Vercel, you can use [Vercel Firewall](https://vercel.com/docs/security/vercel-firewall) to configure rate limiting rules for specific API routes without code changes. This provides an easy way to set up IP-based or route-based rate limits directly from your Vercel dashboard.
+
 ## Database Setup
 
 You have two options for setting up Supabase:
