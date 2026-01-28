@@ -237,7 +237,6 @@ The application uses a **deterministic deduplication approach** based on client-
 - **Deterministic**: Matching is exact, based on UUIDs, not heuristics
 - **Handles duplicates**: Users can send identical messages (e.g., "ok", "👍") without deduplication failures
 - **Simple**: No time-window comparisons or content matching needed
-- **Interview-friendly**: Clean, predictable reconciliation logic
 
 **Previous approach (problematic):**
 - Matched optimistic messages by "same content + user + within 5s"
