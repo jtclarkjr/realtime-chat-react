@@ -8,17 +8,12 @@ import { RealtimePresenceAvatars } from '@/components/presence'
 import { useEffect, useState, useCallback } from 'react'
 import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import type { PresenceState } from '@/lib/types/presence'
-
-interface UserData {
-  id: string
-  username: string
-  avatarUrl?: string
-}
+import type { PublicUser } from '@/lib/types/user'
 
 interface RoomClientProps {
   room: DatabaseRoom
   initialMessages: ChatMessageWithDB[]
-  user: UserData
+  user: PublicUser
 }
 
 export function RoomClient({ room, initialMessages, user }: RoomClientProps) {

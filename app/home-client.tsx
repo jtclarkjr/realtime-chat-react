@@ -10,18 +10,13 @@ import { useRoomStore } from '@/lib/stores/room-store'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { DatabaseRoom } from '@/lib/types/database'
+import type { PublicUser } from '@/lib/types/user'
 import { signOutAction } from '@/lib/actions/auth-actions'
-
-interface UserData {
-  id: string
-  username: string
-  avatarUrl?: string
-}
 
 interface HomeClientProps {
   initialRooms: DatabaseRoom[]
   initialDefaultRoomId: string | null
-  user: UserData
+  user: PublicUser
 }
 
 export function HomeClient({

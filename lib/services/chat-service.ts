@@ -136,8 +136,11 @@ export class ChatService {
       throw new Error('Failed to save AI message')
     }
 
-    // For AI messages, we'll use a fixed display name since AI_USER_ID should have this set
-    const aiUserName = await this.getUserDisplayName(AI_USER_ID)
+    // For AI messages, use a stable fallback if no display name is set
+    let aiUserName = await this.getUserDisplayName(AI_USER_ID)
+    if (!aiUserName || aiUserName === 'Unknown User') {
+      aiUserName = 'AI Assistant'
+    }
 
     // Track this as the latest message in Redis
     await trackLatestMessage(request.roomId, message.id)

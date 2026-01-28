@@ -2,6 +2,7 @@ import { getRoomDataWithMessages } from '@/lib/actions/room-actions'
 import { RoomClient } from './room-client'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { toPublicUser } from '@/lib/auth/public-user'
 import { headers } from 'next/headers'
 
 // No page-level caching since we need user-specific data for private messages
@@ -35,15 +36,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
   }
 
   // Extract only the data we need for the client
-  const userData = {
-    id: user.id,
-    username:
-      user.user_metadata?.display_name ||
-      user.user_metadata?.full_name ||
-      user.email?.split('@')[0] ||
-      'Anonymous User',
-    avatarUrl: user.user_metadata?.avatar_url
-  }
+  const userData = toPublicUser(user)
 
   // Fetch initial room data and messages server-side with user context for privacy
   const { room, messages } = await getRoomDataWithMessages(id, user.id)

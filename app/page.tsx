@@ -1,6 +1,7 @@
 import { getInitialRoomsData } from '@/lib/actions/room-actions'
 import { HomeClient } from './home-client'
 import { createClient } from '@/lib/supabase/server'
+import { toPublicUser } from '@/lib/auth/public-user'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
@@ -25,15 +26,7 @@ export default async function Home() {
   }
 
   // Extract only the data we need for the client
-  const userData = {
-    id: user.id,
-    username:
-      user.user_metadata?.display_name ||
-      user.user_metadata?.full_name ||
-      user.email?.split('@')[0] ||
-      'Anonymous User',
-    avatarUrl: user.user_metadata?.avatar_url
-  }
+  const userData = toPublicUser(user)
 
   // Fetch initial room data server-side
   const { rooms, defaultRoomId } = await getInitialRoomsData()
