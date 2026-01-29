@@ -1,9 +1,9 @@
 export { ERROR_DEFINITIONS, type ErrorCode } from './error-definitions'
 
 export {
-  createErrorResponse,
-  createPlainErrorResponse,
-  createCustomErrorResponse,
+  errorResponse,
+  plainErrorResponse,
+  customErrorResponse,
   formatSSEError,
   type ErrorResponse
 } from './error-responses'

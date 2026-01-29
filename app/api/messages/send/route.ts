@@ -4,7 +4,7 @@ import { userService } from '@/lib/services/user-service'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
 import { sendMessageSchema, validateRequestBody } from '@/lib/validation'
 import type { SendMessageRequest } from '@/lib/types/api'
-import { createErrorResponse } from '@/lib/errors'
+import { errorResponse } from '@/lib/errors'
 
 export const POST = withAuth(
   async (request: NextRequest, { user, supabase }) => {
@@ -19,7 +19,7 @@ export const POST = withAuth(
 
       // Validate that the user is sending messages as themselves
       if (!validateUserAccess(user.id, body.userId)) {
-        return createErrorResponse('SEND_AS_SELF_ONLY')
+        return errorResponse('SEND_AS_SELF_ONLY')
       }
 
       const message = await sendMessage({
@@ -56,7 +56,7 @@ export const POST = withAuth(
       })
     } catch (error) {
       console.error('Error sending message:', error)
-      return createErrorResponse('MESSAGE_SEND_FAILED')
+      return errorResponse('MESSAGE_SEND_FAILED')
     }
   }
 )

@@ -17,7 +17,7 @@ export interface ErrorResponse {
  * @param details - Optional additional error details
  * @returns NextResponse with standardized error structure
  */
-export function createErrorResponse(
+export function errorResponse(
   errorCode: ErrorCode,
   details?: unknown
 ): NextResponse<ErrorResponse> {
@@ -43,7 +43,7 @@ export function createErrorResponse(
  * @param details - Optional additional error details
  * @returns Response with standardized error structure
  */
-export function createPlainErrorResponse(
+export function plainErrorResponse(
   errorCode: ErrorCode,
   details?: unknown
 ): Response {
@@ -74,7 +74,7 @@ export function createPlainErrorResponse(
  * @param details - Optional additional error details
  * @returns NextResponse with error structure
  */
-export function createCustomErrorResponse(
+export function customErrorResponse(
   message: string,
   statusCode: number,
   code?: string,
