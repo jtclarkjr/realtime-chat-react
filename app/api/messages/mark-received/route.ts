@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ChatService } from '@/lib/services/chat-service'
+import { markAsReceived } from '@/lib/services/chat'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
 import { markReceivedSchema, validateRequestBody } from '@/lib/validation'
 import type { MarkReceivedRequest } from '@/lib/types/database'
@@ -22,8 +22,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       )
     }
 
-    const chatService = new ChatService()
-    await chatService.markAsReceived(body.userId, body.roomId, body.messageId)
+    await markAsReceived(body.userId, body.roomId, body.messageId)
 
     return NextResponse.json({
       success: true

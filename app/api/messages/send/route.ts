@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ChatService } from '@/lib/services/chat-service'
+import { sendMessage } from '@/lib/services/chat'
 import { userService } from '@/lib/services/user-service'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
 import { sendMessageSchema, validateRequestBody } from '@/lib/validation'
 import type { SendMessageRequest } from '@/lib/types/api'
+import { errorResponse } from '@/lib/errors'
 
 export const POST = withAuth(
   async (request: NextRequest, { user, supabase }) => {
@@ -18,14 +19,10 @@ export const POST = withAuth(
 
       // Validate that the user is sending messages as themselves
       if (!validateUserAccess(user.id, body.userId)) {
-        return NextResponse.json(
-          { error: 'You can only send messages as yourself' },
-          { status: 403 }
-        )
+        return errorResponse('SEND_AS_SELF_ONLY')
       }
 
-      const chatService = new ChatService()
-      const message = await chatService.sendMessage({
+      const message = await sendMessage({
         roomId: body.roomId,
         userId: body.userId,
         username: body.username,
@@ -59,10 +56,7 @@ export const POST = withAuth(
       })
     } catch (error) {
       console.error('Error sending message:', error)
-      return NextResponse.json(
-        { error: 'Failed to send message' },
-        { status: 500 }
-      )
+      return errorResponse('MESSAGE_SEND_FAILED')
     }
   }
 )

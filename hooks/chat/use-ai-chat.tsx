@@ -53,8 +53,8 @@ export function useAIChat({
         }
 
         // Add a natural delay before AI starts responding (1-2 seconds)
-        const delay = Math.random() * 1000 + 1000 // Random delay between 1-2 seconds
-        await new Promise((resolve) => setTimeout(resolve, delay))
+        // const delay = Math.random() * 1000 + 1000 // Random delay between 1-2 seconds
+        // await new Promise((resolve) => setTimeout(resolve, delay))
 
         // Prepare context from previous messages
         const messageContext = previousMessages.map((msg) => ({

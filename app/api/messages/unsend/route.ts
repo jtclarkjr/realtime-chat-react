@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ChatService } from '@/lib/services/chat-service'
+import { unsendMessage } from '@/lib/services/chat'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
 import { unsendMessageSchema, validateRequestBody } from '@/lib/validation'
 import type { UnsendMessageRequest } from '@/lib/types/database'
@@ -23,8 +23,7 @@ export const POST = withAuth(
         )
       }
 
-      const chatService = new ChatService()
-      const unsent = await chatService.unsendMessage(body, supabase)
+      const unsent = await unsendMessage(body, supabase)
 
       // Broadcast the unsend event to all users in the room
       await supabase.channel(body.roomId).httpSend('message_unsent', {

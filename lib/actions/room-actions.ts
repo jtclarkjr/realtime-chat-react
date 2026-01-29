@@ -7,7 +7,7 @@ import { roomCacheService } from '@/lib/services/room-cache-service'
 import { ensureDefaultRooms } from '@/lib/supabase/rooms'
 import { createClient } from '@/lib/supabase/server'
 import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
-import { ChatService } from '@/lib/services/chat-service'
+import { getRecentMessages } from '@/lib/services/chat'
 
 /**
  * Server action to get initial rooms data for SSR
@@ -182,8 +182,6 @@ export async function getRoomDataWithMessages(
   messages: ChatMessageWithDB[]
 }> {
   try {
-    const chatService = new ChatService()
-
     // Get room details (cached)
     const room = await getCachedRoomData(roomId)
 
@@ -198,7 +196,7 @@ export async function getRoomDataWithMessages(
     // (NOT cached - each user needs fresh data for missed message tracking)
     // This ensures the missed message system works correctly when users rejoin
     // AND respects private message visibility
-    const messages = await chatService.getRecentMessages(roomId, userId, 50)
+    const messages = await getRecentMessages(roomId, userId, 50)
 
     return {
       room,

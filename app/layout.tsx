@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
-import { AuthProvider } from '@/lib/auth/context'
 import { ThemeProvider } from '@/components/theme-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { Toaster } from '@/components/ui/sonner'
@@ -46,7 +45,7 @@ export default function RootLayout({
       >
         <QueryProvider>
           <ThemeProvider>
-            <AuthProvider>{children}</AuthProvider>
+            {children}
             <Toaster />
           </ThemeProvider>
         </QueryProvider>

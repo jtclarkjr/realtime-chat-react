@@ -8,10 +8,12 @@ import { DiscordIcon, GitHubIcon, AppleIcon } from '@/components/ui/icons'
 import {
   signInWithDiscord,
   signInWithGitHub,
-  signInWithApple,
-  signInWithEmail,
-  signUpWithEmail
+  signInWithApple
 } from '@/lib/auth/client'
+import {
+  signInWithEmailAction,
+  signUpWithEmailAction
+} from '@/lib/actions/auth-actions'
 import { Input } from '@/components/ui/input'
 import { useRouter } from 'next/navigation'
 
@@ -111,20 +113,25 @@ export function LoginClient() {
     setLoading('email')
 
     try {
-      const { data, error: authError } = isSignUp
-        ? await signUpWithEmail(email, password)
-        : await signInWithEmail(email, password)
-
-      if (authError) {
-        setError(authError.message)
-        setLoading(null)
-        return
-      }
-
-      if (isSignUp && data.user) {
-        setError('Check your email to confirm your account!')
-        setLoading(null)
-        return
+      if (isSignUp) {
+        const result = await signUpWithEmailAction(email, password)
+        if ('error' in result) {
+          setError(result.error)
+          setLoading(null)
+          return
+        }
+        if ('message' in result) {
+          setError(result.message) // Display confirmation message
+          setLoading(null)
+          return
+        }
+      } else {
+        const result = await signInWithEmailAction(email, password)
+        if ('error' in result) {
+          setError(result.error)
+          setLoading(null)
+          return
+        }
       }
 
       // Successful sign in - redirect

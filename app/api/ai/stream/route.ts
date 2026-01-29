@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { ChatService } from '@/lib/services/chat-service'
+import { sendAIMessage, markMessageAsAITrigger } from '@/lib/services/chat'
 import { requireAuth } from '@/lib/auth/middleware'
 import { aiStreamRequestSchema, validateRequestBody } from '@/lib/validation'
+import { plainErrorResponse, formatSSEError } from '@/lib/errors'
 
 // Configure route for streaming with body size limit
 export const runtime = 'nodejs'
@@ -43,15 +44,7 @@ export const POST = async (request: NextRequest) => {
 
     // Validate that the user making the request matches the userId
     if (user.id !== body.userId) {
-      return new Response(
-        JSON.stringify({
-          error: 'You can only request AI responses for yourself'
-        }),
-        {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      )
+      return plainErrorResponse('AI_REQUEST_SELF_ONLY')
     }
 
     // Initialize Anthropic
@@ -61,13 +54,7 @@ export const POST = async (request: NextRequest) => {
 
     if (!process.env.ANTHROPIC_API_KEY) {
       console.error('Anthropic API key not configured')
-      return new Response(
-        JSON.stringify({ error: 'AI service not configured' }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      )
+      return plainErrorResponse('AI_SERVICE_NOT_CONFIGURED')
     }
 
     // Prepare conversation context for Anthropic
@@ -157,8 +144,7 @@ Be friendly and respectful, but extreme brevity is mandatory.`
           }
 
           // Save complete message to database
-          const chatService = new ChatService()
-          const aiMessage = await chatService.sendAIMessage({
+          const aiMessage = await sendAIMessage({
             roomId: body.roomId,
             content: fullResponse.trim(),
             isPrivate: body.isPrivate || false,
@@ -166,7 +152,7 @@ Be friendly and respectful, but extreme brevity is mandatory.`
           })
 
           if (body.triggerMessageId) {
-            await chatService.markMessageAsAITrigger(body.triggerMessageId)
+            await markMessageAsAITrigger(body.triggerMessageId)
           }
 
           // Send completion with database info
@@ -197,12 +183,8 @@ Be friendly and respectful, but extreme brevity is mandatory.`
           controller.close()
         } catch (error) {
           console.error('Streaming error:', error)
-          const errorData = {
-            type: 'error',
-            error: 'Failed to get AI response'
-          }
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(errorData)}\n\n`)
+            encoder.encode(formatSSEError('AI_RESPONSE_FAILED'))
           )
           controller.close()
         }
@@ -221,12 +203,6 @@ Be friendly and respectful, but extreme brevity is mandatory.`
     })
   } catch (error) {
     console.error('Error in AI stream:', error)
-    return new Response(
-      JSON.stringify({ error: 'Failed to get AI response' }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
+    return plainErrorResponse('AI_RESPONSE_FAILED')
   }
 }
