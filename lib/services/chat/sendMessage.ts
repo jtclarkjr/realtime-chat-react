@@ -48,9 +48,5 @@ export async function sendMessage(
   // Track this as the latest message in Redis
   await trackLatestMessage(request.roomId, message.id)
 
-  return transformDatabaseMessage(
-    message,
-    userProfile?.avatar_url,
-    userName
-  )
+  return transformDatabaseMessage(message, userProfile?.avatar_url, userName)
 }

@@ -77,8 +77,7 @@ export async function getMissedMessages(
       )
 
       return {
-        type:
-          transformedMessages.length > 0 ? 'missed_messages' : 'caught_up',
+        type: transformedMessages.length > 0 ? 'missed_messages' : 'caught_up',
         messages: transformedMessages,
         count: transformedMessages.length
       }
@@ -123,11 +122,7 @@ export async function getMissedMessages(
       (missedMessages || []).map(async (msg: DatabaseMessage) => {
         const userProfile = userProfiles.get(msg.user_id)
         const userName = await getUserDisplayName(supabase, msg.user_id)
-        return transformDatabaseMessage(
-          msg,
-          userProfile?.avatar_url,
-          userName
-        )
+        return transformDatabaseMessage(msg, userProfile?.avatar_url, userName)
       })
     )
 

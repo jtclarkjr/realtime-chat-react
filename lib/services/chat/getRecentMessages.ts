@@ -53,11 +53,7 @@ export async function getRecentMessages(
       (messages || []).reverse().map(async (msg: DatabaseMessage) => {
         const userProfile = userProfiles.get(msg.user_id)
         const userName = await getUserDisplayName(supabase, msg.user_id)
-        return transformDatabaseMessage(
-          msg,
-          userProfile?.avatar_url,
-          userName
-        )
+        return transformDatabaseMessage(msg, userProfile?.avatar_url, userName)
       })
     )
   } catch (error) {

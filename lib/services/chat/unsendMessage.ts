@@ -16,18 +16,17 @@ export async function unsendMessage(
 
   // Soft delete by setting deleted_at and deleted_by
   // Let the database set the timestamp using NOW()
-  const { data: updatedMessage, error: updateError } =
-    await authenticatedClient
-      .from('messages')
-      .update({
-        deleted_at: 'now()', // Database function to set current timestamp
-        deleted_by: request.userId
-      })
-      .eq('id', request.messageId)
-      .eq('room_id', request.roomId)
-      .is('deleted_at', null)
-      .select()
-      .single()
+  const { data: updatedMessage, error: updateError } = await authenticatedClient
+    .from('messages')
+    .update({
+      deleted_at: 'now()', // Database function to set current timestamp
+      deleted_by: request.userId
+    })
+    .eq('id', request.messageId)
+    .eq('room_id', request.roomId)
+    .is('deleted_at', null)
+    .select()
+    .single()
 
   if (updateError || !updatedMessage) {
     console.error('Error soft deleting message:', updateError)
@@ -45,6 +44,9 @@ export async function unsendMessage(
   }
 
   // Get username for the unsent message
-  const userName = await getUserDisplayName(authenticatedClient, updatedMessage.user_id)
+  const userName = await getUserDisplayName(
+    authenticatedClient,
+    updatedMessage.user_id
+  )
   return transformDatabaseMessage(updatedMessage, null, userName)
 }
