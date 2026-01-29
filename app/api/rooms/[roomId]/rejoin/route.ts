@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ChatService } from '@/lib/services/chat-service'
+import { getMissedMessages } from '@/lib/services/chat'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
 
 interface RouteParams {
@@ -30,8 +30,7 @@ export const POST = withAuth(
         )
       }
 
-      const chatService = new ChatService()
-      const response = await chatService.getMissedMessages(userId, roomId)
+      const response = await getMissedMessages(userId, roomId)
 
       return NextResponse.json(response)
     } catch (error) {
@@ -67,8 +66,7 @@ export const GET = withAuth(
         )
       }
 
-      const chatService = new ChatService()
-      const response = await chatService.getMissedMessages(userId, roomId)
+      const response = await getMissedMessages(userId, roomId)
 
       return NextResponse.json(response)
     } catch (error) {

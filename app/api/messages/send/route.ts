@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ChatService } from '@/lib/services/chat-service'
+import { sendMessage } from '@/lib/services/chat'
 import { userService } from '@/lib/services/user-service'
 import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
 import { sendMessageSchema, validateRequestBody } from '@/lib/validation'
@@ -24,8 +24,7 @@ export const POST = withAuth(
         )
       }
 
-      const chatService = new ChatService()
-      const message = await chatService.sendMessage({
+      const message = await sendMessage({
         roomId: body.roomId,
         userId: body.userId,
         username: body.username,

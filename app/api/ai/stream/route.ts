@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { ChatService } from '@/lib/services/chat-service'
+import { sendAIMessage, markMessageAsAITrigger } from '@/lib/services/chat'
 import { requireAuth } from '@/lib/auth/middleware'
 import { aiStreamRequestSchema, validateRequestBody } from '@/lib/validation'
 
@@ -157,8 +157,7 @@ Be friendly and respectful, but extreme brevity is mandatory.`
           }
 
           // Save complete message to database
-          const chatService = new ChatService()
-          const aiMessage = await chatService.sendAIMessage({
+          const aiMessage = await sendAIMessage({
             roomId: body.roomId,
             content: fullResponse.trim(),
             isPrivate: body.isPrivate || false,
@@ -166,7 +165,7 @@ Be friendly and respectful, but extreme brevity is mandatory.`
           })
 
           if (body.triggerMessageId) {
-            await chatService.markMessageAsAITrigger(body.triggerMessageId)
+            await markMessageAsAITrigger(body.triggerMessageId)
           }
 
           // Send completion with database info
