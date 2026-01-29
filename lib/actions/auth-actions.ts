@@ -55,9 +55,7 @@ export async function signUpWithEmailAction(
   email: string,
   password: string
 ): Promise<
-  | { success: true; message: string }
-  | { success: true }
-  | { error: string }
+  { success: true; message: string } | { success: true } | { error: string }
 > {
   const cookieStore = await cookies()
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
@@ -88,8 +86,7 @@ export async function signUpWithEmailAction(
     password,
     options: {
       emailRedirectTo:
-        process.env.NEXT_PUBLIC_AUTH_CALLBACK_URL ||
-        `${baseUrl}/auth/callback`
+        process.env.NEXT_PUBLIC_AUTH_CALLBACK_URL || `${baseUrl}/auth/callback`
     }
   })
 
@@ -98,7 +95,10 @@ export async function signUpWithEmailAction(
   }
 
   if (data.user && !data.session) {
-    return { success: true, message: 'Check your email to confirm your account!' }
+    return {
+      success: true,
+      message: 'Check your email to confirm your account!'
+    }
   }
 
   return { success: true }
