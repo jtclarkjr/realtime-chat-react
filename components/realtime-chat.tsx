@@ -211,7 +211,6 @@ export const RealtimeChat = ({
         messages={allMessages}
         loading={loading}
         isConnected={isConnected}
-        username={username}
         userId={userId}
         initialMessagesLength={initialMessages.length}
         onRetry={retryMessage}

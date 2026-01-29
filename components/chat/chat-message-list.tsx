@@ -11,7 +11,6 @@ interface ChatMessageListProps {
   messages: ChatMessage[]
   loading: boolean
   isConnected: boolean
-  username: string
   userId: string
   initialMessagesLength: number
   onRetry: (messageId: string) => void
@@ -26,7 +25,6 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
       messages,
       loading,
       isConnected,
-      username,
       userId,
       initialMessagesLength,
       onRetry,
@@ -104,8 +102,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                         ? filteredMessages[virtualRow.index - 1]
                         : null
                     const showHeader =
-                      !prevMessage ||
-                      prevMessage.user.name !== message.user.name
+                      !prevMessage || prevMessage.user.id !== message.user.id
 
                     return (
                       <div
@@ -125,7 +122,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                       >
                         <ChatMessageItem
                           message={message}
-                          isOwnMessage={message.user.name === username}
+                          isOwnMessage={message.user.id === userId}
                           showHeader={showHeader}
                           currentUserId={userId}
                           onRetry={onRetry}
@@ -143,8 +140,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                       const prevMessage =
                         index > 0 ? currentMessages[index - 1] : null
                       const showHeader =
-                        !prevMessage ||
-                        prevMessage.user.name !== message.user.name
+                        !prevMessage || prevMessage.user.id !== message.user.id
                       const shouldAnimate =
                         enableAnimations && !message.isOptimistic
 
@@ -164,7 +160,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                         >
                           <ChatMessageItem
                             message={message}
-                            isOwnMessage={message.user.name === username}
+                            isOwnMessage={message.user.id === userId}
                             showHeader={showHeader}
                             currentUserId={userId}
                             onRetry={onRetry}
@@ -181,7 +177,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                         >
                           <ChatMessageItem
                             message={message}
-                            isOwnMessage={message.user.name === username}
+                            isOwnMessage={message.user.id === userId}
                             showHeader={showHeader}
                             currentUserId={userId}
                             onRetry={onRetry}

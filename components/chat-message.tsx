@@ -8,6 +8,7 @@ import {
   RetryButton,
   FailedMessageBubble
 } from '@/components/chat'
+import { AI_USER_ID } from '@/lib/services/ai-user-setup'
 
 interface ChatMessageItemProps {
   message: ChatMessage
@@ -28,9 +29,10 @@ const ChatMessageItemComponent = ({
   onUnsend,
   isUnsending
 }: ChatMessageItemProps) => {
-  const isAIMessage = message.isAI || message.user.name === 'AI Assistant'
+  const isAIMessage =
+    message.isAI || (!!AI_USER_ID && message.user.id === AI_USER_ID)
   const isStreaming =
-    isAIMessage && (message.isStreaming || !message.content.trim()) // AI message with no content or marked as streaming
+    isAIMessage && !!(message.isStreaming || !message.content.trim()) // AI message with no content or marked as streaming
   const isPrivateMessage = message.isPrivate
   const isPrivateForCurrentUser = !!(
     isPrivateMessage && message.requesterId === currentUserId
