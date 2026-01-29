@@ -1,10 +1,10 @@
 import { markMessageReceived } from '@/lib/redis'
 
-export async function markAsReceived(
+export const markAsReceived = async (
   userId: string,
   roomId: string,
   messageId: string
-): Promise<void> {
+): Promise<void> => {
   try {
     await markMessageReceived(userId, roomId, messageId)
   } catch (error) {

@@ -9,9 +9,9 @@ import type {
 import { transformDatabaseMessage } from './transformDatabaseMessage'
 import { getUserDisplayName } from './getUserDisplayName'
 
-export async function sendAIMessage(
+export const sendAIMessage = async (
   request: SendAIMessageRequest
-): Promise<ChatMessageWithDB> {
+): Promise<ChatMessageWithDB> => {
   // Validate required fields
   if (!request.roomId || !request.content?.trim()) {
     throw new Error('Missing required fields for AI message')

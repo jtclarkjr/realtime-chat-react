@@ -1,10 +1,10 @@
 import type { DatabaseMessage, ChatMessageWithDB } from '@/lib/types/database'
 
-export function transformDatabaseMessage(
+export const transformDatabaseMessage = (
   dbMessage: DatabaseMessage,
   userAvatar?: string | null,
   userName?: string
-): ChatMessageWithDB {
+): ChatMessageWithDB => {
   return {
     id: dbMessage.id,
     content: dbMessage.content,

@@ -14,10 +14,10 @@ import { transformDatabaseMessage } from './transformDatabaseMessage'
 import { getUserDisplayName } from './getUserDisplayName'
 import { getMessageTimestamp } from './getMessageTimestamp'
 
-export async function getMissedMessages(
+export const getMissedMessages = async (
   userId: string,
   roomId: string
-): Promise<MissedMessagesResponse> {
+): Promise<MissedMessagesResponse> => {
   const supabase = getServiceClient()
 
   try {

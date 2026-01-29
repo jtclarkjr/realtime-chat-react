@@ -6,10 +6,10 @@ import type {
 import { transformDatabaseMessage } from './transformDatabaseMessage'
 import { getUserDisplayName } from './getUserDisplayName'
 
-export async function unsendMessage(
+export const unsendMessage = async (
   request: UnsendMessageRequest,
   authenticatedClient: SupabaseServerClient
-): Promise<ChatMessageWithDB> {
+): Promise<ChatMessageWithDB> => {
   if (!request.messageId || !request.userId || !request.roomId) {
     throw new Error('Missing required fields for unsend message')
   }

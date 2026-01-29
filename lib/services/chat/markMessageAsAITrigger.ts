@@ -1,6 +1,8 @@
 import { getServiceClient } from '@/lib/supabase/service-client'
 
-export async function markMessageAsAITrigger(messageId: string): Promise<void> {
+export const markMessageAsAITrigger = async (
+  messageId: string
+): Promise<void> => {
   const supabase = getServiceClient()
 
   try {

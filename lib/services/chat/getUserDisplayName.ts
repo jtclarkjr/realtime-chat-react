@@ -1,9 +1,9 @@
 import type { SupabaseServerClient } from '@/lib/types/database'
 
-export async function getUserDisplayName(
+export const getUserDisplayName = async (
   supabase: SupabaseServerClient,
   userId: string
-): Promise<string> {
+): Promise<string> => {
   try {
     const { data, error } = await supabase.rpc('get_user_display_name', {
       user_uuid: userId
