@@ -11,55 +11,53 @@ import type {
   GenerateRoomResponse
 } from '@/lib/types/api'
 
-class ApiClient {
-  async getRooms(): Promise<RoomsResponse> {
-    return ky.get('/api/rooms').json<RoomsResponse>()
-  }
-
-  async getMissedMessages(
-    roomId: string,
-    userId: string,
-    signal?: AbortSignal
-  ): Promise<MissedMessagesResponse> {
-    return ky
-      .get(`/api/rooms/${roomId}/rejoin?userId=${userId}`, {
-        signal
-      })
-      .json<MissedMessagesResponse>()
-  }
-
-  async sendMessage(data: SendMessageRequest): Promise<SendMessageResponse> {
-    return ky
-      .post('/api/messages/send', {
-        json: data
-      })
-      .json<SendMessageResponse>()
-  }
-
-  async unsendMessage(
-    data: UnsendMessageRequest
-  ): Promise<UnsendMessageResponse> {
-    return ky
-      .post('/api/messages/unsend', {
-        json: data
-      })
-      .json<UnsendMessageResponse>()
-  }
-
-  async generateRoomSuggestion(
-    data: GenerateRoomRequest
-  ): Promise<GenerateRoomResponse> {
-    return ky
-      .post('/api/rooms/generate', {
-        json: data
-      })
-      .json<GenerateRoomResponse>()
-  }
+export const getRooms = async (): Promise<RoomsResponse> => {
+  return ky.get('/api/rooms').json<RoomsResponse>()
 }
 
-export const apiClient = new ApiClient()
+export const getMissedMessages = async (
+  roomId: string,
+  userId: string,
+  signal?: AbortSignal
+): Promise<MissedMessagesResponse> => {
+  return ky
+    .get(`/api/rooms/${roomId}/rejoin?userId=${userId}`, {
+      signal
+    })
+    .json<MissedMessagesResponse>()
+}
 
-export function transformApiMessage(msg: ApiMessage): ChatMessage {
+export const sendMessage = async (
+  data: SendMessageRequest
+): Promise<SendMessageResponse> => {
+  return ky
+    .post('/api/messages/send', {
+      json: data
+    })
+    .json<SendMessageResponse>()
+}
+
+export const unsendMessage = async (
+  data: UnsendMessageRequest
+): Promise<UnsendMessageResponse> => {
+  return ky
+    .post('/api/messages/unsend', {
+      json: data
+    })
+    .json<UnsendMessageResponse>()
+}
+
+export const generateRoomSuggestion = async (
+  data: GenerateRoomRequest
+): Promise<GenerateRoomResponse> => {
+  return ky
+    .post('/api/rooms/generate', {
+      json: data
+    })
+    .json<GenerateRoomResponse>()
+}
+
+export const transformApiMessage = (msg: ApiMessage): ChatMessage => {
   return {
     id: msg.id,
     content: msg.content,

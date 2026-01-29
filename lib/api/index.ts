@@ -1,4 +1,11 @@
-export { apiClient, transformApiMessage } from './client'
+export {
+  getRooms,
+  getMissedMessages,
+  sendMessage,
+  unsendMessage,
+  generateRoomSuggestion,
+  transformApiMessage
+} from './client'
 export type {
   RoomsResponse,
   MissedMessagesResponse,

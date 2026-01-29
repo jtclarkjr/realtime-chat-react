@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api/client'
+import { unsendMessage } from '@/lib/api/client'
 import type {
   UnsendMessageRequest,
   UnsendMessageResponse
@@ -10,7 +10,7 @@ import type {
 export function useUnsendMessageMutation() {
   return useMutation<UnsendMessageResponse, Error, UnsendMessageRequest>({
     mutationFn: async (data) => {
-      return apiClient.unsendMessage(data)
+      return unsendMessage(data)
     }
   })
 }

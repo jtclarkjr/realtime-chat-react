@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../query-keys'
-import { apiClient } from '@/lib/api/client'
+import { getRooms } from '@/lib/api/client'
 import type { DatabaseRoom } from '@/lib/types/database'
 
 interface UseRoomsOptions {
@@ -17,7 +17,7 @@ export function useRooms({
   return useQuery({
     queryKey: queryKeys.rooms.list(),
     queryFn: async () => {
-      const response = await apiClient.getRooms()
+      const response = await getRooms()
       return response.rooms
     },
     enabled,

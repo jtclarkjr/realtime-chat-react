@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../query-keys'
-import { apiClient, transformApiMessage } from '@/lib/api/client'
+import { getMissedMessages, transformApiMessage } from '@/lib/api/client'
 import type { ChatMessage } from '@/lib/types/database'
 
 interface UseMissedMessagesOptions {
@@ -20,7 +20,7 @@ export function useMissedMessages({
     queryKey: queryKeys.messages.missed(roomId, userId),
     queryFn: async ({ signal }) => {
       try {
-        const data = await apiClient.getMissedMessages(roomId, userId, signal)
+        const data = await getMissedMessages(roomId, userId, signal)
 
         if (
           (data.type === 'missed_messages' ||
