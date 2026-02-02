@@ -126,19 +126,23 @@ You should see:
 
 ## Step 4: Enable Anonymous Authentication
 
-Anonymous authentication allows users to browse as guests with read-only access before signing up. This must be enabled in your Supabase configuration.
+Anonymous authentication allows users to browse as guests with read-only access
+before signing up. This must be enabled in your Supabase configuration.
 
 ### For Local Supabase
 
-The anonymous auth setting is configured in `supabase/config.toml` (created when you run `supabase init`).
+The anonymous auth setting is configured in `supabase/config.toml` (created when
+you run `supabase init`).
 
 1. **Locate the config file**:
+
    ```bash
    cat supabase/config.toml | grep -A 2 "enable_anonymous_sign_ins"
    ```
 
-2. **Enable anonymous sign-ins**:
-   Edit `supabase/config.toml` and find the `[auth]` section:
+2. **Enable anonymous sign-ins**: Edit `supabase/config.toml` and find the
+   `[auth]` section:
+
    ```toml
    [auth]
    enabled = true
@@ -169,11 +173,13 @@ If using hosted Supabase (production):
 ### Verify Anonymous Auth is Enabled
 
 After restarting, verify the setting:
+
 ```bash
 cat supabase/config.toml | grep "enable_anonymous_sign_ins"
 ```
 
 Should show:
+
 ```toml
 enable_anonymous_sign_ins = true
 ```
