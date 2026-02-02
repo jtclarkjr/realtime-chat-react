@@ -124,7 +124,71 @@ You should see:
  public | rooms    | table | postgres
 ```
 
-## Step 4: Configure Environment Variables
+## Step 4: Enable Anonymous Authentication
+
+Anonymous authentication allows users to browse as guests with read-only access before signing up. This must be enabled in your Supabase configuration.
+
+### For Local Supabase
+
+The anonymous auth setting is configured in `supabase/config.toml` (created when you run `supabase init`).
+
+1. **Locate the config file**:
+   ```bash
+   cat supabase/config.toml | grep -A 2 "enable_anonymous_sign_ins"
+   ```
+
+2. **Enable anonymous sign-ins**:
+   Edit `supabase/config.toml` and find the `[auth]` section:
+   ```toml
+   [auth]
+   enabled = true
+   site_url = "http://127.0.0.1:3000"
+   # ... other settings ...
+
+   # Allow/disallow anonymous sign-ins to your project.
+   enable_anonymous_sign_ins = true  # Set this to true
+   ```
+
+3. **Restart Supabase** to apply changes:
+   ```bash
+   supabase stop
+   supabase start
+   ```
+
+### For Hosted Supabase
+
+If using hosted Supabase (production):
+
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. Navigate to **Authentication** → **Providers**
+4. Scroll down to **Anonymous**
+5. Toggle it **ON**
+6. Click **Save**
+
+### Verify Anonymous Auth is Enabled
+
+After restarting, verify the setting:
+```bash
+cat supabase/config.toml | grep "enable_anonymous_sign_ins"
+```
+
+Should show:
+```toml
+enable_anonymous_sign_ins = true
+```
+
+### Rate Limiting (Optional)
+
+You can configure rate limits for anonymous sign-ins in the same config file:
+
+```toml
+[auth.rate_limit]
+# Number of anonymous sign-ins that can be made per hour per IP address
+anonymous_users = 30
+```
+
+## Step 5: Configure Environment Variables
 
 Update your `.env.local` (or create `.env.development.local`) with local
 Supabase credentials:
