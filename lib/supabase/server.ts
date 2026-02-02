@@ -26,7 +26,12 @@ export function createClient(request: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies
+      cookies,
+      auth: {
+        // Suppress logging of expected auth errors (e.g., no refresh token on login page)
+        // The library will still handle session refresh properly when valid tokens exist
+        debug: false
+      }
     }
   )
 
