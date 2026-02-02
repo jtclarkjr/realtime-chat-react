@@ -18,6 +18,7 @@ interface ChatInputProps {
   isAIPrivate: boolean
   setIsAIPrivate: (isPrivate: boolean) => void
   isAILoading: boolean
+  isAnonymous: boolean
 }
 
 export const ChatInput = ({
@@ -30,7 +31,8 @@ export const ChatInput = ({
   setIsAIEnabled,
   isAIPrivate,
   setIsAIPrivate,
-  isAILoading
+  isAILoading,
+  isAnonymous
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -50,8 +52,10 @@ export const ChatInput = ({
     loading: boolean,
     isAILoading: boolean,
     isAIEnabled: boolean,
-    isConnected: boolean
+    isConnected: boolean,
+    isAnonymous: boolean
   ): string => {
+    if (isAnonymous) return 'Sign in to send messages...'
     // if (loading) return 'Connecting...' temp removed loading
     if (isAILoading) return 'AI is responding...'
     if (!isConnected && !loading)
@@ -96,9 +100,10 @@ export const ChatInput = ({
             loading,
             isAILoading,
             isAIEnabled,
-            isConnected
+            isConnected,
+            isAnonymous
           )}
-          disabled={isAILoading} // temp removed loading
+          disabled={isAILoading || isAnonymous} // temp removed loading
           autoComplete="off"
           autoCapitalize="sentences"
           // autoFocus={!isAILoading} // temp removed !loading
@@ -112,10 +117,11 @@ export const ChatInput = ({
             onToggle={() => setIsAIEnabled(!isAIEnabled)}
             isPrivate={isAIPrivate}
             onPrivacyToggle={() => setIsAIPrivate(!isAIPrivate)}
+            isAnonymous={isAnonymous}
           />
         </div>
       </div>
-      {!loading && newMessage.trim() && (
+      {!loading && newMessage.trim() && !isAnonymous && (
         <Button
           className={cn(
             'aspect-square h-12 w-12 sm:h-10 sm:w-10 rounded-full animate-in fade-in slide-in-from-right-4 duration-300 active:scale-95',

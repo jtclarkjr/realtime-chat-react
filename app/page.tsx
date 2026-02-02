@@ -2,6 +2,7 @@ import { getInitialRoomsData } from '@/lib/actions/room-actions'
 import { HomeClient } from './home-client'
 import { createClient } from '@/lib/supabase/server'
 import { toPublicUser } from '@/lib/auth/public-user'
+import { AnonymousBanner } from '@/components/anonymous-banner'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
@@ -32,10 +33,13 @@ export default async function Home() {
   const { rooms, defaultRoomId } = await getInitialRoomsData()
 
   return (
-    <HomeClient
-      initialRooms={rooms}
-      initialDefaultRoomId={defaultRoomId}
-      user={userData}
-    />
+    <>
+      {userData.isAnonymous && <AnonymousBanner />}
+      <HomeClient
+        initialRooms={rooms}
+        initialDefaultRoomId={defaultRoomId}
+        user={userData}
+      />
+    </>
   )
 }

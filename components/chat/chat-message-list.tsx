@@ -17,6 +17,7 @@ interface ChatMessageListProps {
   onUnsend?: (messageId: string) => void
   isUnsending?: (messageId: string) => boolean
   onUserScroll?: () => void
+  isAnonymous?: boolean
 }
 
 export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
@@ -30,7 +31,8 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
       onRetry,
       onUnsend,
       isUnsending,
-      onUserScroll
+      onUserScroll,
+      isAnonymous = false
     },
     ref
   ) => {
@@ -128,6 +130,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                           onRetry={onRetry}
                           onUnsend={onUnsend}
                           isUnsending={isUnsending}
+                          isAnonymous={isAnonymous}
                         />
                       </div>
                     )
@@ -166,6 +169,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                             onRetry={onRetry}
                             onUnsend={onUnsend}
                             isUnsending={isUnsending}
+                            isAnonymous={isAnonymous}
                           />
                         </motion.div>
                       ) : (
@@ -183,6 +187,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                             onRetry={onRetry}
                             onUnsend={onUnsend}
                             isUnsending={isUnsending}
+                            isAnonymous={isAnonymous}
                           />
                         </div>
                       )

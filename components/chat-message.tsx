@@ -18,6 +18,7 @@ interface ChatMessageItemProps {
   onRetry?: (messageId: string) => void
   onUnsend?: (messageId: string) => void
   isUnsending?: (messageId: string) => boolean
+  isAnonymous?: boolean
 }
 
 const ChatMessageItemComponent = ({
@@ -27,7 +28,8 @@ const ChatMessageItemComponent = ({
   currentUserId,
   onRetry,
   onUnsend,
-  isUnsending
+  isUnsending,
+  isAnonymous = false
 }: ChatMessageItemProps) => {
   const isAIMessage =
     message.isAI || (!!AI_USER_ID && message.user.id === AI_USER_ID)
@@ -103,6 +105,7 @@ const ChatMessageItemComponent = ({
                   ? isUnsending(message.serverId || message.id)
                   : false
               }
+              isAnonymous={isAnonymous}
             />
 
             {/* Status indicators for user's own messages */}

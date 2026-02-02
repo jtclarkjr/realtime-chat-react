@@ -8,7 +8,9 @@ import { DiscordIcon, GitHubIcon, AppleIcon } from '@/components/ui/icons'
 import {
   signInWithDiscord,
   signInWithGitHub,
-  signInWithApple
+  signInWithApple,
+  signInAnonymously,
+  getCurrentUser
 } from '@/lib/auth/client'
 import {
   signInWithEmailAction,
@@ -25,7 +27,19 @@ export function LoginClient() {
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isAnonymous, setIsAnonymous] = useState(false)
   const router = useRouter()
+
+  // Check if user is already signed in as anonymous on mount
+  useEffect(() => {
+    const checkAnonymousStatus = async () => {
+      const { user } = await getCurrentUser()
+      if (user?.is_anonymous) {
+        setIsAnonymous(true)
+      }
+    }
+    checkAnonymousStatus()
+  }, [])
 
   // Handle clearing loading state when returning to the page
   useEffect(() => {
@@ -107,6 +121,37 @@ export function LoginClient() {
   const handleGitHubSignIn = () => handleOAuthSignIn('github', signInWithGitHub)
   const handleAppleSignIn = () => handleOAuthSignIn('apple', signInWithApple)
 
+  const handleGuestSignIn = async () => {
+    track('event_login_attempt', { provider: 'anonymous' })
+    try {
+      setLoading('guest')
+
+      // Check if user is already signed in
+      const { user } = await getCurrentUser()
+      if (user) {
+        // User is already signed in (anonymous or full account), just redirect
+        router.push('/')
+        router.refresh()
+        return
+      }
+
+      // No existing session, create new anonymous user
+      const { error } = await signInAnonymously()
+      if (error) {
+        console.error('Error signing in anonymously:', error)
+        setError('Failed to sign in as guest. Please try again.')
+        setLoading(null)
+      } else {
+        router.push('/')
+        router.refresh()
+      }
+    } catch (err) {
+      console.error('Error signing in anonymously:', err)
+      setError('Failed to sign in as guest. Please try again.')
+      setLoading(null)
+    }
+  }
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -145,6 +190,40 @@ export function LoginClient() {
 
   return (
     <div className="space-y-4">
+      {isAnonymous && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="space-y-3">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              You&apos;re currently browsing as a guest. You can continue as a
+              guest or sign in with a full account for the complete experience.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => router.push('/')}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+              >
+                Continue as Guest
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAnonymous && (
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-gray-300 dark:border-gray-700" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white dark:bg-gray-950 px-2 text-gray-500 dark:text-gray-400">
+              Or sign in with
+            </span>
+          </div>
+        </div>
+      )}
+
       {isEmailAuthEnabled && (
         <>
           <form onSubmit={handleEmailAuth} className="space-y-3">
@@ -274,6 +353,37 @@ export function LoginClient() {
           </span>
         )}
       </Button>
+
+      {!isAnonymous && (
+        <>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-300 dark:border-gray-700" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white dark:bg-gray-950 px-2 text-gray-500 dark:text-gray-400">
+                Or
+              </span>
+            </div>
+          </div>
+
+          <Button
+            onClick={handleGuestSignIn}
+            disabled={!!loading}
+            variant="outline"
+            size="xl"
+          >
+            {loading === 'guest' ? (
+              <span className="flex items-center gap-2">
+                <Spinner />
+                Signing in...
+              </span>
+            ) : (
+              <span>Continue as Guest</span>
+            )}
+          </Button>
+        </>
+      )}
     </div>
   )
 }

@@ -22,6 +22,7 @@ interface RealtimeChatProps {
   onMessage?: (messages: ChatMessage[]) => void
   messages?: ChatMessage[]
   onPresenceChange?: (users: PresenceState) => void
+  isAnonymous?: boolean
 }
 
 /**
@@ -39,7 +40,8 @@ export const RealtimeChat = ({
   userAvatarUrl,
   onMessage,
   messages: initialMessages = [],
-  onPresenceChange
+  onPresenceChange,
+  isAnonymous = false
 }: RealtimeChatProps) => {
   const { containerRef, scrollToBottom, scrollToBottomInstant } =
     useChatScroll()
@@ -217,6 +219,7 @@ export const RealtimeChat = ({
         onUnsend={unsendMessage}
         isUnsending={isUnsending}
         onUserScroll={handleUserScroll}
+        isAnonymous={isAnonymous}
       />
 
       <NewMessagesBadge
@@ -236,6 +239,7 @@ export const RealtimeChat = ({
         isAIPrivate={isAIPrivate}
         setIsAIPrivate={setIsAIPrivate}
         isAILoading={isAILoading}
+        isAnonymous={isAnonymous}
       />
     </div>
   )

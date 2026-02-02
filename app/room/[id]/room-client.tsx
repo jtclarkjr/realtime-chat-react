@@ -53,7 +53,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   // Ensure proper initialization before showing chat
   if (!isInitialized || !userId) {
     return (
-      <PageTransition className="h-dvh flex flex-col bg-background">
+      <PageTransition className="h-full flex flex-col bg-background">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-sm text-muted-foreground">Loading room...</div>
         </div>
@@ -62,7 +62,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   }
 
   return (
-    <PageTransition className="h-dvh flex flex-col bg-background">
+    <PageTransition className="h-full flex flex-col bg-background">
       <header className="border-b border-border p-3 sm:p-4 shrink-0">
         <div className="flex items-center justify-between">
           <div className="w-16 flex items-center justify-start">
@@ -93,6 +93,7 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
           userId={userId}
           userAvatarUrl={user.avatarUrl}
           onPresenceChange={handlePresenceChange}
+          isAnonymous={user.isAnonymous}
           messages={initialMessages.map((message) => ({
             ...message,
             roomId: message.channelId, // Convert channelId to roomId for consistency

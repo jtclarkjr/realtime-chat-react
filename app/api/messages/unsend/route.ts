@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { unsendMessage } from '@/lib/services/chat'
-import { withAuth, validateUserAccess } from '@/lib/auth/middleware'
+import { withNonAnonymousAuth, validateUserAccess } from '@/lib/auth/middleware'
 import { unsendMessageSchema, validateRequestBody } from '@/lib/validation'
 import type { UnsendMessageRequest } from '@/lib/types/database'
 
-export const POST = withAuth(
+export const POST = withNonAnonymousAuth(
   async (request: NextRequest, { user, supabase }) => {
     try {
       // Validate request body with Zod schema

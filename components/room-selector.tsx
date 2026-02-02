@@ -22,6 +22,7 @@ interface RoomSelectorProps {
   showAddRoom?: boolean
   initialRooms?: DatabaseRoom[]
   currentUserId?: string // User ID to check permissions
+  isAnonymous?: boolean
 }
 
 export function RoomSelector({
@@ -30,7 +31,8 @@ export function RoomSelector({
   disabled = false,
   showAddRoom = true,
   initialRooms = [],
-  currentUserId
+  currentUserId,
+  isAnonymous = false
 }: RoomSelectorProps) {
   const {
     data: rooms = [],
@@ -177,6 +179,7 @@ export function RoomSelector({
 
     // Add delete action if user has permission and it's not the currently selected room
     if (
+      !isAnonymous &&
       currentUserId &&
       room.created_by === currentUserId &&
       room.id !== selectedRoom
@@ -213,7 +216,7 @@ export function RoomSelector({
         triggerClassName="pl-10 pr-10"
       />
 
-      {showAddRoom && (
+      {showAddRoom && !isAnonymous && (
         <AddRoomDialog
           onRoomCreated={handleRoomCreated}
           disabled={disabled}

@@ -80,3 +80,55 @@ export function validateUserAccess(
 ): boolean {
   return authenticatedUserId === requestUserId
 }
+
+/**
+ * Check if the user is an anonymous user
+ */
+export function isAnonymousUser(user: User): boolean {
+  return user.is_anonymous === true
+}
+
+/**
+ * Authentication middleware that also checks for non-anonymous users
+ * Returns 403 if user is anonymous
+ */
+export async function requireNonAnonymousAuth(
+  request: NextRequest
+): Promise<
+  { user: User; supabase: SupabaseClient; headers: Headers } | NextResponse
+> {
+  const authResult = await requireAuth(request)
+
+  if (authResult instanceof NextResponse) {
+    return authResult
+  }
+
+  if (isAnonymousUser(authResult.user)) {
+    return NextResponse.json(
+      {
+        error: 'This action requires a full account. Please sign in.',
+        code: 'ANONYMOUS_USER_RESTRICTED'
+      },
+      { status: 403 }
+    )
+  }
+
+  return authResult
+}
+
+/**
+ * Wrapper function to add non-anonymous authentication to API route handlers
+ */
+export function withNonAnonymousAuth<T extends unknown[]>(
+  handler: (
+    request: NextRequest,
+    auth: { user: User; supabase: SupabaseClient; headers: Headers },
+    ...args: T
+  ) => Promise<NextResponse>
+) {
+  return async (request: NextRequest, ...args: T): Promise<NextResponse> => {
+    const authResult = await requireNonAnonymousAuth(request)
+    if (authResult instanceof NextResponse) return authResult
+    return handler(request, authResult, ...args)
+  }
+}
