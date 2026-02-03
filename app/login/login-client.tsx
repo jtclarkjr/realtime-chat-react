@@ -20,6 +20,8 @@ import { Input } from '@/components/ui/input'
 import { useRouter } from 'next/navigation'
 
 const isEmailAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_EMAIL_AUTH === 'true'
+const isGuestUsersEnabled =
+  process.env.NEXT_PUBLIC_ENABLE_GUEST_USERS !== 'false'
 
 export function LoginClient() {
   const [loading, setLoading] = useState<string | null>(null)
@@ -354,7 +356,7 @@ export function LoginClient() {
         )}
       </Button>
 
-      {!isAnonymous && (
+      {!isAnonymous && isGuestUsersEnabled && (
         <>
           <div className="relative">
             <div className="absolute inset-0 flex items-center">

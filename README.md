@@ -71,6 +71,8 @@ AI_USER_ID=your_ai_user_id_here
 
 # Authentication Configuration
 NEXT_PUBLIC_AUTH_CALLBACK_URL=http://localhost:3000/auth/callback
+NEXT_PUBLIC_ENABLE_EMAIL_AUTH=false
+NEXT_PUBLIC_ENABLE_GUEST_USERS=true
 
 # Site Configuration
 NEXT_PUBLIC_SITE_URL=http://localhost:3000

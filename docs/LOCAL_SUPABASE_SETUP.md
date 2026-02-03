@@ -209,6 +209,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_local_supabase_service_role_jwt_key
 
 # Enable email/password auth for local development only
 NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true
+NEXT_PUBLIC_ENABLE_GUEST_USERS=true
 
 # Redis Configuration (keep as-is)
 REDIS_URL=redis://localhost:6379
@@ -235,6 +236,8 @@ ENV=dev
   `sb_publishable*...`).
 - **Email Auth Flag**: Set `NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true` to enable
   email/password login (local only)
+- **Guest Login Flag**: Set `NEXT_PUBLIC_ENABLE_GUEST_USERS=true` to show
+  "Continue as Guest" on the login page
 - **Production**: Use different keys from your hosted Supabase project
 
 ## Step 5: Start the Application
@@ -445,6 +448,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_hosted_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_hosted_service_key
 NEXT_PUBLIC_ENABLE_EMAIL_AUTH=false  # OAuth only
+NEXT_PUBLIC_ENABLE_GUEST_USERS=true  # Show guest login option
 ```
 
 **`.env.development.local`** (local Supabase):
@@ -454,6 +458,7 @@ NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true  # Email auth for local
+NEXT_PUBLIC_ENABLE_GUEST_USERS=true  # Show guest login option
 ```
 
 Next.js loads `.env.development.local` in development, which takes precedence
