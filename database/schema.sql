@@ -71,8 +71,36 @@ COMMENT ON COLUMN messages.has_ai_response IS 'TRUE if this message triggered an
 
 -- Add database constraint to ensure deleted_by equals user_id (security layer)
 ALTER TABLE messages ADD CONSTRAINT check_deleted_by_equals_user_id
-  CHECK ((deleted_at IS NULL AND deleted_by IS NULL) OR 
+  CHECK ((deleted_at IS NULL AND deleted_by IS NULL) OR
          (deleted_at IS NOT NULL AND deleted_by = user_id));
+
+-- ============================================================================
+-- HELPER FUNCTIONS (must be created before RLS policies that use them)
+-- ============================================================================
+
+-- Create helper function to check if current user is anonymous
+-- SECURITY DEFINER allows the function to access auth.users with elevated privileges
+-- STABLE indicates the function returns consistent results during a transaction
+CREATE OR REPLACE FUNCTION auth.is_anonymous_user()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN COALESCE(
+    (SELECT is_anonymous FROM auth.users WHERE id = auth.uid()),
+    false
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- Grant execute permissions to authenticated users
+GRANT EXECUTE ON FUNCTION auth.is_anonymous_user() TO authenticated;
+
+-- Add helpful comments
+COMMENT ON FUNCTION auth.is_anonymous_user() IS
+'Helper function to check if the current authenticated user is an anonymous user. Returns false if user not found or not anonymous.';
+
+-- ============================================================================
+-- ROW LEVEL SECURITY POLICIES
+-- ============================================================================
 
 -- Enable Row Level Security
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
@@ -135,29 +163,8 @@ CREATE TRIGGER auto_set_deleted_at
     EXECUTE FUNCTION set_deleted_at_timestamp();
 
 -- Add comment explaining the trigger function
-COMMENT ON FUNCTION set_deleted_at_timestamp() IS 
+COMMENT ON FUNCTION set_deleted_at_timestamp() IS
 'Automatically sets deleted_at to current timestamp when a message is being soft deleted (when deleted_at changes from NULL to any value)';
-
-
--- Create helper function to check if current user is anonymous
--- SECURITY DEFINER allows the function to access auth.users with elevated privileges
--- STABLE indicates the function returns consistent results during a transaction
-CREATE OR REPLACE FUNCTION auth.is_anonymous_user()
-RETURNS BOOLEAN AS $$
-BEGIN
-  RETURN COALESCE(
-    (SELECT is_anonymous FROM auth.users WHERE id = auth.uid()),
-    false
-  );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
-
--- Grant execute permissions to authenticated users
-GRANT EXECUTE ON FUNCTION auth.is_anonymous_user() TO authenticated;
-
--- Add helpful comments
-COMMENT ON FUNCTION auth.is_anonymous_user() IS
-'Helper function to check if the current authenticated user is an anonymous user. Returns false if user not found or not anonymous.';
 
 -- Create helpful function to get user display name
 -- SECURITY DEFINER allows the function to access auth.users with elevated privileges
