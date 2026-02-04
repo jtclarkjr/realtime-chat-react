@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { roomCacheService } from '@/lib/services/room-cache-service'
-import { withAuth } from '@/lib/auth/middleware'
+import { withAuth, withNonAnonymousAuth } from '@/lib/auth/middleware'
 import {
   createRoomSchema,
   deleteRoomQuerySchema,
@@ -23,7 +23,7 @@ export const GET = withAuth(async () => {
   }
 })
 
-export const POST = withAuth(async (request: NextRequest, auth) => {
+export const POST = withNonAnonymousAuth(async (request: NextRequest, auth) => {
   try {
     // Validate request body with Zod schema
     const validation = await validateRequestBody(request, createRoomSchema)
@@ -61,7 +61,7 @@ export const POST = withAuth(async (request: NextRequest, auth) => {
   }
 })
 
-export const DELETE = withAuth(async (request: NextRequest) => {
+export const DELETE = withNonAnonymousAuth(async (request: NextRequest) => {
   try {
     // Validate query parameters with Zod schema
     const validation = validateQueryParams(request, deleteRoomQuerySchema)

@@ -53,7 +53,14 @@ export function HomeClient({
 
   const handleLogout = async () => {
     try {
-      await signOutAction()
+      if (user.isAnonymous) {
+        // For anonymous users, just navigate to login without destroying session
+        // This preserves their guest account so they can return as the same user
+        router.push('/login')
+      } else {
+        // For authenticated users, sign out normally
+        await signOutAction()
+      }
     } catch (error) {
       console.error('Error signing out:', error)
     }
@@ -92,7 +99,7 @@ export function HomeClient({
                 <div className="flex items-center gap-2 ml-4">
                   <ThemeToggle />
                   <Button onClick={handleLogout} variant="text-danger">
-                    Sign Out
+                    {user.isAnonymous ? 'Leave' : 'Sign Out'}
                   </Button>
                 </div>
               </div>
@@ -108,6 +115,7 @@ export function HomeClient({
                 disabled={false}
                 initialRooms={initialRooms}
                 currentUserId={user.id}
+                isAnonymous={user.isAnonymous}
               />
             </div>
           </div>

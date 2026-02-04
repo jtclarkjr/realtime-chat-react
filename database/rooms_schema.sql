@@ -1,4 +1,7 @@
 -- Create rooms table with proper Supabase auth integration
+-- NOTE: This schema requires the auth.is_anonymous_user() function to exist
+-- Run schema.sql first to create the required helper functions
+
 CREATE TABLE IF NOT EXISTS rooms (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name VARCHAR(255) NOT NULL UNIQUE,
@@ -22,24 +25,24 @@ ON rooms FOR SELECT
 TO authenticated 
 USING (true);
 
--- Create policy to allow authenticated users to insert rooms
-CREATE POLICY "Allow authenticated users to insert rooms" 
-ON rooms FOR INSERT 
-TO authenticated 
-WITH CHECK (auth.uid() = created_by);
+-- Create policy to allow non-anonymous users to insert rooms
+CREATE POLICY "Allow non-anonymous users to insert rooms"
+ON rooms FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = created_by AND NOT auth.is_anonymous_user());
 
--- Create policy to allow room creators to update their rooms
-CREATE POLICY "Allow room creators to update their rooms" 
-ON rooms FOR UPDATE 
-TO authenticated 
-USING (auth.uid() = created_by)
-WITH CHECK (auth.uid() = created_by);
+-- Create policy to allow non-anonymous room creators to update their rooms
+CREATE POLICY "Allow non-anonymous room creators to update their rooms"
+ON rooms FOR UPDATE
+TO authenticated
+USING (auth.uid() = created_by AND NOT auth.is_anonymous_user())
+WITH CHECK (auth.uid() = created_by AND NOT auth.is_anonymous_user());
 
--- Create policy to allow room creators to delete their rooms
-CREATE POLICY "Allow room creators to delete their rooms" 
-ON rooms FOR DELETE 
-TO authenticated 
-USING (auth.uid() = created_by);
+-- Create policy to allow non-anonymous room creators to delete their rooms
+CREATE POLICY "Allow non-anonymous room creators to delete their rooms"
+ON rooms FOR DELETE
+TO authenticated
+USING (auth.uid() = created_by AND NOT auth.is_anonymous_user());
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_rooms_created_by 

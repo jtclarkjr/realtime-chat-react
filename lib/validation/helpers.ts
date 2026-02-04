@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-
-/**
- * Validation error response interface
- */
-interface ValidationErrorResponse {
-  error: string
-  code: string
-  details?: Array<{
-    field: string
-    message: string
-  }>
-}
+import { errorResponse } from '@/lib/errors'
 
 /**
  * Sanitize error message to prevent leaking sensitive information
@@ -42,7 +31,7 @@ export async function validateRequestBody<T extends z.ZodTypeAny>(
   schema: T
 ): Promise<
   | { success: true; data: z.infer<T> }
-  | { success: false; response: NextResponse<ValidationErrorResponse> }
+  | { success: false; response: NextResponse }
 > {
   try {
     const body = await request.json()
@@ -56,14 +45,7 @@ export async function validateRequestBody<T extends z.ZodTypeAny>(
 
       return {
         success: false,
-        response: NextResponse.json(
-          {
-            error: 'Validation failed',
-            code: 'VALIDATION_ERROR',
-            details: errorDetails
-          },
-          { status: 400 }
-        )
+        response: errorResponse('VALIDATION_ERROR', errorDetails)
       }
     }
 
@@ -71,13 +53,7 @@ export async function validateRequestBody<T extends z.ZodTypeAny>(
   } catch {
     return {
       success: false,
-      response: NextResponse.json(
-        {
-          error: 'Invalid JSON in request body',
-          code: 'INVALID_JSON'
-        },
-        { status: 400 }
-      )
+      response: errorResponse('INVALID_JSON')
     }
   }
 }
@@ -91,7 +67,7 @@ export function validateQueryParams<T extends z.ZodTypeAny>(
   schema: T
 ):
   | { success: true; data: z.infer<T> }
-  | { success: false; response: NextResponse<ValidationErrorResponse> } {
+  | { success: false; response: NextResponse } {
   const { searchParams } = new URL(request.url)
   const params: Record<string, string> = {}
 
@@ -109,14 +85,7 @@ export function validateQueryParams<T extends z.ZodTypeAny>(
 
     return {
       success: false,
-      response: NextResponse.json(
-        {
-          error: 'Invalid query parameters',
-          code: 'INVALID_QUERY_PARAMS',
-          details: errorDetails
-        },
-        { status: 400 }
-      )
+      response: errorResponse('INVALID_QUERY_PARAMS', errorDetails)
     }
   }
 
@@ -132,7 +101,7 @@ export function validatePathParams<T extends z.ZodTypeAny>(
   schema: T
 ):
   | { success: true; data: z.infer<T> }
-  | { success: false; response: NextResponse<ValidationErrorResponse> } {
+  | { success: false; response: NextResponse } {
   const result = schema.safeParse(params)
 
   if (!result.success) {
@@ -143,14 +112,7 @@ export function validatePathParams<T extends z.ZodTypeAny>(
 
     return {
       success: false,
-      response: NextResponse.json(
-        {
-          error: 'Invalid path parameters',
-          code: 'INVALID_PATH_PARAMS',
-          details: errorDetails
-        },
-        { status: 400 }
-      )
+      response: errorResponse('INVALID_PATH_PARAMS', errorDetails)
     }
   }
 

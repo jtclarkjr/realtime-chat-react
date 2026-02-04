@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { sendAIMessage, markMessageAsAITrigger } from '@/lib/services/chat'
-import { requireAuth } from '@/lib/auth/middleware'
+import { requireNonAnonymousAuth } from '@/lib/auth/middleware'
 import { aiStreamRequestSchema, validateRequestBody } from '@/lib/validation'
 import { plainErrorResponse, formatSSEError } from '@/lib/errors'
 
@@ -16,8 +16,8 @@ const AI_ASSISTANT = {
 }
 
 export const POST = async (request: NextRequest) => {
-  // Authentication check - required for streaming endpoints
-  const authResult = await requireAuth(request)
+  // Authentication check - requires full (non-anonymous) account
+  const authResult = await requireNonAnonymousAuth(request)
 
   // If auth failed, return error response
   if (authResult instanceof Response) {

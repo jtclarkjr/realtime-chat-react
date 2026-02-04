@@ -41,5 +41,20 @@ export async function signInWithApple() {
   return { data, error }
 }
 
+export async function signInAnonymously() {
+  const supabase = createAuthClient()
+  const { data, error } = await supabase.auth.signInAnonymously()
+  return { data, error }
+}
+
+export async function getCurrentUser() {
+  const supabase = createAuthClient()
+  const {
+    data: { user },
+    error
+  } = await supabase.auth.getUser()
+  return { user, error }
+}
+
 // Email/password auth moved to server actions
 // See lib/actions/auth-actions.ts for signInWithEmailAction and signUpWithEmailAction

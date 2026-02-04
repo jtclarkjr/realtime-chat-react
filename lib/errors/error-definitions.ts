@@ -24,6 +24,26 @@ export const ERROR_DEFINITIONS = {
     message: 'Missing required fields for message',
     statusCode: 400
   },
+  VALIDATION_ERROR: {
+    code: 'VALIDATION_ERROR',
+    message: 'Validation failed',
+    statusCode: 400
+  },
+  INVALID_JSON: {
+    code: 'INVALID_JSON',
+    message: 'Invalid JSON in request body',
+    statusCode: 400
+  },
+  INVALID_QUERY_PARAMS: {
+    code: 'INVALID_QUERY_PARAMS',
+    message: 'Invalid query parameters',
+    statusCode: 400
+  },
+  INVALID_PATH_PARAMS: {
+    code: 'INVALID_PATH_PARAMS',
+    message: 'Invalid path parameters',
+    statusCode: 400
+  },
 
   // 401 - Unauthorized
   AUTHENTICATION_REQUIRED: {
@@ -56,6 +76,11 @@ export const ERROR_DEFINITIONS = {
   AI_REQUEST_SELF_ONLY: {
     code: 'FORBIDDEN_AI_REQUEST_OTHER',
     message: 'You can only request AI responses for yourself',
+    statusCode: 403
+  },
+  ANONYMOUS_USER_RESTRICTED: {
+    code: 'ANONYMOUS_USER_RESTRICTED',
+    message: 'This action requires a full account. Please sign in.',
     statusCode: 403
   },
 
