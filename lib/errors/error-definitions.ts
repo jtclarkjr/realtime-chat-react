@@ -58,6 +58,11 @@ export const ERROR_DEFINITIONS = {
     message: 'You can only request AI responses for yourself',
     statusCode: 403
   },
+  ANONYMOUS_USER_RESTRICTED: {
+    code: 'ANONYMOUS_USER_RESTRICTED',
+    message: 'This action requires a full account. Please sign in.',
+    statusCode: 403
+  },
 
   // 404 - Not Found
   ROOM_NOT_FOUND: {

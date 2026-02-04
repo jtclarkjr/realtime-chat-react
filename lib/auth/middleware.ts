@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { errorResponse } from '@/lib/errors'
 import type { User } from '@supabase/supabase-js'
 
 type SupabaseClient = ReturnType<typeof createClient>['supabase']
@@ -25,26 +26,14 @@ export async function requireAuth(
     // If no user or there's an error, return unauthorized response
     if (error || !user) {
       console.error('Authentication failed:', error)
-      return NextResponse.json(
-        {
-          error: 'Authentication required. Please sign in.',
-          code: 'UNAUTHENTICATED'
-        },
-        { status: 401 }
-      )
+      return errorResponse('AUTHENTICATION_REQUIRED')
     }
 
     // Return user and supabase client for use in the route
     return { user, supabase, headers }
   } catch (error) {
     console.error('Error in authentication middleware:', error)
-    return NextResponse.json(
-      {
-        error: 'Authentication verification failed.',
-        code: 'AUTH_ERROR'
-      },
-      { status: 500 }
-    )
+    return errorResponse('AUTH_VERIFICATION_FAILED')
   }
 }
 
@@ -104,13 +93,7 @@ export async function requireNonAnonymousAuth(
   }
 
   if (isAnonymousUser(authResult.user)) {
-    return NextResponse.json(
-      {
-        error: 'This action requires a full account. Please sign in.',
-        code: 'ANONYMOUS_USER_RESTRICTED'
-      },
-      { status: 403 }
-    )
+    return errorResponse('ANONYMOUS_USER_RESTRICTED')
   }
 
   return authResult
