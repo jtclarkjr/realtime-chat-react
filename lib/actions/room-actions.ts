@@ -8,6 +8,7 @@ import { ensureDefaultRooms } from '@/lib/supabase/rooms'
 import { createClient } from '@/lib/supabase/server'
 import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import { getRecentMessages } from '@/lib/services/chat'
+import { isAnonymousUser } from '@/lib/auth/middleware'
 
 /**
  * Server action to get initial rooms data for SSR
@@ -105,6 +106,13 @@ export async function createRoomAction(
       return {
         success: false,
         error: 'Authentication required'
+      }
+    }
+
+    if (isAnonymousUser(user)) {
+      return {
+        success: false,
+        error: 'Anonymous users cannot create rooms. Please sign in.'
       }
     }
 
@@ -242,6 +250,13 @@ export async function deleteRoomAction(roomId: string): Promise<{
       return {
         success: false,
         error: 'Authentication required'
+      }
+    }
+
+    if (isAnonymousUser(user)) {
+      return {
+        success: false,
+        error: 'Anonymous users cannot delete rooms. Please sign in.'
       }
     }
 

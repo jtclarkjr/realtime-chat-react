@@ -71,8 +71,70 @@ COMMENT ON COLUMN messages.has_ai_response IS 'TRUE if this message triggered an
 
 -- Add database constraint to ensure deleted_by equals user_id (security layer)
 ALTER TABLE messages ADD CONSTRAINT check_deleted_by_equals_user_id
-  CHECK ((deleted_at IS NULL AND deleted_by IS NULL) OR 
+  CHECK ((deleted_at IS NULL AND deleted_by IS NULL) OR
          (deleted_at IS NOT NULL AND deleted_by = user_id));
+
+-- ============================================================================
+-- HELPER FUNCTIONS (must be created before RLS policies that use them)
+-- ============================================================================
+
+-- Create helper function to check if current user is anonymous
+-- SECURITY DEFINER allows the function to access auth.users with elevated privileges
+-- STABLE indicates the function returns consistent results during a transaction
+CREATE OR REPLACE FUNCTION public.is_anonymous_user()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN COALESCE(
+    (SELECT is_anonymous FROM auth.users WHERE id = auth.uid()),
+    false
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- Grant execute permissions to authenticated users
+GRANT EXECUTE ON FUNCTION public.is_anonymous_user() TO authenticated;
+
+-- Add helpful comments
+COMMENT ON FUNCTION public.is_anonymous_user() IS
+'Helper function to check if the current authenticated user is an anonymous user. Returns false if user not found or not anonymous.';
+
+-- Ensure auth user triggers skip anonymous users to prevent DB errors during anonymous sign-in.
+-- This is safe to run even if the trigger functions are not present.
+DO $$
+BEGIN
+  IF to_regprocedure('public.handle_new_user()') IS NOT NULL THEN
+    BEGIN
+      DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+      CREATE TRIGGER on_auth_user_created
+        AFTER INSERT ON auth.users
+        FOR EACH ROW
+        WHEN (NEW.is_anonymous IS NOT TRUE)
+        EXECUTE FUNCTION public.handle_new_user();
+    EXCEPTION
+      WHEN insufficient_privilege THEN
+        RAISE NOTICE 'Skipping on_auth_user_created trigger update: insufficient privilege on auth.users';
+    END;
+  END IF;
+
+  IF to_regprocedure('public.add_admins_from_auth()') IS NOT NULL THEN
+    BEGIN
+      DROP TRIGGER IF EXISTS trigger_add_admins ON auth.users;
+      CREATE TRIGGER trigger_add_admins
+        AFTER INSERT ON auth.users
+        FOR EACH ROW
+        WHEN (NEW.is_anonymous IS NOT TRUE)
+        EXECUTE FUNCTION public.add_admins_from_auth();
+    EXCEPTION
+      WHEN insufficient_privilege THEN
+        RAISE NOTICE 'Skipping trigger_add_admins update: insufficient privilege on auth.users';
+    END;
+  END IF;
+END;
+$$;
+
+-- ============================================================================
+-- ROW LEVEL SECURITY POLICIES
+-- ============================================================================
 
 -- Enable Row Level Security
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
@@ -89,26 +151,29 @@ CREATE POLICY "Allow users to read their own deleted messages" ON messages
   TO authenticated
   USING (deleted_at IS NOT NULL AND user_id = auth.uid());
 
-CREATE POLICY "Allow authenticated users to insert messages" ON messages
-  FOR INSERT 
+CREATE POLICY "Allow non-anonymous users to insert messages" ON messages
+  FOR INSERT
   TO authenticated
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (user_id = auth.uid() AND NOT public.is_anonymous_user());
 
--- Allow users to soft delete their own messages only
+-- Allow non-anonymous users to soft delete their own messages only
 -- Users cannot unsend messages that triggered AI responses to maintain conversation context
-CREATE POLICY "Allow users to soft delete their own messages" ON messages
-  FOR UPDATE 
+-- Anonymous users cannot delete messages
+CREATE POLICY "Allow non-anonymous users to soft delete their own messages" ON messages
+  FOR UPDATE
   TO authenticated
   USING (
-    user_id = auth.uid() AND 
-    deleted_at IS NULL AND 
-    has_ai_response = FALSE
+    user_id = auth.uid() AND
+    deleted_at IS NULL AND
+    has_ai_response = FALSE AND
+    NOT public.is_anonymous_user()
   )
   WITH CHECK (
-    user_id = auth.uid() AND 
-    deleted_at IS NOT NULL AND 
-    deleted_by = auth.uid() AND 
-    has_ai_response = FALSE
+    user_id = auth.uid() AND
+    deleted_at IS NOT NULL AND
+    deleted_by = auth.uid() AND
+    has_ai_response = FALSE AND
+    NOT public.is_anonymous_user()
   );
 
 -- Database trigger to automatically set deleted_at timestamp
@@ -132,9 +197,8 @@ CREATE TRIGGER auto_set_deleted_at
     EXECUTE FUNCTION set_deleted_at_timestamp();
 
 -- Add comment explaining the trigger function
-COMMENT ON FUNCTION set_deleted_at_timestamp() IS 
+COMMENT ON FUNCTION set_deleted_at_timestamp() IS
 'Automatically sets deleted_at to current timestamp when a message is being soft deleted (when deleted_at changes from NULL to any value)';
-
 
 -- Create helpful function to get user display name
 -- SECURITY DEFINER allows the function to access auth.users with elevated privileges
@@ -150,7 +214,7 @@ BEGIN
       email,
       'Anonymous User'
     )
-    FROM auth.users 
+    FROM auth.users
     WHERE id = user_uuid
   );
 END;
@@ -161,5 +225,5 @@ GRANT EXECUTE ON FUNCTION get_user_display_name(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_user_display_name(UUID) TO service_role;
 
 -- Add helpful comments
-COMMENT ON FUNCTION get_user_display_name(UUID) IS 
+COMMENT ON FUNCTION get_user_display_name(UUID) IS
 'Helper function to get a user display name from auth.users, falling back to email or "Anonymous User" if not found. Uses SECURITY DEFINER for auth.users access.';

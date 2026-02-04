@@ -1,6 +1,10 @@
 'use client'
 
-import { useChatScroll, useSmartAutoScroll, useLastReadMessage } from '@/hooks/ui'
+import {
+  useChatScroll,
+  useSmartAutoScroll,
+  useLastReadMessage
+} from '@/hooks/ui'
 import { useRealtimeChat, useAIChat, useStreamingMessages } from '@/hooks/chat'
 import { useMessageMerging, useUnsendMessage } from '@/hooks/messages'
 import {
@@ -22,6 +26,7 @@ interface RealtimeChatProps {
   onMessage?: (messages: ChatMessage[]) => void
   messages?: ChatMessage[]
   onPresenceChange?: (users: PresenceState) => void
+  isAnonymous?: boolean
 }
 
 /**
@@ -39,7 +44,8 @@ export const RealtimeChat = ({
   userAvatarUrl,
   onMessage,
   messages: initialMessages = [],
-  onPresenceChange
+  onPresenceChange,
+  isAnonymous = false
 }: RealtimeChatProps) => {
   const { containerRef, scrollToBottom, scrollToBottomInstant } =
     useChatScroll()
@@ -110,10 +116,7 @@ export const RealtimeChat = ({
   })
 
   // Track last read message for new message divider
-  const {
-    getLastReadMessage,
-    currentSessionId
-  } = useLastReadMessage({
+  const { getLastReadMessage, currentSessionId } = useLastReadMessage({
     roomId,
     messages: allMessages
   })
@@ -222,7 +225,6 @@ export const RealtimeChat = ({
         messages={allMessages}
         loading={loading}
         isConnected={isConnected}
-        username={username}
         userId={userId}
         initialMessagesLength={initialMessages.length}
         onRetry={retryMessage}
@@ -232,6 +234,7 @@ export const RealtimeChat = ({
         lastReadMessageId={lastReadData?.messageId || null}
         lastReadTimestamp={lastReadData?.timestamp || null}
         currentSessionId={currentSessionId}
+        isAnonymous={isAnonymous}
       />
 
       <NewMessagesBadge
@@ -251,6 +254,7 @@ export const RealtimeChat = ({
         isAIPrivate={isAIPrivate}
         setIsAIPrivate={setIsAIPrivate}
         isAILoading={isAILoading}
+        isAnonymous={isAnonymous}
       />
     </div>
   )

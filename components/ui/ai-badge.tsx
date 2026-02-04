@@ -9,6 +9,7 @@ interface AIBadgeProps {
   isPrivate: boolean
   onPrivacyToggle: () => void
   className?: string
+  isAnonymous?: boolean
 }
 
 export const AIBadge = ({
@@ -16,22 +17,36 @@ export const AIBadge = ({
   onToggle,
   isPrivate,
   onPrivacyToggle,
-  className
+  className,
+  isAnonymous = false
 }: AIBadgeProps) => {
+  const getAriaLabel = () => {
+    if (isAnonymous) {
+      return 'Sign in to use AI assistant'
+    }
+    if (isActive) {
+      return 'Disable AI assistant'
+    }
+    return 'Enable AI assistant'
+  }
+
   return (
     <div className={cn('flex items-center gap-1', className)}>
       {/* AI Toggle Button */}
       <button
         type="button"
         onClick={onToggle}
+        disabled={isAnonymous}
         className={cn(
           'inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-full transition-all duration-200 border',
           'hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1',
+          isAnonymous && 'opacity-50 cursor-not-allowed hover:scale-100',
           isActive
             ? 'bg-primary text-primary-foreground border-primary shadow-sm'
             : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
         )}
-        aria-label={isActive ? 'Disable AI assistant' : 'Enable AI assistant'}
+        aria-label={getAriaLabel()}
+        title={isAnonymous ? 'Sign in to use AI assistant' : undefined}
       >
         <Bot
           className={cn(

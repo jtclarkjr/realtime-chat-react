@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { withAuth } from '@/lib/auth/middleware'
+import { withNonAnonymousAuth } from '@/lib/auth/middleware'
 import { roomCacheService } from '@/lib/services/room-cache-service'
 
 interface GenerateRoomRequest {
@@ -94,7 +94,7 @@ function ensureUniqueName(name: string, existingNames: string[]): string {
   return `${name}-${Date.now()}`
 }
 
-export const POST = withAuth(async (request: NextRequest) => {
+export const POST = withNonAnonymousAuth(async (request: NextRequest) => {
   try {
     const {
       prompt,

@@ -8,6 +8,7 @@ import {
   RetryButton,
   FailedMessageBubble
 } from '@/components/chat'
+import { AI_USER_ID } from '@/lib/services/ai-user-setup'
 
 interface ChatMessageItemProps {
   message: ChatMessage
@@ -17,6 +18,7 @@ interface ChatMessageItemProps {
   onRetry?: (messageId: string) => void
   onUnsend?: (messageId: string) => void
   isUnsending?: (messageId: string) => boolean
+  isAnonymous?: boolean
 }
 
 const ChatMessageItemComponent = ({
@@ -26,11 +28,13 @@ const ChatMessageItemComponent = ({
   currentUserId,
   onRetry,
   onUnsend,
-  isUnsending
+  isUnsending,
+  isAnonymous = false
 }: ChatMessageItemProps) => {
-  const isAIMessage = message.isAI || message.user.name === 'AI Assistant'
+  const isAIMessage =
+    message.isAI || (!!AI_USER_ID && message.user.id === AI_USER_ID)
   const isStreaming =
-    isAIMessage && (message.isStreaming || !message.content.trim()) // AI message with no content or marked as streaming
+    isAIMessage && !!(message.isStreaming || !message.content.trim()) // AI message with no content or marked as streaming
   const isPrivateMessage = message.isPrivate
   const isPrivateForCurrentUser = !!(
     isPrivateMessage && message.requesterId === currentUserId
@@ -101,6 +105,7 @@ const ChatMessageItemComponent = ({
                   ? isUnsending(message.serverId || message.id)
                   : false
               }
+              isAnonymous={isAnonymous}
             />
 
             {/* Status indicators for user's own messages */}

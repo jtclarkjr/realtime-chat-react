@@ -13,6 +13,7 @@ interface MessageBubbleProps {
   isStreaming: boolean
   isUnsending?: boolean
   onUnsend?: (messageId: string) => void
+  isAnonymous: boolean
 }
 
 export const MessageBubble = ({
@@ -22,9 +23,11 @@ export const MessageBubble = ({
   isPrivateForCurrentUser,
   isStreaming,
   onUnsend,
-  isUnsending = false
+  isUnsending = false,
+  isAnonymous
 }: MessageBubbleProps) => {
   const canUnsend =
+    !isAnonymous &&
     isOwnMessage &&
     !isAIMessage &&
     !isStreaming &&

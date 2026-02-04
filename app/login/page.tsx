@@ -1,8 +1,27 @@
 import { PageTransition } from '@/components/page-transition'
 import { MessageCircle } from 'lucide-react'
 import { LoginClient } from './login-client'
+import { createClient } from '@/lib/supabase/server'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  // Check if user is already signed in
+  const headersList = await headers()
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const request = new Request(baseUrl, {
+    headers: Object.fromEntries(headersList.entries())
+  })
+  const { supabase } = createClient(request)
+  const {
+    data: { user }
+  } = await supabase.auth.getUser()
+
+  // If user is signed in with a full account (not anonymous), redirect to home
+  if (user && !user.is_anonymous) {
+    redirect('/')
+  }
+
   return (
     <PageTransition className="min-h-dvh flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md space-y-6">

@@ -124,7 +124,77 @@ You should see:
  public | rooms    | table | postgres
 ```
 
-## Step 4: Configure Environment Variables
+## Step 4: Enable Anonymous Authentication
+
+Anonymous authentication allows users to browse as guests with read-only access
+before signing up. This must be enabled in your Supabase configuration.
+
+### For Local Supabase
+
+The anonymous auth setting is configured in `supabase/config.toml` (created when
+you run `supabase init`).
+
+1. **Locate the config file**:
+
+   ```bash
+   cat supabase/config.toml | grep -A 2 "enable_anonymous_sign_ins"
+   ```
+
+2. **Enable anonymous sign-ins**: Edit `supabase/config.toml` and find the
+   `[auth]` section:
+
+   ```toml
+   [auth]
+   enabled = true
+   site_url = "http://127.0.0.1:3000"
+   # ... other settings ...
+
+   # Allow/disallow anonymous sign-ins to your project.
+   enable_anonymous_sign_ins = true  # Set this to true
+   ```
+
+3. **Restart Supabase** to apply changes:
+   ```bash
+   supabase stop
+   supabase start
+   ```
+
+### For Hosted Supabase
+
+If using hosted Supabase (production):
+
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. Navigate to **Authentication** → **Providers**
+4. Scroll down to **Anonymous**
+5. Toggle it **ON**
+6. Click **Save**
+
+### Verify Anonymous Auth is Enabled
+
+After restarting, verify the setting:
+
+```bash
+cat supabase/config.toml | grep "enable_anonymous_sign_ins"
+```
+
+Should show:
+
+```toml
+enable_anonymous_sign_ins = true
+```
+
+### Rate Limiting (Optional)
+
+You can configure rate limits for anonymous sign-ins in the same config file:
+
+```toml
+[auth.rate_limit]
+# Number of anonymous sign-ins that can be made per hour per IP address
+anonymous_users = 30
+```
+
+## Step 5: Configure Environment Variables
 
 Update your `.env.local` (or create `.env.development.local`) with local
 Supabase credentials:
@@ -139,6 +209,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_local_supabase_service_role_jwt_key
 
 # Enable email/password auth for local development only
 NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true
+NEXT_PUBLIC_ENABLE_GUEST_USERS=true
 
 # Redis Configuration (keep as-is)
 REDIS_URL=redis://localhost:6379
@@ -165,6 +236,8 @@ ENV=dev
   `sb_publishable*...`).
 - **Email Auth Flag**: Set `NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true` to enable
   email/password login (local only)
+- **Guest Login Flag**: Set `NEXT_PUBLIC_ENABLE_GUEST_USERS=true` to show
+  "Continue as Guest" on the login page
 - **Production**: Use different keys from your hosted Supabase project
 
 ## Step 5: Start the Application
@@ -375,6 +448,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_hosted_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_hosted_service_key
 NEXT_PUBLIC_ENABLE_EMAIL_AUTH=false  # OAuth only
+NEXT_PUBLIC_ENABLE_GUEST_USERS=true  # Show guest login option
 ```
 
 **`.env.development.local`** (local Supabase):
@@ -384,6 +458,7 @@ NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true  # Email auth for local
+NEXT_PUBLIC_ENABLE_GUEST_USERS=true  # Show guest login option
 ```
 
 Next.js loads `.env.development.local` in development, which takes precedence

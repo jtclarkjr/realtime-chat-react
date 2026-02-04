@@ -4,11 +4,11 @@ import type { DatabaseMessage, ChatMessageWithDB } from '@/lib/types/database'
 import { transformDatabaseMessage } from './transformDatabaseMessage'
 import { getUserDisplayName } from './getUserDisplayName'
 
-export async function getRecentMessages(
+export const getRecentMessages = async (
   roomId: string,
   userId?: string,
   limit: number = 50
-): Promise<ChatMessageWithDB[]> {
+): Promise<ChatMessageWithDB[]> => {
   const supabase = getServiceClient()
 
   try {

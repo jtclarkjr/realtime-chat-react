@@ -1,9 +1,9 @@
 import type { SupabaseServerClient } from '@/lib/types/database'
 
-export async function getMessageTimestamp(
+export const getMessageTimestamp = async (
   supabase: SupabaseServerClient,
   messageId: string
-): Promise<string> {
+): Promise<string> => {
   const { data: message } = await supabase
     .from('messages')
     .select('created_at')

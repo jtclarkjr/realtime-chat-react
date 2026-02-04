@@ -3,6 +3,7 @@ import { RoomClient } from './room-client'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { toPublicUser } from '@/lib/auth/public-user'
+import { AnonymousBanner } from '@/components/anonymous-banner'
 import { headers } from 'next/headers'
 
 // No page-level caching since we need user-specific data for private messages
@@ -47,8 +48,13 @@ export default async function RoomPage({ params }: RoomPageProps) {
   }
 
   return (
-    <section className="md:border-l md:border-r bg-background md:max-w-5xl md:mx-auto">
-      <RoomClient room={room} initialMessages={messages} user={userData} />
-    </section>
+    <div className="h-dvh flex flex-col w-full">
+      {userData.isAnonymous && <AnonymousBanner />}
+      <div className="flex-1 flex justify-center overflow-hidden">
+        <section className="w-full md:border-l md:border-r bg-background md:max-w-5xl overflow-hidden">
+          <RoomClient room={room} initialMessages={messages} user={userData} />
+        </section>
+      </div>
+    </div>
   )
 }

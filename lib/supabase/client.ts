@@ -1,4 +1,12 @@
 import { createBrowserClient } from '@supabase/ssr'
+import {
+  REALTIME_EVENTS_PER_SECOND,
+  REALTIME_HEARTBEAT_INTERVAL_MS,
+  REALTIME_CONNECTION_TIMEOUT_MS,
+  REALTIME_INITIAL_BACKOFF_MS,
+  REALTIME_MAX_BACKOFF_MS,
+  REALTIME_MAX_BACKOFF_TRIES
+} from './constants'
 
 /**
  * Supabase client for Realtime connections (WebSocket)
@@ -27,15 +35,18 @@ export function createClient() {
       },
       realtime: {
         params: {
-          eventsPerSecond: 10,
-          heartbeatIntervalMs: 30000 // Send heartbeat every 30 seconds
+          eventsPerSecond: REALTIME_EVENTS_PER_SECOND,
+          heartbeatIntervalMs: REALTIME_HEARTBEAT_INTERVAL_MS
         },
-        timeout: 20000, // Connection timeout
+        timeout: REALTIME_CONNECTION_TIMEOUT_MS,
         reconnectAfterMs: (tries: number) => {
           // Exponential backoff: 1s, 2s, 4s, 8s, then every 10s
-          return tries > 4
-            ? 10000
-            : Math.min(1000 * Math.pow(2, tries - 1), 10000)
+          return tries > REALTIME_MAX_BACKOFF_TRIES
+            ? REALTIME_MAX_BACKOFF_MS
+            : Math.min(
+                REALTIME_INITIAL_BACKOFF_MS * Math.pow(2, tries - 1),
+                REALTIME_MAX_BACKOFF_MS
+              )
         }
       }
     }
