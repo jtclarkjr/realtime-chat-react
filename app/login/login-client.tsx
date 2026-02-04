@@ -131,6 +131,12 @@ export function LoginClient() {
       // Check if user is already signed in
       const { user } = await getCurrentUser()
       if (user) {
+        if (user.is_anonymous) {
+          track('event_login_success', {
+            provider: 'anonymous',
+            source: 'existing_session'
+          })
+        }
         // User is already signed in (anonymous or full account), just redirect
         router.push('/')
         router.refresh()
@@ -144,6 +150,10 @@ export function LoginClient() {
         setError('Failed to sign in as guest. Please try again.')
         setLoading(null)
       } else {
+        track('event_login_success', {
+          provider: 'anonymous',
+          source: 'new_session'
+        })
         router.push('/')
         router.refresh()
       }
