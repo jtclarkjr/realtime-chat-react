@@ -44,7 +44,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
       onUserScroll,
       lastReadMessageId,
       lastReadTimestamp,
-      currentSessionId
+      currentSessionId,
       isAnonymous = false
     },
     ref
@@ -186,7 +186,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                       prevMessage.user.name !== message.user.name
                     const showDividerAfterThis =
                       showDivider && message.id === initialDividerMessageId
-                      !prevMessage || prevMessage.user.id !== message.user.id
+                    !prevMessage || prevMessage.user.id !== message.user.id
 
                     return (
                       <div
