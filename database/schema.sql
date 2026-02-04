@@ -81,7 +81,7 @@ ALTER TABLE messages ADD CONSTRAINT check_deleted_by_equals_user_id
 -- Create helper function to check if current user is anonymous
 -- SECURITY DEFINER allows the function to access auth.users with elevated privileges
 -- STABLE indicates the function returns consistent results during a transaction
-CREATE OR REPLACE FUNCTION auth.is_anonymous_user()
+CREATE OR REPLACE FUNCTION public.is_anonymous_user()
 RETURNS BOOLEAN AS $$
 BEGIN
   RETURN COALESCE(
@@ -92,11 +92,45 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
 -- Grant execute permissions to authenticated users
-GRANT EXECUTE ON FUNCTION auth.is_anonymous_user() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_anonymous_user() TO authenticated;
 
 -- Add helpful comments
-COMMENT ON FUNCTION auth.is_anonymous_user() IS
+COMMENT ON FUNCTION public.is_anonymous_user() IS
 'Helper function to check if the current authenticated user is an anonymous user. Returns false if user not found or not anonymous.';
+
+-- Ensure auth user triggers skip anonymous users to prevent DB errors during anonymous sign-in.
+-- This is safe to run even if the trigger functions are not present.
+DO $$
+BEGIN
+  IF to_regprocedure('public.handle_new_user()') IS NOT NULL THEN
+    BEGIN
+      DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+      CREATE TRIGGER on_auth_user_created
+        AFTER INSERT ON auth.users
+        FOR EACH ROW
+        WHEN (NEW.is_anonymous IS NOT TRUE)
+        EXECUTE FUNCTION public.handle_new_user();
+    EXCEPTION
+      WHEN insufficient_privilege THEN
+        RAISE NOTICE 'Skipping on_auth_user_created trigger update: insufficient privilege on auth.users';
+    END;
+  END IF;
+
+  IF to_regprocedure('public.add_admins_from_auth()') IS NOT NULL THEN
+    BEGIN
+      DROP TRIGGER IF EXISTS trigger_add_admins ON auth.users;
+      CREATE TRIGGER trigger_add_admins
+        AFTER INSERT ON auth.users
+        FOR EACH ROW
+        WHEN (NEW.is_anonymous IS NOT TRUE)
+        EXECUTE FUNCTION public.add_admins_from_auth();
+    EXCEPTION
+      WHEN insufficient_privilege THEN
+        RAISE NOTICE 'Skipping trigger_add_admins update: insufficient privilege on auth.users';
+    END;
+  END IF;
+END;
+$$;
 
 -- ============================================================================
 -- ROW LEVEL SECURITY POLICIES
@@ -120,7 +154,7 @@ CREATE POLICY "Allow users to read their own deleted messages" ON messages
 CREATE POLICY "Allow non-anonymous users to insert messages" ON messages
   FOR INSERT
   TO authenticated
-  WITH CHECK (user_id = auth.uid() AND NOT auth.is_anonymous_user());
+  WITH CHECK (user_id = auth.uid() AND NOT public.is_anonymous_user());
 
 -- Allow non-anonymous users to soft delete their own messages only
 -- Users cannot unsend messages that triggered AI responses to maintain conversation context
@@ -132,14 +166,14 @@ CREATE POLICY "Allow non-anonymous users to soft delete their own messages" ON m
     user_id = auth.uid() AND
     deleted_at IS NULL AND
     has_ai_response = FALSE AND
-    NOT auth.is_anonymous_user()
+    NOT public.is_anonymous_user()
   )
   WITH CHECK (
     user_id = auth.uid() AND
     deleted_at IS NOT NULL AND
     deleted_by = auth.uid() AND
     has_ai_response = FALSE AND
-    NOT auth.is_anonymous_user()
+    NOT public.is_anonymous_user()
   );
 
 -- Database trigger to automatically set deleted_at timestamp
