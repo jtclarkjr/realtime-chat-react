@@ -1,13 +1,6 @@
-import { getInitialRoomsData } from '@/lib/actions/room-actions'
-import { HomeClient } from './home-client'
 import { createClient } from '@/lib/supabase/server'
-import { toPublicUser } from '@/lib/auth/public-user'
-import { AnonymousBanner } from '@/components/anonymous-banner'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-
-// Use ISR for better performance while keeping data fresh
-export const revalidate = 30 // Revalidate every 30 seconds
 
 export default async function Home() {
   // Check authentication server-side
@@ -26,20 +19,6 @@ export default async function Home() {
     redirect('/login')
   }
 
-  // Extract only the data we need for the client
-  const userData = toPublicUser(user)
-
-  // Fetch initial room data server-side
-  const { rooms, defaultRoomId } = await getInitialRoomsData()
-
-  return (
-    <>
-      {userData.isAnonymous && <AnonymousBanner />}
-      <HomeClient
-        initialRooms={rooms}
-        initialDefaultRoomId={defaultRoomId}
-        user={userData}
-      />
-    </>
-  )
+  // Redirect authenticated users to the authenticated layout
+  redirect('/(authenticated)')
 }
