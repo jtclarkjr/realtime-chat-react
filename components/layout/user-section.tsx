@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { PublicUser } from '@/lib/types/user'
 import { cn } from '@/lib/utils'
+import { useNetworkConnectivity } from '@/hooks/connection/use-network-connectivity'
 
 interface UserSectionProps {
   user: PublicUser
@@ -23,6 +24,18 @@ interface UserSectionProps {
 export function UserSection({ user, collapsed }: UserSectionProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const { isOnline } = useNetworkConnectivity()
+
+  let presenceLabel = 'Offline'
+  let presenceDotClass = 'bg-red-500'
+
+  if (user.isAnonymous) {
+    presenceLabel = 'Guest'
+    presenceDotClass = 'bg-muted-foreground/60'
+  } else if (isOnline) {
+    presenceLabel = 'Online'
+    presenceDotClass = 'bg-green-500'
+  }
 
   const handleSignOut = async () => {
     try {
@@ -61,8 +74,15 @@ export function UserSection({ user, collapsed }: UserSectionProps) {
                   <div className="font-medium text-sm truncate">
                     {user.username}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {user.isAnonymous ? 'Guest' : 'Online'}
+                  <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <span
+                      className={cn(
+                        'inline-block h-2 w-2 rounded-full',
+                        presenceDotClass
+                      )}
+                      aria-hidden="true"
+                    />
+                    <span>{presenceLabel}</span>
                   </div>
                 </div>
                 <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -86,8 +106,15 @@ export function UserSection({ user, collapsed }: UserSectionProps) {
               <div className="font-medium text-sm truncate">
                 {user.username}
               </div>
-              <div className="text-xs text-muted-foreground">
-                {user.isAnonymous ? 'Guest' : 'Online'}
+              <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    'inline-block h-2 w-2 rounded-full',
+                    presenceDotClass
+                  )}
+                  aria-hidden="true"
+                />
+                <span>{presenceLabel}</span>
               </div>
             </div>
           </div>

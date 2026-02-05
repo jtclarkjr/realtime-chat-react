@@ -6,6 +6,8 @@ import type { ChatMessage } from '@/lib/types/database'
 import type { PresenceState, PresenceUser } from '@/lib/types/presence'
 
 const EVENT_MESSAGE_TYPE = 'message'
+const PRESENCE_STALE_MS = 90_000
+const PRESENCE_PRUNE_INTERVAL_MS = 15_000
 
 interface UseWebSocketConnectionProps {
   roomId: string
@@ -42,11 +44,41 @@ export function useWebSocketConnection({
 
     let reconnectTimeout: NodeJS.Timeout
     let heartbeatInterval: NodeJS.Timeout
+    let presencePruneInterval: NodeJS.Timeout
     let missedHeartbeats = 0
     let isCleanedUp = false
 
     // Get fresh supabase client
     const supabase = supabaseRef.current
+
+    const emitPresenceSync = (): void => {
+      const presenceState = newChannel.presenceState<PresenceUser>()
+      const transformedState: PresenceState = {}
+      const now = Date.now()
+
+      Object.entries(presenceState).forEach(([presenceUserId, presences]) => {
+        if (!presences || presences.length === 0) return
+
+        // Use the most recent metadata update from this user.
+        const latestPresence = presences[presences.length - 1]
+        const lastSeenAt =
+          latestPresence.timestamp || latestPresence.online_at || 0
+        const isStale = lastSeenAt > 0 && now - lastSeenAt > PRESENCE_STALE_MS
+
+        if (latestPresence.online === false || isStale) return
+
+        transformedState[presenceUserId] = {
+          id: presenceUserId,
+          name: latestPresence.name,
+          avatar_url: latestPresence.avatar_url,
+          online_at: latestPresence.online_at,
+          timestamp: latestPresence.timestamp,
+          online: latestPresence.online
+        }
+      })
+
+      onPresenceSync?.(transformedState)
+    }
 
     const newChannel = supabase
       .channel(roomId, {
@@ -79,21 +111,7 @@ export function useWebSocketConnection({
       })
       .on('presence', { event: 'sync' }, () => {
         // Handle presence sync events
-        const presenceState = newChannel.presenceState<PresenceUser>()
-        const transformedState: PresenceState = {}
-
-        Object.entries(presenceState).forEach(([userId, presences]) => {
-          if (presences && presences[0]) {
-            transformedState[userId] = {
-              id: userId,
-              name: presences[0].name,
-              avatar_url: presences[0].avatar_url,
-              online_at: presences[0].online_at
-            }
-          }
-        })
-
-        onPresenceSync?.(transformedState)
+        emitPresenceSync()
       })
       .on('system', {}, (payload) => {
         // Handle system events (connection state changes)
@@ -156,6 +174,11 @@ export function useWebSocketConnection({
               timestamp: Date.now()
             })
           }, 30000) // Send heartbeat every 30 seconds
+
+          clearInterval(presencePruneInterval)
+          presencePruneInterval = setInterval(() => {
+            emitPresenceSync()
+          }, PRESENCE_PRUNE_INTERVAL_MS)
         } else if (status === 'CHANNEL_ERROR') {
           setIsConnected(false)
           if (error) {
@@ -190,7 +213,10 @@ export function useWebSocketConnection({
       isCleanedUp = true
       clearTimeout(reconnectTimeout)
       clearInterval(heartbeatInterval)
+      clearInterval(presencePruneInterval)
       if (newChannel) {
+        // Best effort: notify channel we're leaving before removing subscription.
+        void newChannel.untrack()
         supabase.removeChannel(newChannel)
       }
       setIsConnected(false)

@@ -106,7 +106,7 @@ export function useRealtimeChat({
     userId,
     onMessage: handleIncomingMessage,
     onMessageUnsent: handleMessageUnsent,
-    enabled: true,
+    enabled: networkState.isOnline,
     username,
     userAvatarUrl,
     onPresenceSync: handlePresenceSync
