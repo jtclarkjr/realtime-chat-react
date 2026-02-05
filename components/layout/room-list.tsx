@@ -94,7 +94,6 @@ export function RoomList({
         open={showAddRoom}
         onOpenChange={setShowAddRoom}
         onRoomCreated={handleRoomCreated}
-        disabled={false}
         existingRooms={rooms}
       />
     </div>

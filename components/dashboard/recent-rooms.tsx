@@ -17,8 +17,9 @@ export function RecentRooms({ initialRooms }: RecentRoomsProps) {
   const roomsWithMessages = initialRooms.filter(
     (
       room
-    ): room is RoomWithLastMessage & { lastMessage: NonNullable<RoomWithLastMessage['lastMessage']> } =>
-      room.lastMessage != null
+    ): room is RoomWithLastMessage & {
+      lastMessage: NonNullable<RoomWithLastMessage['lastMessage']>
+    } => room.lastMessage != null
   )
 
   // Sort rooms by:
@@ -53,7 +54,9 @@ export function RecentRooms({ initialRooms }: RecentRoomsProps) {
         <h2 className="text-xl font-semibold">Recent chats</h2>
         <div className="text-center py-8 text-muted-foreground">
           <p>No recent chats yet.</p>
-          <p className="text-sm mt-2">Start a conversation in a room to see it here!</p>
+          <p className="text-sm mt-2">
+            Start a conversation in a room to see it here!
+          </p>
         </div>
       </div>
     )
@@ -67,7 +70,7 @@ export function RecentRooms({ initialRooms }: RecentRoomsProps) {
     <div className="max-w-2xl mx-auto space-y-4">
       <h2 className="text-xl font-semibold">Recent chats</h2>
       <div className="space-y-2">
-        {displayedRooms.map((room) => (
+        {displayedRooms.map((room) =>
           room.lastMessage ? (
             <Link
               key={room.id}
@@ -97,7 +100,7 @@ export function RecentRooms({ initialRooms }: RecentRoomsProps) {
               </div>
             </Link>
           ) : null
-        ))}
+        )}
       </div>
     </div>
   )

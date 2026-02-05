@@ -3,15 +3,18 @@
 ## Overview
 
 The user presence system provides real-time visibility of active users in chat
-rooms through online count displays in the sidebar. Users can see how many people
-are currently in each room, with counts updating dynamically as people join and leave.
+rooms through online count displays in the sidebar. Users can see how many
+people are currently in each room, with counts updating dynamically as people
+join and leave.
 
-> **Note**: As of the Discord-like UI redesign (Feb 2026), presence is now displayed
-> as online counts in the sidebar rather than avatar stacks in the room header.
+> **Note**: As of the Discord-like UI redesign (Feb 2026), presence is now
+> displayed as online counts in the sidebar rather than avatar stacks in the
+> room header.
 
 ### Key Features
 
-- **Real-time presence tracking** - Online counts update instantly as users join/leave
+- **Real-time presence tracking** - Online counts update instantly as users
+  join/leave
 - **Sidebar integration** - Online count shown next to each room name
 - **Per-room tracking** - Cached in UI store for persistent display
 - **Tooltip information** - Shows online count in collapsed sidebar state
@@ -58,6 +61,7 @@ graph TB
 ```
 
 **Key Changes:**
+
 - Presence avatars removed from room header
 - Online counts displayed in sidebar next to room names
 - Presence data cached in UI store (`roomPresence` state)
@@ -121,6 +125,7 @@ graph TB
 ```
 
 **Simplified Structure:**
+
 - Online count displayed as simple number next to room name
 - Tooltip shows count when sidebar is collapsed
 - No avatar stack component needed
@@ -166,6 +171,7 @@ flowchart TB
 ```
 
 **Key Changes:**
+
 - Removed `RealtimePresenceAvatars` and `AvatarStack` components
 - Added UI store for persistence
 - Sidebar reads from UI store to display counts

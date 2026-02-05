@@ -60,7 +60,6 @@ export function CreateRoomCard({ user, initialRooms }: CreateRoomCardProps) {
         open={showAddRoom}
         onOpenChange={setShowAddRoom}
         onRoomCreated={handleRoomCreated}
-        disabled={false}
         existingRooms={rooms}
       />
     </>

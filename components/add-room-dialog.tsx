@@ -13,14 +13,13 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { useGenerateRoom, useCreateRoom } from '@/lib/query/mutations'
 import { roomNameSchema } from '@/lib/validation/schemas'
 import type { DatabaseRoom } from '@/lib/types/database'
 
 interface AddRoomDialogProps {
   onRoomCreated?: (room: DatabaseRoom) => void
-  disabled?: boolean
   existingRooms?: DatabaseRoom[]
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -28,7 +27,6 @@ interface AddRoomDialogProps {
 
 export function AddRoomDialog({
   onRoomCreated,
-  disabled = false,
   existingRooms = [],
   open: controlledOpen,
   onOpenChange
