@@ -7,7 +7,7 @@ import { roomCacheService } from '@/lib/services/room-cache-service'
 import { ensureDefaultRooms } from '@/lib/supabase/rooms'
 import { createClient } from '@/lib/supabase/server'
 import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
-import { getRecentMessages } from '@/lib/services/chat'
+import { getRecentMessages, getLastMessagesByRoom } from '@/lib/services/chat'
 import { isAnonymousUser } from '@/lib/auth/middleware'
 
 /**
@@ -327,28 +327,25 @@ export async function getRoomsWithLastMessage(
 ): Promise<RoomWithLastMessage[]> {
   try {
     const { rooms } = await getInitialRoomsData()
+    if (rooms.length === 0) return []
 
-    // For each room, fetch the most recent message
-    const roomsWithMessages = await Promise.all(
-      rooms.map(async (room) => {
-        const messages = await getRecentMessages(room.id, userId, 1)
+    const roomIds = rooms.map((room) => room.id)
+    const latestByRoom = await getLastMessagesByRoom(roomIds, userId)
 
-        if (messages.length > 0) {
-          const lastMsg = messages[0]
-          return {
-            ...room,
-            lastMessage: {
-              content: lastMsg.content,
-              timestamp: lastMsg.createdAt,
-              userName: lastMsg.user.name,
-              isAI: lastMsg.isAI || false
-            }
-          }
+    const roomsWithMessages = rooms.map((room) => {
+      const lastMsg = latestByRoom.get(room.id)
+      if (!lastMsg) return room
+
+      return {
+        ...room,
+        lastMessage: {
+          content: lastMsg.content,
+          timestamp: lastMsg.timestamp,
+          userName: lastMsg.userName,
+          isAI: lastMsg.isAI
         }
-
-        return room
-      })
-    )
+      }
+    })
 
     return roomsWithMessages
   } catch (error) {

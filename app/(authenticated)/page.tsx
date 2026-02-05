@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { WelcomeCard } from '@/components/dashboard/welcome-card'
 import { RecentRooms } from '@/components/dashboard/recent-rooms'
 import { CreateRoomCard } from '@/components/dashboard/create-room-card'
+import { ChannelSearchCard } from '@/components/dashboard/channel-search-card'
 
 // Use ISR for better performance
 export const revalidate = 30
@@ -35,6 +36,7 @@ export default async function DashboardPage() {
       <div className="container max-w-5xl mx-auto py-8 px-4 space-y-8">
         <WelcomeCard user={userData} />
         <CreateRoomCard user={userData} initialRooms={roomsWithLastMessage} />
+        <ChannelSearchCard initialRooms={roomsWithLastMessage} />
         <RecentRooms initialRooms={roomsWithLastMessage} />
       </div>
     </div>

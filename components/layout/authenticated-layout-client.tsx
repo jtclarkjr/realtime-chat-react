@@ -2,6 +2,7 @@
 
 import { Sidebar } from './sidebar'
 import { TopBar } from './top-bar'
+import { UnreadMessageTracker } from './unread-message-tracker'
 import { AnonymousBanner } from '@/components/anonymous-banner'
 import { useUIStore } from '@/lib/stores/ui-store'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
@@ -25,6 +26,9 @@ export function AuthenticatedLayoutClient({
 }: AuthenticatedLayoutClientProps) {
   const { sidebarCollapsed, mobileDrawerOpen, setMobileDrawerOpen } =
     useUIStore()
+  const hasHydrated = useUIStore.persist.hasHydrated()
+  const effectiveSidebarCollapsed = hasHydrated ? sidebarCollapsed : false
+  const effectiveMobileDrawerOpen = hasHydrated ? mobileDrawerOpen : false
 
   // Live region for screen reader announcements
   const [announcement, setAnnouncement] = React.useState('')
@@ -48,6 +52,7 @@ export function AuthenticatedLayoutClient({
 
   return (
     <div className="h-dvh flex flex-col w-full">
+      <UnreadMessageTracker userId={user.id} />
       {user.isAnonymous && <AnonymousBanner />}
 
       <div className="flex-1 flex overflow-hidden">
@@ -55,19 +60,22 @@ export function AuthenticatedLayoutClient({
         <aside
           className={cn(
             'relative z-20 hidden md:flex flex-col overflow-visible border-r border-border bg-background transition-all duration-300 ease-in-out',
-            sidebarCollapsed ? 'w-16' : 'w-60'
+            effectiveSidebarCollapsed ? 'w-16' : 'w-60'
           )}
         >
           <Sidebar
             user={user}
             initialRooms={initialRooms}
             initialDefaultRoomId={initialDefaultRoomId}
-            collapsed={sidebarCollapsed}
+            collapsed={effectiveSidebarCollapsed}
           />
         </aside>
 
         {/* Mobile Sidebar Drawer */}
-        <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+        <Sheet
+          open={effectiveMobileDrawerOpen}
+          onOpenChange={setMobileDrawerOpen}
+        >
           <SheetContent side="left" className="p-0 w-60">
             <Sidebar
               user={user}

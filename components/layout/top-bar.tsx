@@ -18,6 +18,7 @@ interface TopBarProps {
 export function TopBar({ user, initialRooms }: TopBarProps) {
   const params = useParams()
   const { unreadCounts, setMobileDrawerOpen, roomPresenceUsers } = useUIStore()
+  const hasHydrated = useUIStore.persist.hasHydrated()
   const { data: rooms = [] } = useRooms({ initialData: initialRooms })
 
   // Get current room if we're in a room
@@ -30,10 +31,9 @@ export function TopBar({ user, initialRooms }: TopBarProps) {
     : {}
 
   // Calculate total unread count
-  const totalUnread = Object.values(unreadCounts).reduce(
-    (sum, count) => sum + count,
-    0
-  )
+  const totalUnread = hasHydrated
+    ? Object.values(unreadCounts).reduce((sum, count) => sum + count, 0)
+    : 0
 
   return (
     <header className="border-b border-border bg-background">
