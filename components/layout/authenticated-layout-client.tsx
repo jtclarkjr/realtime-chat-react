@@ -6,10 +6,11 @@ import { UnreadMessageTracker } from './unread-message-tracker'
 import { AnonymousBanner } from '@/components/anonymous-banner'
 import { useUIStore } from '@/lib/stores/ui-store'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { usePathname } from 'next/navigation'
 import type { DatabaseRoom } from '@/lib/types/database'
 import type { PublicUser } from '@/lib/types/user'
 import { cn } from '@/lib/utils'
-import * as React from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface AuthenticatedLayoutClientProps {
   user: PublicUser
@@ -24,6 +25,7 @@ export function AuthenticatedLayoutClient({
   initialDefaultRoomId,
   children
 }: AuthenticatedLayoutClientProps) {
+  const pathname = usePathname()
   const { sidebarCollapsed, mobileDrawerOpen, setMobileDrawerOpen } =
     useUIStore()
   const hasHydrated = useUIStore.persist.hasHydrated()
@@ -31,24 +33,26 @@ export function AuthenticatedLayoutClient({
   const effectiveMobileDrawerOpen = hasHydrated ? mobileDrawerOpen : false
 
   // Live region for screen reader announcements
-  const [announcement, setAnnouncement] = React.useState('')
+  const [announcement, setAnnouncement] = useState('')
+  const previousPathRef = useRef<string | null>(null)
 
-  // Announce room changes to screen readers
-  React.useEffect(() => {
-    const handleRouteChange = () => {
-      // Announce after a short delay to let the page update
-      setTimeout(() => {
-        const currentRoom = window.location.pathname.split('/').pop()
-        if (currentRoom && currentRoom !== '(authenticated)') {
-          setAnnouncement(`Navigated to room ${currentRoom}`)
-        }
-      }, 100)
+  // Announce route changes to screen readers.
+  useEffect(() => {
+    // Skip initial mount announcement.
+    if (previousPathRef.current === null) {
+      previousPathRef.current = pathname
+      return
     }
 
-    // Listen for route changes (Next.js)
-    window.addEventListener('popstate', handleRouteChange)
-    return () => window.removeEventListener('popstate', handleRouteChange)
-  }, [])
+    if (previousPathRef.current !== pathname) {
+      const segments = pathname.split('/').filter(Boolean)
+      const roomId = segments[0] === 'room' ? segments[1] : null
+      setAnnouncement(
+        roomId ? `Navigated to room ${roomId}` : 'Navigated to dashboard'
+      )
+      previousPathRef.current = pathname
+    }
+  }, [pathname])
 
   return (
     <div className="h-dvh flex flex-col w-full">

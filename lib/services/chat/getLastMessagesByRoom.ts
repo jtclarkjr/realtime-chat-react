@@ -19,28 +19,6 @@ export const getLastMessagesByRoom = async (
 
   const supabase = getServiceClient()
 
-  let query = supabase
-    .from('messages')
-    .select(
-      'room_id, content, created_at, user_id, is_ai_message, is_private, requester_id, deleted_at'
-    )
-    .in('room_id', roomIds)
-    .is('deleted_at', null)
-
-  if (userId) {
-    query = query.or(
-      `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
-    )
-  } else {
-    query = query.eq('is_private', false)
-  }
-
-  const { data, error } = await query.order('created_at', { ascending: false })
-  if (error) {
-    console.error('Error fetching last messages by room:', error)
-    return new Map()
-  }
-
   const latestByRoom = new Map<
     string,
     Pick<
@@ -49,9 +27,85 @@ export const getLastMessagesByRoom = async (
     >
   >()
 
-  for (const message of data || []) {
-    if (!latestByRoom.has(message.room_id)) {
-      latestByRoom.set(message.room_id, message)
+  const applyVisibilityFilter = (query: ReturnType<typeof supabase.from>) => {
+    if (userId) {
+      return query.or(
+        `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
+      )
+    }
+    return query.eq('is_private', false)
+  }
+
+  // First pass: paged global query (bounded) to avoid unbounded scans.
+  const batchSize = Math.min(Math.max(roomIds.length * 4, 100), 500)
+  const maxBatches = 5
+  let offset = 0
+
+  for (let i = 0; i < maxBatches; i++) {
+    let query = supabase
+      .from('messages')
+      .select(
+        'room_id, content, created_at, user_id, is_ai_message, is_private, requester_id, deleted_at'
+      )
+      .in('room_id', roomIds)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + batchSize - 1)
+
+    query = applyVisibilityFilter(query)
+
+    const { data, error } = await query
+    if (error) {
+      console.error('Error fetching last messages by room:', error)
+      break
+    }
+
+    const rows = data || []
+    for (const message of rows) {
+      if (!latestByRoom.has(message.room_id)) {
+        latestByRoom.set(message.room_id, message)
+      }
+    }
+
+    if (latestByRoom.size >= roomIds.length || rows.length < batchSize) {
+      break
+    }
+
+    offset += rows.length
+  }
+
+  // Fallback for rooms not found in bounded pass: fetch 1 row per missing room.
+  const missingRoomIds = roomIds.filter((roomId) => !latestByRoom.has(roomId))
+  if (missingRoomIds.length > 0) {
+    const perRoomResults = await Promise.all(
+      missingRoomIds.map(async (roomId) => {
+        let query = supabase
+          .from('messages')
+          .select(
+            'room_id, content, created_at, user_id, is_ai_message, is_private, requester_id, deleted_at'
+          )
+          .eq('room_id', roomId)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        query = applyVisibilityFilter(query)
+        const { data, error } = await query
+        if (error) {
+          console.error(
+            `Error fetching last message for room ${roomId}:`,
+            error
+          )
+          return null
+        }
+        return data?.[0] || null
+      })
+    )
+
+    for (const row of perRoomResults) {
+      if (row && !latestByRoom.has(row.room_id)) {
+        latestByRoom.set(row.room_id, row)
+      }
     }
   }
 
