@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { RealtimeChat } from '@/components/realtime-chat'
 import { useEffect, useState, useCallback } from 'react'
 import { useUIStore } from '@/lib/stores/ui-store'
@@ -16,9 +16,7 @@ interface RoomClientProps {
 
 export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const router = useRouter()
-  const params = useParams()
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
-  const [presenceUsers, setPresenceUsers] = useState<PresenceState>({})
   const { addRecentRoom, clearUnread, setRoomPresence } = useUIStore()
 
   const userId = user.id
@@ -27,14 +25,11 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   // Handle presence changes
   const handlePresenceChange = useCallback(
     (users: PresenceState) => {
-      setPresenceUsers(users)
       // Update presence count in UI store for room list
       const onlineCount = Object.keys(users).length
-      if (room?.id) {
-        setRoomPresence(room.id, onlineCount)
-      }
+      setRoomPresence(room.id, onlineCount)
     },
-    [room?.id, setRoomPresence]
+    [room.id, setRoomPresence]
   )
 
   // Track this room as recently visited and clear unread count

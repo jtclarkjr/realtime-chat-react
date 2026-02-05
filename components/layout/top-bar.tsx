@@ -12,7 +12,7 @@ interface TopBarProps {
   initialRooms: DatabaseRoom[]
 }
 
-export function TopBar({ user, initialRooms }: TopBarProps) {
+export function TopBar({ initialRooms }: TopBarProps) {
   const { unreadCounts, setMobileDrawerOpen } = useUIStore()
 
   // Calculate total unread count

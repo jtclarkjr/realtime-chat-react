@@ -33,7 +33,7 @@ type PersistedState = Pick<
 
 export const useUIStore = create<UIState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // Sidebar state
       sidebarCollapsed: false,
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
@@ -51,6 +51,7 @@ export const useUIStore = create<UIState>()(
         })),
       clearUnread: (roomId) =>
         set((state) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [roomId]: _, ...rest } = state.unreadCounts
           return { unreadCounts: rest }
         }),

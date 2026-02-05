@@ -26,15 +26,12 @@ export function RoomList({
 }: RoomListProps) {
   const [showAddRoom, setShowAddRoom] = useState(false)
 
-  const {
-    data: rooms = [],
-    isLoading
-  } = useRooms({
+  const { data: rooms = [], isLoading } = useRooms({
     initialData: initialRooms.length > 0 ? initialRooms : undefined,
     enabled: initialRooms.length === 0
   })
 
-  const handleRoomCreated = async (newRoom: DatabaseRoom): Promise<void> => {
+  const handleRoomCreated = async (): Promise<void> => {
     // Room will be automatically added to the list via React Query
     setShowAddRoom(false)
   }
@@ -44,10 +41,7 @@ export function RoomList({
       <div className="flex-1 p-3">
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-9 bg-muted rounded-lg animate-pulse"
-            />
+            <div key={i} className="h-9 bg-muted rounded-lg animate-pulse" />
           ))}
         </div>
       </div>

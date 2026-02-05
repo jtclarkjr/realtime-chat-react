@@ -1,6 +1,5 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
 import {
   Popover,
   PopoverContent,
@@ -55,9 +54,7 @@ export function NotificationDropdown({
           {unreadRooms.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">
               <p>No new notifications</p>
-              <p className="text-xs mt-2">
-                You're all caught up!
-              </p>
+              <p className="text-xs mt-2">You&apos;re all caught up!</p>
             </div>
           ) : (
             <div className="py-2">
@@ -78,9 +75,7 @@ export function NotificationDropdown({
                     </div>
                   </div>
                   <div className="h-6 min-w-6 px-2 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium shrink-0">
-                    {unreadCounts[room.id] > 99
-                      ? '99+'
-                      : unreadCounts[room.id]}
+                    {unreadCounts[room.id] > 99 ? '99+' : unreadCounts[room.id]}
                   </div>
                 </button>
               ))}

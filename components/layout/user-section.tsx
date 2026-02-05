@@ -1,7 +1,6 @@
 'use client'
 
 import { UserAvatar } from '@/components/ui/user-avatar'
-import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
 import {
   ContextMenu,
@@ -70,7 +69,10 @@ export function UserSection({ user, collapsed }: UserSectionProps) {
             <Settings className="h-4 w-4" />
             <span>Settings</span>
           </ContextMenuItem>
-          <ContextMenuItem onClick={handleSignOut} className="flex items-center gap-2">
+          <ContextMenuItem
+            onClick={handleSignOut}
+            className="flex items-center gap-2"
+          >
             <LogOut className="h-4 w-4" />
             <span>{user.isAnonymous ? 'Leave' : 'Sign Out'}</span>
           </ContextMenuItem>

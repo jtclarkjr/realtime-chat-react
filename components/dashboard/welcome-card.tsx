@@ -15,13 +15,9 @@ export function WelcomeCard({ user }: WelcomeCardProps) {
       <div className="flex items-center gap-4">
         <UserAvatar src={user.avatarUrl} alt={user.username} size="lg" />
         <div>
-          <h1 className="text-3xl font-bold">
-            Welcome back, {user.username}!
-          </h1>
+          <h1 className="text-3xl font-bold">Welcome back, {user.username}!</h1>
           <p className="text-muted-foreground">
-            {user.isAnonymous
-              ? 'You\'re browsing as a guest'
-              : 'Ready to chat?'}
+            {user.isAnonymous ? "You're browsing as a guest" : 'Ready to chat?'}
           </p>
         </div>
       </div>

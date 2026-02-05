@@ -20,7 +20,6 @@ interface SidebarProps {
 export function Sidebar({
   user,
   initialRooms,
-  initialDefaultRoomId,
   collapsed,
   onNavigate
 }: SidebarProps) {
@@ -36,9 +35,7 @@ export function Sidebar({
     >
       {/* Logo / App name */}
       <div className="p-4 border-b border-border flex items-center justify-between">
-        {!collapsed && (
-          <h1 className="text-lg font-bold">Realtime Chat</h1>
-        )}
+        {!collapsed && <h1 className="text-lg font-bold">Realtime Chat</h1>}
         {collapsed && (
           <div className="text-lg font-bold text-center w-full">RC</div>
         )}
