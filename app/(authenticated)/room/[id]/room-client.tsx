@@ -19,15 +19,23 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const params = useParams()
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
   const [presenceUsers, setPresenceUsers] = useState<PresenceState>({})
-  const { addRecentRoom, clearUnread } = useUIStore()
+  const { addRecentRoom, clearUnread, setRoomPresence } = useUIStore()
 
   const userId = user.id
   const displayName = user.username
 
   // Handle presence changes
-  const handlePresenceChange = useCallback((users: PresenceState) => {
-    setPresenceUsers(users)
-  }, [])
+  const handlePresenceChange = useCallback(
+    (users: PresenceState) => {
+      setPresenceUsers(users)
+      // Update presence count in UI store for room list
+      const onlineCount = Object.keys(users).length
+      if (room?.id) {
+        setRoomPresence(room.id, onlineCount)
+      }
+    },
+    [room?.id, setRoomPresence]
+  )
 
   // Track this room as recently visited and clear unread count
   useEffect(() => {

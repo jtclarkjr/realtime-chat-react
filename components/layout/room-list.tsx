@@ -77,7 +77,11 @@ export function RoomList({
       </div>
 
       {/* Room list */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      <div
+        className="flex-1 overflow-y-auto p-2 space-y-1"
+        role="list"
+        aria-label="Channel list"
+      >
         {rooms.map((room) => (
           <RoomListItem
             key={room.id}

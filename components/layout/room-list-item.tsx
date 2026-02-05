@@ -3,6 +3,12 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Hash } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/lib/stores/ui-store'
 import type { DatabaseRoom } from '@/lib/types/database'
@@ -21,8 +27,9 @@ export function RoomListItem({
   onNavigate
 }: RoomListItemProps) {
   const router = useRouter()
-  const { unreadCounts } = useUIStore()
+  const { unreadCounts, roomPresence } = useUIStore()
   const unreadCount = unreadCounts[room.id] || 0
+  const onlineCount = roomPresence[room.id] || 0
 
   const handleMouseEnter = () => {
     // Prefetch the room page on hover
@@ -34,18 +41,8 @@ export function RoomListItem({
     onNavigate?.()
   }
 
-  return (
-    <Link
-      href={`/room/${room.id}`}
-      onMouseEnter={handleMouseEnter}
-      onClick={handleClick}
-      className={cn(
-        'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative group',
-        'hover:bg-muted/50',
-        isActive && 'bg-accent border-l-4 border-primary pl-2',
-        collapsed && 'justify-center px-2'
-      )}
-    >
+  const linkContent = (
+    <>
       {/* Hash icon */}
       <Hash
         className={cn(
@@ -55,16 +52,23 @@ export function RoomListItem({
         )}
       />
 
-      {/* Room name */}
+      {/* Room name and online count */}
       {!collapsed && (
-        <span
-          className={cn(
-            'flex-1 truncate text-sm font-medium',
-            isActive ? 'text-foreground' : 'text-muted-foreground'
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <span
+            className={cn(
+              'truncate text-sm font-medium',
+              isActive ? 'text-foreground' : 'text-muted-foreground'
+            )}
+          >
+            {room.name}
+          </span>
+          {onlineCount > 0 && (
+            <span className="text-xs text-muted-foreground shrink-0">
+              {onlineCount}
+            </span>
           )}
-        >
-          {room.name}
-        </span>
+        </div>
       )}
 
       {/* Unread badge */}
@@ -78,6 +82,59 @@ export function RoomListItem({
       {collapsed && unreadCount > 0 && (
         <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
       )}
+    </>
+  )
+
+  if (collapsed) {
+    return (
+      <TooltipProvider delayDuration={0}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href={`/room/${room.id}`}
+              onMouseEnter={handleMouseEnter}
+              onClick={handleClick}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative group',
+                'hover:bg-muted/50',
+                isActive && 'bg-accent border-l-4 border-primary pl-2',
+                'justify-center px-2'
+              )}
+              aria-label={`${room.name} channel${unreadCount > 0 ? `, ${unreadCount} unread messages` : ''}${onlineCount > 0 ? `, ${onlineCount} online` : ''}`}
+              aria-current={isActive ? 'page' : undefined}
+              role="listitem"
+            >
+              {linkContent}
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p>{room.name}</p>
+            {onlineCount > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {onlineCount} online
+              </p>
+            )}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  }
+
+  return (
+    <Link
+      href={`/room/${room.id}`}
+      onMouseEnter={handleMouseEnter}
+      onClick={handleClick}
+      className={cn(
+        'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative group',
+        'hover:bg-muted/50',
+        isActive && 'bg-accent border-l-4 border-primary pl-2'
+      )}
+      aria-label={`${room.name} channel${unreadCount > 0 ? `, ${unreadCount} unread messages` : ''}${onlineCount > 0 ? `, ${onlineCount} online` : ''}`}
+      aria-current={isActive ? 'page' : undefined}
+      role="listitem"
+    >
+      {linkContent}
     </Link>
   )
 }

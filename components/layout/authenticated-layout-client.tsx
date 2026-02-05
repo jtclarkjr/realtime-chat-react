@@ -8,6 +8,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import type { DatabaseRoom } from '@/lib/types/database'
 import type { PublicUser } from '@/lib/types/user'
 import { cn } from '@/lib/utils'
+import * as React from 'react'
 
 interface AuthenticatedLayoutClientProps {
   user: PublicUser
@@ -24,6 +25,26 @@ export function AuthenticatedLayoutClient({
 }: AuthenticatedLayoutClientProps) {
   const { sidebarCollapsed, mobileDrawerOpen, setMobileDrawerOpen } =
     useUIStore()
+
+  // Live region for screen reader announcements
+  const [announcement, setAnnouncement] = React.useState('')
+
+  // Announce room changes to screen readers
+  React.useEffect(() => {
+    const handleRouteChange = () => {
+      // Announce after a short delay to let the page update
+      setTimeout(() => {
+        const currentRoom = window.location.pathname.split('/').pop()
+        if (currentRoom && currentRoom !== '(authenticated)') {
+          setAnnouncement(`Navigated to room ${currentRoom}`)
+        }
+      }, 100)
+    }
+
+    // Listen for route changes (Next.js)
+    window.addEventListener('popstate', handleRouteChange)
+    return () => window.removeEventListener('popstate', handleRouteChange)
+  }, [])
 
   return (
     <div className="h-dvh flex flex-col w-full">
@@ -60,9 +81,19 @@ export function AuthenticatedLayoutClient({
 
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          <TopBar user={user} />
+          <TopBar user={user} initialRooms={initialRooms} />
           <div className="flex-1 overflow-hidden">{children}</div>
         </main>
+      </div>
+
+      {/* Live region for screen reader announcements */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {announcement}
       </div>
     </div>
   )

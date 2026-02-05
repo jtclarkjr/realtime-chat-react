@@ -20,6 +20,10 @@ interface UIState {
   // Mobile drawer state (not persisted)
   mobileDrawerOpen: boolean
   setMobileDrawerOpen: (open: boolean) => void
+
+  // Presence cache per room (not persisted)
+  roomPresence: Record<string, number> // roomId -> online count
+  setRoomPresence: (roomId: string, count: number) => void
 }
 
 type PersistedState = Pick<
@@ -70,7 +74,17 @@ export const useUIStore = create<UIState>()(
 
       // Mobile drawer (not persisted)
       mobileDrawerOpen: false,
-      setMobileDrawerOpen: (open) => set({ mobileDrawerOpen: open })
+      setMobileDrawerOpen: (open) => set({ mobileDrawerOpen: open }),
+
+      // Presence cache (not persisted)
+      roomPresence: {},
+      setRoomPresence: (roomId, count) =>
+        set((state) => ({
+          roomPresence: {
+            ...state.roomPresence,
+            [roomId]: count
+          }
+        }))
     }),
     {
       name: 'ui-storage',

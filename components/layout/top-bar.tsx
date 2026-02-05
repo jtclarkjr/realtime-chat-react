@@ -3,13 +3,16 @@
 import { Button } from '@/components/ui/button'
 import { Bell, Menu } from 'lucide-react'
 import { useUIStore } from '@/lib/stores/ui-store'
+import { NotificationDropdown } from './notification-dropdown'
 import type { PublicUser } from '@/lib/types/user'
+import type { DatabaseRoom } from '@/lib/types/database'
 
 interface TopBarProps {
   user: PublicUser
+  initialRooms: DatabaseRoom[]
 }
 
-export function TopBar({ user }: TopBarProps) {
+export function TopBar({ user, initialRooms }: TopBarProps) {
   const { unreadCounts, setMobileDrawerOpen } = useUIStore()
 
   // Calculate total unread count
@@ -37,15 +40,17 @@ export function TopBar({ user }: TopBarProps) {
 
         {/* Right side - Notifications */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            {totalUnread > 0 && (
-              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium">
-                {totalUnread > 99 ? '99+' : totalUnread}
-              </span>
-            )}
-            <span className="sr-only">Notifications</span>
-          </Button>
+          <NotificationDropdown initialRooms={initialRooms}>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              {totalUnread > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium">
+                  {totalUnread > 99 ? '99+' : totalUnread}
+                </span>
+              )}
+              <span className="sr-only">Notifications</span>
+            </Button>
+          </NotificationDropdown>
         </div>
       </div>
     </header>

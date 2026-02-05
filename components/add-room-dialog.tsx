@@ -22,14 +22,22 @@ interface AddRoomDialogProps {
   onRoomCreated?: (room: DatabaseRoom) => void
   disabled?: boolean
   existingRooms?: DatabaseRoom[]
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 export function AddRoomDialog({
   onRoomCreated,
   disabled = false,
-  existingRooms = []
+  existingRooms = [],
+  open: controlledOpen,
+  onOpenChange
 }: AddRoomDialogProps) {
-  const [open, setOpen] = useState<boolean>(false)
+  const [internalOpen, setInternalOpen] = useState<boolean>(false)
+
+  // Use controlled open state if provided, otherwise use internal state
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+  const setOpen = onOpenChange || setInternalOpen
   const [roomName, setRoomName] = useState<string>('')
   const [description, setDescription] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
