@@ -94,7 +94,10 @@ export function useWebSocketConnection({
 
       // Reconnects can emit an empty sync before presences repopulate.
       // Debounce empty state to prevent avatar flicker.
-      if (hadUsers && now - lastNonEmptyPresenceAt < PRESENCE_EMPTY_DEBOUNCE_MS) {
+      if (
+        hadUsers &&
+        now - lastNonEmptyPresenceAt < PRESENCE_EMPTY_DEBOUNCE_MS
+      ) {
         return
       }
 

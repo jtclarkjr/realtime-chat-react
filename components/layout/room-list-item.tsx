@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Hash } from 'lucide-react'
+import { Hash, Loader2, Trash2 } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/lib/stores/ui-store'
 import type { DatabaseRoom } from '@/lib/types/database'
@@ -17,6 +18,9 @@ interface RoomListItemProps {
   room: DatabaseRoom
   isActive: boolean
   collapsed: boolean
+  canDelete?: boolean
+  isDeleting?: boolean
+  onDelete?: () => void
   onNavigate?: () => void
 }
 
@@ -24,6 +28,9 @@ export function RoomListItem({
   room,
   isActive,
   collapsed,
+  canDelete = false,
+  isDeleting = false,
+  onDelete,
   onNavigate
 }: RoomListItemProps) {
   const router = useRouter()
@@ -110,20 +117,41 @@ export function RoomListItem({
   }
 
   return (
-    <Link
-      href={`/room/${room.id}`}
-      onMouseEnter={handleMouseEnter}
-      onClick={handleClick}
-      className={cn(
-        'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative group',
-        'hover:bg-muted/50',
-        isActive && 'bg-accent border-l-4 border-primary pl-2'
+    <div className="flex items-center gap-1 group">
+      <Link
+        href={`/room/${room.id}`}
+        onMouseEnter={handleMouseEnter}
+        onClick={handleClick}
+        className={cn(
+          'flex-1 flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative',
+          'hover:bg-muted/50',
+          isActive && 'bg-accent border-l-4 border-primary pl-2'
+        )}
+        aria-label={`${room.name} channel${unreadCount > 0 ? `, ${unreadCount} unread messages` : ''}`}
+        aria-current={isActive ? 'page' : undefined}
+        role="listitem"
+      >
+        {linkContent}
+      </Link>
+
+      {canDelete && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+          onClick={onDelete}
+          disabled={isDeleting}
+          aria-label={`Delete ${room.name} channel`}
+          title={`Delete ${room.name}`}
+        >
+          {isDeleting ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+          )}
+        </Button>
       )}
-      aria-label={`${room.name} channel${unreadCount > 0 ? `, ${unreadCount} unread messages` : ''}`}
-      aria-current={isActive ? 'page' : undefined}
-      role="listitem"
-    >
-      {linkContent}
-    </Link>
+    </div>
   )
 }

@@ -4,8 +4,12 @@ import { RoomListItem } from './room-list-item'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AddRoomDialog } from '@/components/add-room-dialog'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { useRooms } from '@/lib/query/queries/use-rooms'
+import { useDeleteRoom } from '@/lib/query/mutations/use-delete-room'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import type { DatabaseRoom } from '@/lib/types/database'
 import type { PublicUser } from '@/lib/types/user'
 
@@ -24,7 +28,10 @@ export function RoomList({
   user,
   onNavigate
 }: RoomListProps) {
+  const router = useRouter()
   const [showAddRoom, setShowAddRoom] = useState(false)
+  const [roomToDelete, setRoomToDelete] = useState<DatabaseRoom | null>(null)
+  const deleteRoomMutation = useDeleteRoom()
 
   const { data: rooms = [], isLoading } = useRooms({
     initialData: initialRooms.length > 0 ? initialRooms : undefined,
@@ -34,6 +41,29 @@ export function RoomList({
   const handleRoomCreated = async (): Promise<void> => {
     // Room will be automatically added to the list via React Query
     setShowAddRoom(false)
+  }
+
+  const handleDeleteRoom = async (): Promise<void> => {
+    if (!roomToDelete) return
+
+    const roomId = roomToDelete.id
+    const roomName = roomToDelete.name
+    const deletingActiveRoom = roomId === activeRoomId
+
+    const result = await deleteRoomMutation.mutateAsync({ roomId })
+
+    if (!result.success) {
+      toast.error(result.error || 'Failed to delete room')
+      return
+    }
+
+    toast.success(`Deleted #${roomName}`)
+    setRoomToDelete(null)
+
+    if (deletingActiveRoom) {
+      router.push('/')
+      onNavigate?.()
+    }
   }
 
   if (isLoading) {
@@ -84,6 +114,11 @@ export function RoomList({
             room={room}
             isActive={room.id === activeRoomId}
             collapsed={collapsed}
+            canDelete={!collapsed && !user.isAnonymous}
+            isDeleting={
+              deleteRoomMutation.isPending && roomToDelete?.id === room.id
+            }
+            onDelete={() => setRoomToDelete(room)}
             onNavigate={onNavigate}
           />
         ))}
@@ -95,6 +130,23 @@ export function RoomList({
         onOpenChange={setShowAddRoom}
         onRoomCreated={handleRoomCreated}
         existingRooms={rooms}
+      />
+
+      <ConfirmationDialog
+        open={!!roomToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRoomToDelete(null)
+        }}
+        title="Delete room?"
+        description={
+          roomToDelete
+            ? `This will permanently delete #${roomToDelete.name} and all its messages. This action cannot be undone.`
+            : ''
+        }
+        confirmText="Delete room"
+        variant="destructive"
+        onConfirm={handleDeleteRoom}
+        loading={deleteRoomMutation.isPending}
       />
     </div>
   )
