@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight, Home } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { useUIStore } from '@/lib/stores/ui-store'
+import { cn } from '@/lib/utils'
 import type { DatabaseRoom } from '@/lib/types/database'
 import type { PublicUser } from '@/lib/types/user'
 
@@ -35,10 +36,34 @@ export function Sidebar({
 
   return (
     <nav
-      className="h-full flex flex-col"
+      className="relative h-full flex flex-col"
       aria-label="Main navigation"
       role="navigation"
     >
+      {!onNavigate && (
+        <Button
+          variant="outline"
+          size="icon"
+          className={cn(
+            'absolute left-full top-4 z-20 h-7 w-7 -translate-x-1/2 rounded-full border-border !bg-background dark:!bg-background shadow-sm',
+            'hover:bg-accent hover:text-accent-foreground'
+          )}
+          onClick={toggleSidebar}
+        >
+          {collapsed ? (
+            <>
+              <ChevronRight className="h-3.5 w-3.5" />
+              <span className="sr-only">Expand sidebar</span>
+            </>
+          ) : (
+            <>
+              <ChevronLeft className="h-3.5 w-3.5" />
+              <span className="sr-only">Collapse sidebar</span>
+            </>
+          )}
+        </Button>
+      )}
+
       {/* Logo / App name */}
       <div className="p-4 border-b border-border flex items-center justify-between gap-2">
         {!collapsed ? (
@@ -56,18 +81,6 @@ export function Sidebar({
               </Button>
               <h1 className="text-lg font-bold">Realtime Chat</h1>
             </div>
-            {/* Collapse button - only show on desktop */}
-            {!onNavigate && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={toggleSidebar}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="sr-only">Collapse sidebar</span>
-              </Button>
-            )}
           </>
         ) : (
           <div className="flex flex-col items-center gap-2 w-full">
@@ -81,18 +94,6 @@ export function Sidebar({
               <Home className="h-4 w-4" />
               <span className="sr-only">Go to home</span>
             </Button>
-            {/* Collapse button - only show on desktop */}
-            {!onNavigate && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={toggleSidebar}
-              >
-                <ChevronRight className="h-4 w-4" />
-                <span className="sr-only">Expand sidebar</span>
-              </Button>
-            )}
           </div>
         )}
       </div>

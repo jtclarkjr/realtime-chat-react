@@ -50,25 +50,27 @@ export function RoomList({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-        {!collapsed && (
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Channels
-          </h2>
-        )}
-        {!user.isAnonymous && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn('h-6 w-6', collapsed && 'mx-auto')}
-            onClick={() => setShowAddRoom(true)}
-          >
-            <Plus className="h-4 w-4" />
-            <span className="sr-only">Add room</span>
-          </Button>
-        )}
-      </div>
+      {/* Hide the header in collapsed anonymous mode since there are no actions */}
+      {!(collapsed && user.isAnonymous) && (
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+          {!collapsed && (
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Channels
+            </h2>
+          )}
+          {!user.isAnonymous && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn('h-6 w-6', collapsed && 'mx-auto')}
+              onClick={() => setShowAddRoom(true)}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="sr-only">Add room</span>
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Room list */}
       <div

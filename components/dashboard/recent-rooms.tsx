@@ -18,7 +18,7 @@ export function RecentRooms({ initialRooms }: RecentRoomsProps) {
     (
       room
     ): room is RoomWithLastMessage & { lastMessage: NonNullable<RoomWithLastMessage['lastMessage']> } =>
-      room.lastMessage !== null
+      room.lastMessage != null
   )
 
   // Sort rooms by:
@@ -68,33 +68,35 @@ export function RecentRooms({ initialRooms }: RecentRoomsProps) {
       <h2 className="text-xl font-semibold">Recent chats</h2>
       <div className="space-y-2">
         {displayedRooms.map((room) => (
-          <Link
-            key={room.id}
-            href={`/room/${room.id}`}
-            onMouseEnter={() => handleMouseEnter(room.id)}
-            className="flex items-center gap-3 p-4 rounded-lg border border-border bg-card hover:bg-accent transition-colors group"
-          >
-            <div className="p-2 bg-muted rounded-lg shrink-0">
-              <Hash className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium mb-1">{room.name}</div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                {room.lastMessage.isAI && (
-                  <Bot className="h-3.5 w-3.5 shrink-0" />
-                )}
-                <span className="truncate">
-                  {room.lastMessage.userName}: {room.lastMessage.content}
-                </span>
+          room.lastMessage ? (
+            <Link
+              key={room.id}
+              href={`/room/${room.id}`}
+              onMouseEnter={() => handleMouseEnter(room.id)}
+              className="flex items-center gap-3 p-4 rounded-lg border border-border bg-card hover:bg-accent transition-colors group"
+            >
+              <div className="p-2 bg-muted rounded-lg shrink-0">
+                <Hash className="h-5 w-5 text-muted-foreground" />
               </div>
-            </div>
-            <div className="flex flex-col items-end gap-1 shrink-0">
-              <span className="text-xs text-muted-foreground">
-                {formatRelativeTime(room.lastMessage.timestamp)}
-              </span>
-              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-            </div>
-          </Link>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium mb-1">{room.name}</div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {room.lastMessage.isAI && (
+                    <Bot className="h-3.5 w-3.5 shrink-0" />
+                  )}
+                  <span className="truncate">
+                    {room.lastMessage.userName}: {room.lastMessage.content}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className="text-xs text-muted-foreground">
+                  {formatRelativeTime(room.lastMessage.timestamp)}
+                </span>
+                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </div>
+            </Link>
+          ) : null
         ))}
       </div>
     </div>

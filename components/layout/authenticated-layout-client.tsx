@@ -54,7 +54,7 @@ export function AuthenticatedLayoutClient({
         {/* Desktop Sidebar - hidden on mobile */}
         <aside
           className={cn(
-            'hidden md:flex flex-col border-r border-border bg-background transition-all duration-300 ease-in-out',
+            'relative z-20 hidden md:flex flex-col overflow-visible border-r border-border bg-background transition-all duration-300 ease-in-out',
             sidebarCollapsed ? 'w-16' : 'w-60'
           )}
         >

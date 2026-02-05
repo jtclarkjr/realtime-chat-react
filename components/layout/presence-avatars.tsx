@@ -2,11 +2,10 @@
 
 import { UserAvatar } from '@/components/ui/user-avatar'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui/tooltip'
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover'
 import type { PresenceState } from '@/lib/types/presence'
 
 interface PresenceAvatarsProps {
@@ -37,51 +36,67 @@ export function PresenceAvatars({
   const overflowCount = Math.max(0, users.length - maxVisible)
 
   return (
-    <TooltipProvider>
-      <div className="flex items-center -space-x-2">
-        {visibleUsers.map((user) => {
-          const isCurrentUser = user.id === currentUserId
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center -space-x-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={`Show online users (${users.length})`}
+        >
+          {visibleUsers.map((user) => {
+            const isCurrentUser = user.id === currentUserId
 
-          return (
-            <Tooltip key={user.id}>
-              <TooltipTrigger asChild>
-                <div
-                  className={`relative ring-2 ring-background rounded-full transition-transform hover:scale-110 hover:z-10 ${
-                    isCurrentUser ? 'ring-primary' : ''
-                  }`}
-                >
-                  <UserAvatar
-                    src={user.avatar_url}
-                    alt={user.name}
-                    size="sm"
-                    className="h-7 w-7"
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{isCurrentUser ? `${user.name} (you)` : user.name}</p>
-              </TooltipContent>
-            </Tooltip>
-          )
-        })}
+            return (
+              <div
+                key={user.id}
+                className={`relative ring-2 ring-background rounded-full transition-transform hover:scale-110 hover:z-10 ${
+                  isCurrentUser ? 'ring-primary' : ''
+                }`}
+              >
+                <UserAvatar
+                  src={user.avatar_url}
+                  alt={user.name}
+                  size="sm"
+                  className="h-7 w-7"
+                />
+              </div>
+            )
+          })}
 
-        {overflowCount > 0 && (
-          <Tooltip key="overflow">
-            <TooltipTrigger asChild>
-              <div className="flex items-center justify-center h-7 w-7 rounded-full bg-muted text-xs font-medium ring-2 ring-background hover:scale-110 transition-transform cursor-default">
-                +{overflowCount}
+          {overflowCount > 0 && (
+            <div className="flex items-center justify-center h-7 w-7 rounded-full bg-muted text-xs font-medium ring-2 ring-background transition-transform hover:scale-110">
+              +{overflowCount}
+            </div>
+          )}
+        </button>
+      </PopoverTrigger>
+
+      <PopoverContent align="end" className="w-64 p-0">
+        <div className="border-b border-border px-3 py-2">
+          <p className="text-sm font-medium">Online now ({users.length})</p>
+        </div>
+        <div className="max-h-72 overflow-y-auto py-1">
+          {sortedUsers.map((user) => {
+            const isCurrentUser = user.id === currentUserId
+            return (
+              <div
+                key={user.id}
+                className="flex items-center gap-2 px-3 py-2 text-sm"
+              >
+                <UserAvatar
+                  src={user.avatar_url}
+                  alt={user.name}
+                  size="sm"
+                  className="h-6 w-6"
+                />
+                <span className="truncate">
+                  {isCurrentUser ? `${user.name} (you)` : user.name}
+                </span>
               </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <div className="space-y-1">
-                {sortedUsers.slice(maxVisible).map((user) => (
-                  <p key={user.id}>{user.name}</p>
-                ))}
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </div>
-    </TooltipProvider>
+            )
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }

@@ -65,21 +65,21 @@ export function TopBar({ user, initialRooms }: TopBarProps) {
                   </p>
                 )}
               </div>
-              {Object.keys(presenceUsers).length > 0 && (
-                <div className="ml-2 shrink-0">
-                  <PresenceAvatars
-                    presenceUsers={presenceUsers}
-                    currentUserId={user.id}
-                    maxVisible={5}
-                  />
-                </div>
-              )}
             </div>
           )}
         </div>
 
-        {/* Right side - Notifications */}
+        {/* Right side - Presence and notifications */}
         <div className="flex items-center gap-2">
+          {Object.keys(presenceUsers).length > 0 && (
+            <div className="shrink-0">
+              <PresenceAvatars
+                presenceUsers={presenceUsers}
+                currentUserId={user.id}
+                maxVisible={5}
+              />
+            </div>
+          )}
           <NotificationDropdown initialRooms={initialRooms}>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
