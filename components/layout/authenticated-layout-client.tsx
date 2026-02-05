@@ -10,7 +10,6 @@ import { usePathname } from 'next/navigation'
 import type { DatabaseRoom } from '@/lib/types/database'
 import type { PublicUser } from '@/lib/types/user'
 import { cn } from '@/lib/utils'
-import { useEffect, useRef, useState } from 'react'
 
 interface AuthenticatedLayoutClientProps {
   user: PublicUser
@@ -32,27 +31,11 @@ export function AuthenticatedLayoutClient({
   const effectiveSidebarCollapsed = hasHydrated ? sidebarCollapsed : false
   const effectiveMobileDrawerOpen = hasHydrated ? mobileDrawerOpen : false
 
-  // Live region for screen reader announcements
-  const [announcement, setAnnouncement] = useState('')
-  const previousPathRef = useRef<string | null>(null)
-
-  // Announce route changes to screen readers.
-  useEffect(() => {
-    // Skip initial mount announcement.
-    if (previousPathRef.current === null) {
-      previousPathRef.current = pathname
-      return
-    }
-
-    if (previousPathRef.current !== pathname) {
-      const segments = pathname.split('/').filter(Boolean)
-      const roomId = segments[0] === 'room' ? segments[1] : null
-      setAnnouncement(
-        roomId ? `Navigated to room ${roomId}` : 'Navigated to dashboard'
-      )
-      previousPathRef.current = pathname
-    }
-  }, [pathname])
+  const segments = pathname.split('/').filter(Boolean)
+  const roomId = segments[0] === 'room' ? segments[1] : null
+  const announcement = roomId
+    ? `Navigated to room ${roomId}`
+    : 'Navigated to dashboard'
 
   return (
     <div className="h-dvh flex flex-col w-full">
