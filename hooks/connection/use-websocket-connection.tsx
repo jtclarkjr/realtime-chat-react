@@ -8,6 +8,7 @@ import type { PresenceState, PresenceUser } from '@/lib/types/presence'
 const EVENT_MESSAGE_TYPE = 'message'
 const PRESENCE_STALE_MS = 90_000
 const PRESENCE_PRUNE_INTERVAL_MS = 15_000
+const PRESENCE_HEARTBEAT_INTERVAL_MS = 5_000
 
 interface UseWebSocketConnectionProps {
   roomId: string
@@ -125,7 +126,15 @@ export function useWebSocketConnection({
           if (!isCleanedUp) {
             clearTimeout(reconnectTimeout)
             reconnectTimeout = setTimeout(() => {
-              supabase.removeChannel(newChannel)
+              void newChannel.track({
+                online: false,
+                userId,
+                name: username || 'Anonymous',
+                avatar_url: userAvatarUrl,
+                timestamp: Date.now()
+              })
+              void newChannel.untrack()
+              void supabase.removeChannel(newChannel)
               // Trigger reconnect by incrementing trigger
               setReconnectTrigger((prev) => prev + 1)
             }, 3000)
@@ -158,7 +167,15 @@ export function useWebSocketConnection({
               clearInterval(heartbeatInterval)
               setIsConnected(false)
               if (!isCleanedUp) {
-                supabase.removeChannel(newChannel)
+                void newChannel.track({
+                  online: false,
+                  userId,
+                  name: username || 'Anonymous',
+                  avatar_url: userAvatarUrl,
+                  timestamp: Date.now()
+                })
+                void newChannel.untrack()
+                void supabase.removeChannel(newChannel)
                 setReconnectTrigger((prev) => prev + 1)
               }
               return
@@ -173,7 +190,7 @@ export function useWebSocketConnection({
               online_at: Date.now(),
               timestamp: Date.now()
             })
-          }, 30000) // Send heartbeat every 30 seconds
+          }, PRESENCE_HEARTBEAT_INTERVAL_MS) // Send heartbeat every 10 seconds
 
           clearInterval(presencePruneInterval)
           presencePruneInterval = setInterval(() => {
@@ -188,7 +205,15 @@ export function useWebSocketConnection({
           if (!isCleanedUp) {
             clearTimeout(reconnectTimeout)
             reconnectTimeout = setTimeout(() => {
-              supabase.removeChannel(newChannel)
+              void newChannel.track({
+                online: false,
+                userId,
+                name: username || 'Anonymous',
+                avatar_url: userAvatarUrl,
+                timestamp: Date.now()
+              })
+              void newChannel.untrack()
+              void supabase.removeChannel(newChannel)
               // Trigger reconnect by incrementing trigger
               setReconnectTrigger((prev) => prev + 1)
             }, 3000)
@@ -215,9 +240,16 @@ export function useWebSocketConnection({
       clearInterval(heartbeatInterval)
       clearInterval(presencePruneInterval)
       if (newChannel) {
-        // Best effort: notify channel we're leaving before removing subscription.
+        // Best effort: announce offline + leave presence before removing.
+        void newChannel.track({
+          online: false,
+          userId,
+          name: username || 'Anonymous',
+          avatar_url: userAvatarUrl,
+          timestamp: Date.now()
+        })
         void newChannel.untrack()
-        supabase.removeChannel(newChannel)
+        void supabase.removeChannel(newChannel)
       }
       setIsConnected(false)
     }
