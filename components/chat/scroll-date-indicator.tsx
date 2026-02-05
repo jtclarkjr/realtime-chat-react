@@ -48,7 +48,7 @@ export const ScrollDateIndicator = ({
   }
 
   return (
-    <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none">
+    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none">
       <AnimatePresence>
         {isVisible && date && (
           <motion.div

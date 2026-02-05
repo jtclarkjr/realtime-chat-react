@@ -201,7 +201,7 @@ export const RealtimeChat = ({
   )
 
   return (
-    <div className="flex flex-col h-full w-full bg-background text-foreground antialiased">
+    <div className="relative flex flex-col h-full w-full bg-background text-foreground antialiased">
       <ConnectionStatusBar
         isConnected={isConnected}
         queueStatus={queueStatus}

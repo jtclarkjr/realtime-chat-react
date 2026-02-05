@@ -3,17 +3,21 @@
 ## Overview
 
 The user presence system provides real-time visibility of active users in chat
-rooms through avatar displays. Users can see who else is currently in a room,
-with avatars updating dynamically as people join and leave.
+rooms through online count displays in the sidebar. Users can see how many
+people are currently in each room, with counts updating dynamically as people
+join and leave.
+
+> **Note**: As of the Discord-like UI redesign (Feb 2026), presence is now
+> displayed as online counts in the sidebar rather than avatar stacks in the
+> room header.
 
 ### Key Features
 
-- **Real-time presence tracking** - Avatars appear/disappear instantly as users
+- **Real-time presence tracking** - Online counts update instantly as users
   join/leave
-- **Avatar stack display** - Overlapping avatars with overflow indicators
-- **Current user highlighting** - Your avatar is highlighted with a distinct
-  border
-- **Tooltips** - Hover to see full names
+- **Sidebar integration** - Online count shown next to each room name
+- **Per-room tracking** - Cached in UI store for persistent display
+- **Tooltip information** - Shows online count in collapsed sidebar state
 - **Efficient architecture** - Single channel approach, minimal overhead
 - **Automatic cleanup** - Presence removed on disconnect/navigation
 
@@ -32,27 +36,36 @@ presence-only channel. This design choice provides:
 - **Better performance** - Reduced overhead on both client and server
 - **Consistency** - Presence and messaging synchronized through same channel
 
-### Component Architecture
+### Component Architecture (Updated Feb 2026)
 
 ```mermaid
 graph TB
+    AL[AuthenticatedLayout]
+    SB[Sidebar]
+    RL[RoomList]
+    RLI[RoomListItem<br/>Shows online count]
+    UIS[UI Store<br/>roomPresence cache]
     RC[RoomClient]
-    HS[Header Section]
-    PA[Presence Avatars]
-    RN[Room Name]
-    LB[Leave Button]
     RTC[RealtimeChat]
     URC[useRealtimeChat Hook]
     UWS[useWebSocketConnection<br/>- Presence tracking<br/>- Message broadcasting<br/>- Heartbeat mechanism]
 
-    RC --> HS
+    AL --> SB
+    SB --> RL
+    RL --> RLI
+    RLI -.reads from.-> UIS
+    RC -.updates.-> UIS
     RC --> RTC
-    HS --> PA
-    HS --> RN
-    HS --> LB
     RTC --> URC
     URC --> UWS
 ```
+
+**Key Changes:**
+
+- Presence avatars removed from room header
+- Online counts displayed in sidebar next to room names
+- Presence data cached in UI store (`roomPresence` state)
+- `RoomClient` updates presence count when `onPresenceChange` fires
 
 ---
 
@@ -72,10 +85,10 @@ flowchart TD
     H --> I[Presence 'sync' Event Fires<br/>Gets presenceState and transforms<br/>to PresenceState format]
     I --> J[handlePresenceSync in useRealtimeChat<br/>Updates local presenceUsers state]
     J --> K[useEffect in RealtimeChat Component<br/>Calls onPresenceChange with presenceUsers]
-    K --> L[handlePresenceChange in RoomClient<br/>Updates RoomClient's presenceUsers state]
-    L --> M[RealtimePresenceAvatars Renders<br/>- Transforms Record to Array<br/>- Ensures current user included<br/>- Sorts: current user first, then alphabetically]
-    M --> N[AvatarStack Component Renders<br/>- First 5 users visible<br/>- Calculates overflow<br/>- Highlights current user<br/>- Shows +N badge if overflow]
-    N --> O[USER INTERACTION<br/>- Hover shows tooltips<br/>- See real-time updates]
+    K --> L[handlePresenceChange in RoomClient<br/>Calculates online count from users object<br/>Updates UI store: setRoomPresence roomId, count]
+    L --> M[UI Store Updates<br/>roomPresence roomId mapped to online count]
+    M --> N[Sidebar RoomListItem Reads<br/>Displays online count next to room name<br/>Shows in tooltip for collapsed sidebar]
+    N --> O[USER INTERACTION<br/>- See live count updates in sidebar<br/>- Hover collapsed sidebar for details]
     O --> P[HEARTBEAT MECHANISM<br/>Every 30 seconds<br/>channel.track with updated timestamps]
     P --> O
     O --> Q[USER LEAVES ROOM<br/>- Component unmounts<br/>- Cleanup: supabase.removeChannel<br/>- Supabase removes user from presence<br/>- Avatars update for remaining users]
@@ -83,56 +96,53 @@ flowchart TD
 
 ---
 
-## Component Hierarchy
+## Component Hierarchy (Updated Feb 2026)
 
 ### Visual Component Tree
 
 ```mermaid
 graph TB
+    AL[AuthenticatedLayout]
+    SB[Sidebar]
+    RL[RoomList]
+    RLI[RoomListItem]
+    HASH[Hash Icon]
+    NAME[Room Name Text]
+    COUNT[Online Count Badge]
+    TT[Tooltip Collapsed]
     RC[RoomClient]
-    H[Header]
-    RPA[RealtimePresenceAvatars<br/>LEFT SIDE]
-    RT[Room Title<br/>CENTER]
-    LB[Leave Button<br/>RIGHT]
-    AS[AvatarStack]
-    TP[TooltipProvider]
-    T1[Tooltip for each user]
-    TT1[TooltipTrigger]
-    UA[UserAvatar with ring styling]
-    TC1[TooltipContent<br/>Username or Username you]
-    T2[Tooltip overflow badge]
-    TT2[TooltipTrigger<br/>+N Badge]
-    TC2[TooltipContent<br/>List of hidden users]
-    RTC[RealtimeChat<br/>chat interface]
+    RTC[RealtimeChat]
 
-    RC --> H
+    AL --> SB
+    AL --> RC
+    SB --> RL
+    RL --> RLI
+    RLI --> HASH
+    RLI --> NAME
+    RLI --> COUNT
+    RLI -.collapsed state.-> TT
     RC --> RTC
-    H --> RPA
-    H --> RT
-    H --> LB
-    RPA --> AS
-    AS --> TP
-    AS --> T1
-    AS --> T2
-    T1 --> TT1
-    T1 --> TC1
-    TT1 --> UA
-    T2 --> TT2
-    T2 --> TC2
 ```
 
-### Data Flow Between Components
+**Simplified Structure:**
+
+- Online count displayed as simple number next to room name
+- Tooltip shows count when sidebar is collapsed
+- No avatar stack component needed
+- Cleaner, more Discord-like UI
+
+### Data Flow Between Components (Updated Feb 2026)
 
 ```mermaid
 flowchart TB
     subgraph RC[RoomClient]
-        RC_State[State: presenceUsers PresenceState<br/>Callback: handlePresenceChange]
+        RC_Callback[Callback: handlePresenceChange<br/>- Calculates online count<br/>- Updates UI store]
 
         subgraph RTC[RealtimeChat]
             RTC_Props[Props: onPresenceChange]
 
             subgraph URC[useRealtimeChat]
-                URC_State[State: presenceUsers<br/>Callback: handlePresenceSync]
+                URC_State[Callback: handlePresenceSync]
 
                 subgraph UWS[useWebSocketConnection]
                     UWS_Props[Props:<br/>- username<br/>- userAvatarUrl<br/>- onPresenceSync]
@@ -140,23 +150,31 @@ flowchart TB
                 end
             end
         end
+    end
 
-        subgraph RPA[RealtimePresenceAvatars]
-            RPA_Props[Props:<br/>- presenceUsers from RoomClient state<br/>- currentUserId<br/>- currentUserName<br/>- currentUserAvatar]
+    subgraph UIS[UI Store]
+        UIS_State[State: roomPresence<br/>Record roomId to online count]
+    end
 
-            subgraph AS[AvatarStack]
-                AS_Logic[- Transforms data to array<br/>- Sorts users current first<br/>- Renders visible avatars<br/>- Shows overflow badge]
-            end
+    subgraph SB[Sidebar]
+        subgraph RLI[RoomListItem]
+            RLI_Display[Displays:<br/>- Room name<br/>- Online count<br/>- Tooltip in collapsed state]
         end
     end
 
     UWS_Props --> UWS_Channel
     URC_State --> UWS
     RTC_Props --> URC
-    RC_State --> RTC
-    RC_State --> RPA_Props
-    RPA_Props --> AS_Logic
+    RC_Callback --> RTC
+    RC_Callback --> UIS_State
+    UIS_State --> RLI_Display
 ```
+
+**Key Changes:**
+
+- Removed `RealtimePresenceAvatars` and `AvatarStack` components
+- Added UI store for persistence
+- Sidebar reads from UI store to display counts
 
 ---
 

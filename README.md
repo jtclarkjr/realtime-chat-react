@@ -6,10 +6,6 @@ Features instant messaging, message persistence, and reconnection handling.
 **Live Demo**:
 [https://realtime-chat-react-psi.vercel.app](https://realtime-chat-react-psi.vercel.app)
 
-## Screenshots
-
-<img src="images/login.png" alt="Login Page" width="150"> <img src="images/lobby.png" alt="Lobby" width="150"> <img src="images/search.png" alt="Search" width="150"> <img src="images/add-room.png" alt="Add Room" width="150"> <img src="images/chat-room.png" alt="Chat Room" width="150">
-
 ## Features
 
 - **Real-time messaging** using Supabase Realtime
@@ -270,15 +266,22 @@ For production deployment:
 
 ### Security Considerations
 
-**Important**: The `/api/ai/generate` endpoint consumes AI tokens from your Agent account. It is strongly recommended to implement rate limiting on this endpoint to prevent abuse and control costs.
+**Important**: The `/api/ai/generate` endpoint consumes AI tokens from your
+Agent account. It is strongly recommended to implement rate limiting on this
+endpoint to prevent abuse and control costs.
 
 Consider implementing:
+
 - Per-user rate limits (e.g., max requests per minute/hour)
 - Request quotas per user or IP address
 - Authentication checks to ensure only authorized users can access the endpoint
 - Monitoring and alerting for unusual usage patterns
 
-**Vercel Deployment**: If deploying on Vercel, you can use [Vercel Firewall](https://vercel.com/docs/security/vercel-firewall) to configure rate limiting rules for specific API routes without code changes. This provides an easy way to set up IP-based or route-based rate limits directly from your Vercel dashboard.
+**Vercel Deployment**: If deploying on Vercel, you can use
+[Vercel Firewall](https://vercel.com/docs/security/vercel-firewall) to configure
+rate limiting rules for specific API routes without code changes. This provides
+an easy way to set up IP-based or route-based rate limits directly from your
+Vercel dashboard.
 
 ## Database Setup
 

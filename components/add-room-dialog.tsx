@@ -22,14 +22,23 @@ interface AddRoomDialogProps {
   onRoomCreated?: (room: DatabaseRoom) => void
   disabled?: boolean
   existingRooms?: DatabaseRoom[]
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 export function AddRoomDialog({
   onRoomCreated,
   disabled = false,
-  existingRooms = []
+  existingRooms = [],
+  open: controlledOpen,
+  onOpenChange
 }: AddRoomDialogProps) {
-  const [open, setOpen] = useState<boolean>(false)
+  const isControlled = controlledOpen !== undefined
+  const [internalOpen, setInternalOpen] = useState<boolean>(false)
+
+  // Use controlled open state if provided, otherwise use internal state
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+  const setOpen = onOpenChange || setInternalOpen
   const [roomName, setRoomName] = useState<string>('')
   const [description, setDescription] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
@@ -174,17 +183,19 @@ export function AddRoomDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={disabled}
-          className="flex items-center gap-2 shrink-0 h-auto min-h-9 px-3 py-2"
-        >
-          <Plus className="h-4 w-4" />
-          Add Room
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={disabled}
+            className="flex items-center gap-2 shrink-0 h-auto min-h-9 px-3 py-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Room
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New Room</DialogTitle>

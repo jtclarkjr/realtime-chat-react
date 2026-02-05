@@ -22,6 +22,7 @@ export function useRooms({
     },
     enabled,
     initialData,
-    staleTime: 60 * 1000
+    staleTime: 60 * 1000, // Consider data fresh for 60 seconds
+    refetchInterval: 30 * 1000 // Background refresh every 30 seconds
   })
 }

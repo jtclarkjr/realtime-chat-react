@@ -1,15 +1,18 @@
 import { getInitialRoomsData } from '@/lib/actions/room-actions'
-import { HomeClient } from './home-client'
 import { createClient } from '@/lib/supabase/server'
 import { toPublicUser } from '@/lib/auth/public-user'
-import { AnonymousBanner } from '@/components/anonymous-banner'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { AuthenticatedLayoutClient } from '@/components/layout/authenticated-layout-client'
 
 // Use ISR for better performance while keeping data fresh
 export const revalidate = 30 // Revalidate every 30 seconds
 
-export default async function Home() {
+export default async function AuthenticatedLayout({
+  children
+}: {
+  children: React.ReactNode
+}) {
   // Check authentication server-side
   const headersList = await headers()
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
@@ -33,13 +36,12 @@ export default async function Home() {
   const { rooms, defaultRoomId } = await getInitialRoomsData()
 
   return (
-    <>
-      {userData.isAnonymous && <AnonymousBanner />}
-      <HomeClient
-        initialRooms={rooms}
-        initialDefaultRoomId={defaultRoomId}
-        user={userData}
-      />
-    </>
+    <AuthenticatedLayoutClient
+      user={userData}
+      initialRooms={rooms}
+      initialDefaultRoomId={defaultRoomId}
+    >
+      {children}
+    </AuthenticatedLayoutClient>
   )
 }

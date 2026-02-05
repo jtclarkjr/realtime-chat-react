@@ -3,12 +3,10 @@ import { RoomClient } from './room-client'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { toPublicUser } from '@/lib/auth/public-user'
-import { AnonymousBanner } from '@/components/anonymous-banner'
 import { headers } from 'next/headers'
 
 // No page-level caching since we need user-specific data for private messages
-// Room metadata is cached separately in the room-actions.ts
-export const revalidate = 0 // Always fetch fresh data for each user to respect privacy
+export const revalidate = 0
 
 interface RoomPageProps {
   params: Promise<{
@@ -17,7 +15,6 @@ interface RoomPageProps {
 }
 
 export default async function RoomPage({ params }: RoomPageProps) {
-  // Await params to access its properties
   const { id } = await params
 
   // Check authentication server-side
@@ -36,10 +33,9 @@ export default async function RoomPage({ params }: RoomPageProps) {
     redirect('/login')
   }
 
-  // Extract only the data we need for the client
   const userData = toPublicUser(user)
 
-  // Fetch initial room data and messages server-side with user context for privacy
+  // Fetch initial room data and messages server-side
   const { room, messages } = await getRoomDataWithMessages(id, user.id)
 
   // If room doesn't exist, show 404
@@ -47,14 +43,5 @@ export default async function RoomPage({ params }: RoomPageProps) {
     notFound()
   }
 
-  return (
-    <div className="h-dvh flex flex-col w-full">
-      {userData.isAnonymous && <AnonymousBanner />}
-      <div className="flex-1 flex justify-center overflow-hidden">
-        <section className="w-full md:border-l md:border-r bg-background md:max-w-5xl overflow-hidden">
-          <RoomClient room={room} initialMessages={messages} user={userData} />
-        </section>
-      </div>
-    </div>
-  )
+  return <RoomClient room={room} initialMessages={messages} user={userData} />
 }

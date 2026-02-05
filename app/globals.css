@@ -122,11 +122,36 @@
 }
 
 @layer utilities {
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgb(255 255 255 / 0.45) 50%,
+      transparent 100%
+    );
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+
   .scrollbar-none {
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* Internet Explorer 10+ */
   }
   .scrollbar-none::-webkit-scrollbar {
     display: none; /* WebKit */
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }

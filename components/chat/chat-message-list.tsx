@@ -4,6 +4,7 @@ import { forwardRef, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChatMessageItem } from '@/components/chat-message'
 import { ScrollDateIndicator } from '@/components/chat'
+import { MessageListSkeleton } from '@/components/skeletons'
 import { useScrollDateDetection, useVirtualizer } from '@/hooks/ui'
 import type { ChatMessage } from '@/lib/types/database'
 
@@ -81,8 +82,8 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
           onScroll={handleCombinedScroll}
         >
           {loading && initialMessagesLength === 0 ? (
-            <div className="text-center text-sm text-muted-foreground py-8">
-              <div>Connecting to chat...</div>
+            <div className="py-2 sm:py-4" aria-label="Loading chat messages">
+              <MessageListSkeleton />
             </div>
           ) : !loading && messages.length === 0 ? (
             <div className="text-center text-sm text-muted-foreground py-8">
