@@ -9,6 +9,7 @@ const EVENT_MESSAGE_TYPE = 'message'
 const PRESENCE_STALE_MS = 90_000
 const PRESENCE_PRUNE_INTERVAL_MS = 15_000
 const PRESENCE_HEARTBEAT_INTERVAL_MS = 5_000
+const PRESENCE_EMPTY_DEBOUNCE_MS = 2_500
 
 interface UseWebSocketConnectionProps {
   roomId: string
@@ -48,6 +49,8 @@ export function useWebSocketConnection({
     let presencePruneInterval: NodeJS.Timeout
     let missedHeartbeats = 0
     let isCleanedUp = false
+    let lastNonEmptyPresenceAt = 0
+    let lastEmittedPresence: PresenceState = {}
 
     // Get fresh supabase client
     const supabase = supabaseRef.current
@@ -78,7 +81,24 @@ export function useWebSocketConnection({
         }
       })
 
-      onPresenceSync?.(transformedState)
+      const hasUsers = Object.keys(transformedState).length > 0
+      const hadUsers = Object.keys(lastEmittedPresence).length > 0
+
+      if (hasUsers) {
+        lastNonEmptyPresenceAt = now
+        lastEmittedPresence = transformedState
+        onPresenceSync?.(transformedState)
+        return
+      }
+
+      // Reconnects can emit an empty sync before presences repopulate.
+      // Debounce empty state to prevent avatar flicker.
+      if (hadUsers && now - lastNonEmptyPresenceAt < PRESENCE_EMPTY_DEBOUNCE_MS) {
+        return
+      }
+
+      lastEmittedPresence = {}
+      onPresenceSync?.({})
     }
 
     const newChannel = supabase
