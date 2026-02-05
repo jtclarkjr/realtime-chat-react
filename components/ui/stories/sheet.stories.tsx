@@ -58,7 +58,9 @@ export const Left: Story = {
       <SheetContent side="left">
         <SheetHeader>
           <SheetTitle>Navigation</SheetTitle>
-          <SheetDescription>Quick links for common workspace tasks.</SheetDescription>
+          <SheetDescription>
+            Quick links for common workspace tasks.
+          </SheetDescription>
         </SheetHeader>
         <div className="space-y-2 py-4 text-sm">
           <div className="rounded-md border p-3">All channels</div>
@@ -79,7 +81,9 @@ export const Bottom: Story = {
       <SheetContent side="bottom">
         <SheetHeader>
           <SheetTitle>Attach files</SheetTitle>
-          <SheetDescription>Select a source for uploading files.</SheetDescription>
+          <SheetDescription>
+            Select a source for uploading files.
+          </SheetDescription>
         </SheetHeader>
         <div className="grid grid-cols-2 gap-2 py-4">
           <Button variant="outline">Computer</Button>
