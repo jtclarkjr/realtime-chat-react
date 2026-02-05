@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import type { PresenceState } from '@/lib/types/presence'
 
 interface UIState {
   // Sidebar state
@@ -24,6 +25,10 @@ interface UIState {
   // Presence cache per room (not persisted)
   roomPresence: Record<string, number> // roomId -> online count
   setRoomPresence: (roomId: string, count: number) => void
+
+  // Full presence state per room (not persisted)
+  roomPresenceUsers: Record<string, PresenceState> // roomId -> presence users
+  setRoomPresenceUsers: (roomId: string, users: PresenceState) => void
 }
 
 type PersistedState = Pick<
@@ -84,6 +89,16 @@ export const useUIStore = create<UIState>()(
           roomPresence: {
             ...state.roomPresence,
             [roomId]: count
+          }
+        })),
+
+      // Full presence state (not persisted)
+      roomPresenceUsers: {},
+      setRoomPresenceUsers: (roomId, users) =>
+        set((state) => ({
+          roomPresenceUsers: {
+            ...state.roomPresenceUsers,
+            [roomId]: users
           }
         }))
     }),

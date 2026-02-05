@@ -183,7 +183,7 @@ export function AddRoomDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button
+        {/* <Button
           type="button"
           variant="outline"
           disabled={disabled}
@@ -191,7 +191,7 @@ export function AddRoomDialog({
         >
           <Plus className="h-4 w-4" />
           Add Room
-        </Button>
+        </Button> */}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

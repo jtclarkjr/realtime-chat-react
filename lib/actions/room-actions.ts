@@ -306,3 +306,53 @@ export async function warmRoomCacheAction(): Promise<void> {
     console.error('Error warming room cache:', error)
   }
 }
+
+/**
+ * Extended room type with last message info
+ */
+export interface RoomWithLastMessage extends DatabaseRoom {
+  lastMessage?: {
+    content: string
+    timestamp: string
+    userName: string
+    isAI: boolean
+  }
+}
+
+/**
+ * Server action to get rooms with their last message for the dashboard
+ */
+export async function getRoomsWithLastMessage(
+  userId?: string
+): Promise<RoomWithLastMessage[]> {
+  try {
+    const { rooms } = await getInitialRoomsData()
+
+    // For each room, fetch the most recent message
+    const roomsWithMessages = await Promise.all(
+      rooms.map(async (room) => {
+        const messages = await getRecentMessages(room.id, userId, 1)
+
+        if (messages.length > 0) {
+          const lastMsg = messages[0]
+          return {
+            ...room,
+            lastMessage: {
+              content: lastMsg.content,
+              timestamp: lastMsg.createdAt,
+              userName: lastMsg.user.name,
+              isAI: lastMsg.isAI || false
+            }
+          }
+        }
+
+        return room
+      })
+    )
+
+    return roomsWithMessages
+  } catch (error) {
+    console.error('Error fetching rooms with last messages:', error)
+    return []
+  }
+}

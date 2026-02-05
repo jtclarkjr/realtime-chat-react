@@ -17,7 +17,8 @@ interface RoomClientProps {
 export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const router = useRouter()
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
-  const { addRecentRoom, clearUnread, setRoomPresence } = useUIStore()
+  const { addRecentRoom, clearUnread, setRoomPresence, setRoomPresenceUsers } =
+    useUIStore()
 
   const userId = user.id
   const displayName = user.username
@@ -28,8 +29,10 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
       // Update presence count in UI store for room list
       const onlineCount = Object.keys(users).length
       setRoomPresence(room.id, onlineCount)
+      // Update full presence users for avatar display
+      setRoomPresenceUsers(room.id, users)
     },
-    [room.id, setRoomPresence]
+    [room.id, setRoomPresence, setRoomPresenceUsers]
   )
 
   // Track this room as recently visited and clear unread count

@@ -3,8 +3,8 @@
 import { RoomList } from './room-list'
 import { UserSection } from './user-section'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useParams } from 'next/navigation'
+import { ChevronLeft, ChevronRight, Home } from 'lucide-react'
+import { useParams, useRouter } from 'next/navigation'
 import { useUIStore } from '@/lib/stores/ui-store'
 import type { DatabaseRoom } from '@/lib/types/database'
 import type { PublicUser } from '@/lib/types/user'
@@ -24,8 +24,14 @@ export function Sidebar({
   onNavigate
 }: SidebarProps) {
   const params = useParams()
+  const router = useRouter()
   const { toggleSidebar } = useUIStore()
   const activeRoomId = params?.id as string | undefined
+
+  const handleHomeClick = () => {
+    router.push('/')
+    onNavigate?.()
+  }
 
   return (
     <nav
@@ -34,28 +40,60 @@ export function Sidebar({
       role="navigation"
     >
       {/* Logo / App name */}
-      <div className="p-4 border-b border-border flex items-center justify-between">
-        {!collapsed && <h1 className="text-lg font-bold">Realtime Chat</h1>}
-        {collapsed && (
-          <div className="text-lg font-bold text-center w-full">RC</div>
-        )}
-        {/* Collapse button - only show on desktop */}
-        {!onNavigate && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={toggleSidebar}
-          >
-            {collapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
+      <div className="p-4 border-b border-border flex items-center justify-between gap-2">
+        {!collapsed ? (
+          <>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={handleHomeClick}
+                title="Go to home"
+              >
+                <Home className="h-4 w-4" />
+                <span className="sr-only">Go to home</span>
+              </Button>
+              <h1 className="text-lg font-bold">Realtime Chat</h1>
+            </div>
+            {/* Collapse button - only show on desktop */}
+            {!onNavigate && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={toggleSidebar}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Collapse sidebar</span>
+              </Button>
             )}
-            <span className="sr-only">
-              {collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            </span>
-          </Button>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-2 w-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleHomeClick}
+              title="Go to home"
+            >
+              <Home className="h-4 w-4" />
+              <span className="sr-only">Go to home</span>
+            </Button>
+            {/* Collapse button - only show on desktop */}
+            {!onNavigate && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={toggleSidebar}
+              >
+                <ChevronRight className="h-4 w-4" />
+                <span className="sr-only">Expand sidebar</span>
+              </Button>
+            )}
+          </div>
         )}
       </div>
 
