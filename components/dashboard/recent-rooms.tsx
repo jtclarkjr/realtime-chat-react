@@ -14,11 +14,17 @@ interface RecentRoomsProps {
 export function RecentRooms({ initialRooms }: RecentRoomsProps) {
   const router = useRouter()
   const { recentRooms } = useUIStore()
+  const roomsWithMessages = initialRooms.filter(
+    (
+      room
+    ): room is RoomWithLastMessage & { lastMessage: NonNullable<RoomWithLastMessage['lastMessage']> } =>
+      room.lastMessage !== null
+  )
 
   // Sort rooms by:
   // 1. Recent rooms (from UI store) come first, in order of recency
   // 2. Then remaining rooms sorted by last message timestamp
-  const sortedRooms = [...initialRooms].sort((a, b) => {
+  const sortedRooms = [...roomsWithMessages].sort((a, b) => {
     const aRecentIndex = recentRooms.indexOf(a.id)
     const bRecentIndex = recentRooms.indexOf(b.id)
 
@@ -32,17 +38,10 @@ export function RecentRooms({ initialRooms }: RecentRoomsProps) {
     if (bRecentIndex !== -1) return 1
 
     // For non-recent rooms, sort by last message timestamp
-    if (a.lastMessage && b.lastMessage) {
-      return (
-        new Date(b.lastMessage.timestamp).getTime() -
-        new Date(a.lastMessage.timestamp).getTime()
-      )
-    }
-    if (a.lastMessage) return -1
-    if (b.lastMessage) return 1
-
-    // If no last messages, sort alphabetically
-    return a.name.localeCompare(b.name)
+    return (
+      new Date(b.lastMessage.timestamp).getTime() -
+      new Date(a.lastMessage.timestamp).getTime()
+    )
   })
 
   // Show top 5 rooms
@@ -80,27 +79,19 @@ export function RecentRooms({ initialRooms }: RecentRoomsProps) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-medium mb-1">{room.name}</div>
-              {room.lastMessage ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  {room.lastMessage.isAI && (
-                    <Bot className="h-3.5 w-3.5 shrink-0" />
-                  )}
-                  <span className="truncate">
-                    {room.lastMessage.userName}: {room.lastMessage.content}
-                  </span>
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">
-                  No messages yet
-                </div>
-              )}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {room.lastMessage.isAI && (
+                  <Bot className="h-3.5 w-3.5 shrink-0" />
+                )}
+                <span className="truncate">
+                  {room.lastMessage.userName}: {room.lastMessage.content}
+                </span>
+              </div>
             </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
-              {room.lastMessage && (
-                <span className="text-xs text-muted-foreground">
-                  {formatRelativeTime(room.lastMessage.timestamp)}
-                </span>
-              )}
+              <span className="text-xs text-muted-foreground">
+                {formatRelativeTime(room.lastMessage.timestamp)}
+              </span>
               <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
             </div>
           </Link>

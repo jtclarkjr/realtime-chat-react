@@ -2,7 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import { RealtimeChat } from '@/components/realtime-chat'
-import { useEffect, useState, useCallback } from 'react'
+import { RoomSkeleton } from '@/components/skeletons'
+import { useEffect, useCallback } from 'react'
 import { useUIStore } from '@/lib/stores/ui-store'
 import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import type { PresenceState } from '@/lib/types/presence'
@@ -16,7 +17,6 @@ interface RoomClientProps {
 
 export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const router = useRouter()
-  const [isInitialized, setIsInitialized] = useState<boolean>(false)
   const { addRecentRoom, clearUnread, setRoomPresence, setRoomPresenceUsers } =
     useUIStore()
 
@@ -43,28 +43,13 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
     }
   }, [room?.id, addRecentRoom, clearUnread])
 
-  // Mark as initialized immediately
-  useEffect(() => {
-    const initializeTimer = setTimeout(() => {
-      setIsInitialized(true)
-    }, 0)
-    return () => clearTimeout(initializeTimer)
-  }, [])
-
   // Prefetch dashboard on mount
   useEffect(() => {
     router.prefetch('/')
   }, [router])
 
-  // Show loading only if not initialized
-  if (!isInitialized || !userId) {
-    return (
-      <div className="h-full flex flex-col bg-background">
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-sm text-muted-foreground">Loading room...</div>
-        </div>
-      </div>
-    )
+  if (!userId) {
+    return <RoomSkeleton />
   }
 
   return (
