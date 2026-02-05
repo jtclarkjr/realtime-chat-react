@@ -49,6 +49,7 @@ export function useWebSocketConnection({
     let presencePruneInterval: NodeJS.Timeout
     let missedHeartbeats = 0
     let isCleanedUp = false
+    let isSubscribed = false
     let lastNonEmptyPresenceAt = 0
     let lastEmittedPresence: PresenceState = {}
 
@@ -142,18 +143,11 @@ export function useWebSocketConnection({
         ) {
           console.error('Channel error:', payload)
           setIsConnected(false)
+          isSubscribed = false
           // Attempt to reconnect after error
           if (!isCleanedUp) {
             clearTimeout(reconnectTimeout)
             reconnectTimeout = setTimeout(() => {
-              void newChannel.track({
-                online: false,
-                userId,
-                name: username || 'Anonymous',
-                avatar_url: userAvatarUrl,
-                timestamp: Date.now()
-              })
-              void newChannel.untrack()
               void supabase.removeChannel(newChannel)
               // Trigger reconnect by incrementing trigger
               setReconnectTrigger((prev) => prev + 1)
@@ -163,6 +157,7 @@ export function useWebSocketConnection({
       })
       .subscribe(async (status, error) => {
         if (status === 'SUBSCRIBED') {
+          isSubscribed = true
           setIsConnected(true)
           missedHeartbeats = 0
 
@@ -186,15 +181,8 @@ export function useWebSocketConnection({
               console.warn('Connection appears stale, reconnecting...')
               clearInterval(heartbeatInterval)
               setIsConnected(false)
+              isSubscribed = false
               if (!isCleanedUp) {
-                void newChannel.track({
-                  online: false,
-                  userId,
-                  name: username || 'Anonymous',
-                  avatar_url: userAvatarUrl,
-                  timestamp: Date.now()
-                })
-                void newChannel.untrack()
                 void supabase.removeChannel(newChannel)
                 setReconnectTrigger((prev) => prev + 1)
               }
@@ -217,34 +205,29 @@ export function useWebSocketConnection({
             emitPresenceSync()
           }, PRESENCE_PRUNE_INTERVAL_MS)
         } else if (status === 'CHANNEL_ERROR') {
+          isSubscribed = false
           setIsConnected(false)
-          if (error) {
+          if (error && Object.keys(error).length > 0) {
             console.error('Channel subscription error:', error)
           }
           // Attempt reconnection
           if (!isCleanedUp) {
             clearTimeout(reconnectTimeout)
             reconnectTimeout = setTimeout(() => {
-              void newChannel.track({
-                online: false,
-                userId,
-                name: username || 'Anonymous',
-                avatar_url: userAvatarUrl,
-                timestamp: Date.now()
-              })
-              void newChannel.untrack()
               void supabase.removeChannel(newChannel)
               // Trigger reconnect by incrementing trigger
               setReconnectTrigger((prev) => prev + 1)
             }, 3000)
           }
         } else if (status === 'TIMED_OUT') {
+          isSubscribed = false
           setIsConnected(false)
           // Trigger reconnect on timeout
           if (!isCleanedUp) {
             setReconnectTrigger((prev) => prev + 1)
           }
         } else if (status === 'CLOSED') {
+          isSubscribed = false
           setIsConnected(false)
           // Trigger reconnect when closed
           if (!isCleanedUp) {
@@ -260,15 +243,17 @@ export function useWebSocketConnection({
       clearInterval(heartbeatInterval)
       clearInterval(presencePruneInterval)
       if (newChannel) {
-        // Best effort: announce offline + leave presence before removing.
-        void newChannel.track({
-          online: false,
-          userId,
-          name: username || 'Anonymous',
-          avatar_url: userAvatarUrl,
-          timestamp: Date.now()
-        })
-        void newChannel.untrack()
+        if (isSubscribed) {
+          // Best effort: announce offline + leave presence before removing.
+          void newChannel.track({
+            online: false,
+            userId,
+            name: username || 'Anonymous',
+            avatar_url: userAvatarUrl,
+            timestamp: Date.now()
+          })
+          void newChannel.untrack()
+        }
         void supabase.removeChannel(newChannel)
       }
       setIsConnected(false)
