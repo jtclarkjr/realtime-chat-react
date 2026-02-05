@@ -27,9 +27,8 @@ export function RoomListItem({
   onNavigate
 }: RoomListItemProps) {
   const router = useRouter()
-  const { unreadCounts, roomPresence } = useUIStore()
+  const { unreadCounts } = useUIStore()
   const unreadCount = unreadCounts[room.id] || 0
-  const onlineCount = roomPresence[room.id] || 0
 
   const handleMouseEnter = () => {
     // Prefetch the room page on hover
@@ -52,7 +51,7 @@ export function RoomListItem({
         )}
       />
 
-      {/* Room name and online count */}
+      {/* Room name */}
       {!collapsed && (
         <div className="flex-1 min-w-0 flex items-center gap-2">
           <span
@@ -63,11 +62,6 @@ export function RoomListItem({
           >
             {room.name}
           </span>
-          {onlineCount > 0 && (
-            <span className="text-xs text-muted-foreground shrink-0">
-              {onlineCount}
-            </span>
-          )}
         </div>
       )}
 
@@ -100,7 +94,7 @@ export function RoomListItem({
                 isActive && 'bg-accent border-l-4 border-primary pl-2',
                 'justify-center px-2'
               )}
-              aria-label={`${room.name} channel${unreadCount > 0 ? `, ${unreadCount} unread messages` : ''}${onlineCount > 0 ? `, ${onlineCount} online` : ''}`}
+              aria-label={`${room.name} channel${unreadCount > 0 ? `, ${unreadCount} unread messages` : ''}`}
               aria-current={isActive ? 'page' : undefined}
               role="listitem"
             >
@@ -109,11 +103,6 @@ export function RoomListItem({
           </TooltipTrigger>
           <TooltipContent side="right">
             <p>{room.name}</p>
-            {onlineCount > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {onlineCount} online
-              </p>
-            )}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -130,7 +119,7 @@ export function RoomListItem({
         'hover:bg-muted/50',
         isActive && 'bg-accent border-l-4 border-primary pl-2'
       )}
-      aria-label={`${room.name} channel${unreadCount > 0 ? `, ${unreadCount} unread messages` : ''}${onlineCount > 0 ? `, ${onlineCount} online` : ''}`}
+      aria-label={`${room.name} channel${unreadCount > 0 ? `, ${unreadCount} unread messages` : ''}`}
       aria-current={isActive ? 'page' : undefined}
       role="listitem"
     >
