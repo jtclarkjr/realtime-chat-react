@@ -108,7 +108,11 @@ export function Sidebar({
       />
 
       {/* User section at bottom */}
-      <UserSection user={user} collapsed={collapsed} />
+      <UserSection
+        user={user}
+        collapsed={collapsed}
+        initialRooms={initialRooms}
+      />
     </nav>
   )
 }

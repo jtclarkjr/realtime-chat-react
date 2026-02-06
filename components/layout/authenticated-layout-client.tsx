@@ -25,9 +25,12 @@ export function AuthenticatedLayoutClient({
   children
 }: AuthenticatedLayoutClientProps) {
   const pathname = usePathname()
-  const { sidebarCollapsed, mobileDrawerOpen, setMobileDrawerOpen } =
-    useUIStore()
-  const hasHydrated = useUIStore.persist.hasHydrated()
+  const {
+    sidebarCollapsed,
+    mobileDrawerOpen,
+    setMobileDrawerOpen,
+    hasHydrated
+  } = useUIStore()
   const effectiveSidebarCollapsed = hasHydrated ? sidebarCollapsed : false
   const effectiveMobileDrawerOpen = hasHydrated ? mobileDrawerOpen : false
 

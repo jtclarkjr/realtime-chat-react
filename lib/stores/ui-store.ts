@@ -3,6 +3,10 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import type { PresenceState } from '@/lib/types/presence'
 
 interface UIState {
+  // Hydration state for persisted store
+  hasHydrated: boolean
+  setHasHydrated: (hydrated: boolean) => void
+
   // Sidebar state
   sidebarCollapsed: boolean
   setSidebarCollapsed: (collapsed: boolean) => void
@@ -39,6 +43,10 @@ type PersistedState = Pick<
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
+      // Hydration state
+      hasHydrated: false,
+      setHasHydrated: (hydrated) => set({ hasHydrated: hydrated }),
+
       // Sidebar state
       sidebarCollapsed: false,
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
@@ -110,7 +118,10 @@ export const useUIStore = create<UIState>()(
           sidebarCollapsed: state.sidebarCollapsed,
           unreadCounts: state.unreadCounts,
           recentRooms: state.recentRooms
-        }) as PersistedState
+        }) as PersistedState,
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      }
     }
   )
 )
