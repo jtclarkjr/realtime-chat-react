@@ -11,7 +11,7 @@ import {
 } from '@/components/chat'
 import type { ChatMessage } from '@/lib/types/database'
 import type { PresenceState } from '@/lib/types/presence'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { track } from '@vercel/analytics/react'
 
 interface RealtimeChatProps {
@@ -24,6 +24,8 @@ interface RealtimeChatProps {
   onPresenceChange?: (users: PresenceState) => void
   isAnonymous?: boolean
 }
+
+const subscribeNoop = () => () => {}
 
 /**
  * Realtime chat component
@@ -96,6 +98,11 @@ export const RealtimeChat = ({
   })
 
   const [newMessage, setNewMessage] = useState<string>('')
+  const hasHydrated = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false
+  )
   const {
     streamingMessages,
     addOrUpdateStreamingMessage,
@@ -123,6 +130,8 @@ export const RealtimeChat = ({
     scrollToBottom,
     scrollToBottomInstant
   })
+
+  const effectiveIsConnected = hasHydrated ? isConnected : false
 
   // Handle clearing streaming messages when broadcast arrives
   useEffect(() => {
@@ -203,7 +212,7 @@ export const RealtimeChat = ({
   return (
     <div className="relative flex flex-col h-full w-full bg-background text-foreground antialiased">
       <ConnectionStatusBar
-        isConnected={isConnected}
+        isConnected={effectiveIsConnected}
         queueStatus={queueStatus}
         onClearFailedMessages={clearFailedMessages}
       />
@@ -212,7 +221,7 @@ export const RealtimeChat = ({
         ref={containerRef}
         messages={allMessages}
         loading={loading}
-        isConnected={isConnected}
+        isConnected={effectiveIsConnected}
         userId={userId}
         initialMessagesLength={initialMessages.length}
         onRetry={retryMessage}
@@ -233,7 +242,7 @@ export const RealtimeChat = ({
         setNewMessage={setNewMessage}
         onSendMessage={handleSendMessage}
         loading={loading}
-        isConnected={isConnected}
+        isConnected={effectiveIsConnected}
         isAIEnabled={isAIEnabled}
         setIsAIEnabled={setIsAIEnabled}
         isAIPrivate={isAIPrivate}

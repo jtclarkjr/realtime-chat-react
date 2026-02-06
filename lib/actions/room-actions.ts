@@ -1,10 +1,9 @@
 'use server'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { unstable_cache } from 'next/cache'
 import { headers } from 'next/headers'
 import { roomCacheService } from '@/lib/services/room-cache-service'
-import { ensureDefaultRooms } from '@/lib/supabase/rooms'
+import { ensureDefaultRooms, getRoomById, getRooms } from '@/lib/supabase/rooms'
 import { createClient } from '@/lib/supabase/server'
 import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import { getRecentMessages, getLastMessagesByRoom } from '@/lib/services/chat'
@@ -14,47 +13,35 @@ import { isAnonymousUser } from '@/lib/auth/middleware'
  * Server action to get initial rooms data for SSR
  * This will be called during server rendering to pre-populate room data
  */
-// Create cached version of room data fetching
-const getCachedRoomsData = unstable_cache(
-  async () => {
-    try {
-      // Ensure default rooms exist before fetching
-      await ensureDefaultRooms()
-
-      // Get all rooms from cache (with database fallback)
-      const rooms = await roomCacheService.getAllRooms()
-
-      // Find the default room (prefer 'general' room)
-      let defaultRoomId: string | null = null
-      if (rooms.length > 0) {
-        const generalRoom = rooms.find((room) => room.name === 'general')
-        defaultRoomId = generalRoom?.id || rooms[0].id
-      }
-
-      return {
-        rooms,
-        defaultRoomId
-      }
-    } catch (error) {
-      console.error('Error fetching initial rooms data:', error)
-      return {
-        rooms: [],
-        defaultRoomId: null
-      }
-    }
-  },
-  ['rooms-data'], // cache key
-  {
-    revalidate: 30, // Cache for 30 seconds
-    tags: ['rooms'] // Allow targeted revalidation
-  }
-)
-
 export async function getInitialRoomsData(): Promise<{
   rooms: DatabaseRoom[]
   defaultRoomId: string | null
 }> {
-  return getCachedRoomsData()
+  try {
+    // Ensure default rooms exist before fetching
+    await ensureDefaultRooms()
+
+    // Always read fresh rooms for SSR request
+    const rooms = await getRooms()
+
+    // Find the default room (prefer 'general' room)
+    let defaultRoomId: string | null = null
+    if (rooms.length > 0) {
+      const generalRoom = rooms.find((room) => room.name === 'general')
+      defaultRoomId = generalRoom?.id || rooms[0].id
+    }
+
+    return {
+      rooms,
+      defaultRoomId
+    }
+  } catch (error) {
+    console.error('Error fetching initial rooms data:', error)
+    return {
+      rooms: [],
+      defaultRoomId: null
+    }
+  }
 }
 
 /**
@@ -64,7 +51,7 @@ export async function getRoomByIdAction(
   roomId: string
 ): Promise<DatabaseRoom | null> {
   try {
-    return await roomCacheService.getRoomById(roomId)
+    return await getRoomById(roomId)
   } catch (error) {
     console.error('Error fetching room by ID:', error)
     return null
@@ -156,25 +143,6 @@ export async function createRoomAction(
   }
 }
 
-// Create cached version of room data (room info only, not messages)
-const getCachedRoomData = unstable_cache(
-  async (roomId: string) => {
-    try {
-      // Only cache room details, NOT messages
-      const room = await roomCacheService.getRoomById(roomId)
-      return room
-    } catch (error) {
-      console.error('Error fetching room data:', error)
-      return null
-    }
-  },
-  ['room-data'], // cache key base
-  {
-    revalidate: 300, // Cache room data for 5 minutes (changes rarely)
-    tags: ['rooms'] // Allow targeted revalidation
-  }
-)
-
 /**
  * Server action to get initial room data with messages for the /room route
  * This includes room details and recent messages for immediate display
@@ -190,8 +158,8 @@ export async function getRoomDataWithMessages(
   messages: ChatMessageWithDB[]
 }> {
   try {
-    // Get room details (cached)
-    const room = await getCachedRoomData(roomId)
+    // Always read fresh room details for each request.
+    const room = await getRoomById(roomId)
 
     if (!room) {
       return {

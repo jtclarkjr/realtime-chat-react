@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { roomCacheService } from '@/lib/services/room-cache-service'
+import { ensureDefaultRooms, getRooms } from '@/lib/supabase/rooms'
 import { withAuth, withNonAnonymousAuth } from '@/lib/auth/middleware'
 import {
   createRoomSchema,
@@ -10,8 +11,9 @@ import {
 
 export const GET = withAuth(async () => {
   try {
-    // Use the cache service which handles default room creation and caching
-    const rooms = await roomCacheService.getAllRooms()
+    await ensureDefaultRooms()
+    // Always return fresh room list; in-session caching is handled on the client.
+    const rooms = await getRooms()
 
     return NextResponse.json({ rooms })
   } catch (error) {
