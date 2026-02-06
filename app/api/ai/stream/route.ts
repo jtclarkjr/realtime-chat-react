@@ -4,6 +4,8 @@ import { sendAIMessage, markMessageAsAITrigger } from '@/lib/services/chat'
 import { requireNonAnonymousAuth } from '@/lib/auth/middleware'
 import { aiStreamRequestSchema, validateRequestBody } from '@/lib/validation'
 import { plainErrorResponse, formatSSEError } from '@/lib/errors'
+import { AI_STREAM_MODEL } from '@/lib/ai/constants'
+import { AI_STREAM_SYSTEM_PROMPT } from '@/lib/ai/prompts'
 
 // Configure route for streaming with body size limit
 export const runtime = 'nodejs'
@@ -57,24 +59,6 @@ export const POST = async (request: NextRequest) => {
       return plainErrorResponse('AI_SERVICE_NOT_CONFIGURED')
     }
 
-    // Prepare conversation context for Anthropic
-    const systemPrompt = `You are a helpful AI assistant in a chat room. Give ULTRA-CONCISE answers. Treat every token as expensive.
-
-CRITICAL: Answer in ONE sentence or less. Two sentences ONLY if absolutely necessary.
-
-DO NOT:
-- Repeat the question
-- Add context or background unless asked
-- Explain your answer unless asked
-- Use bullet points unless asked
-
-DO:
-- Give just the core answer
-- Be direct and to the point
-- Stop after answering
-
-Be friendly and respectful, but extreme brevity is mandatory.`
-
     const messages: Anthropic.MessageParam[] = []
 
     // Add previous messages for context (if provided)
@@ -95,9 +79,9 @@ Be friendly and respectful, but extreme brevity is mandatory.`
 
     // Create streaming response with Anthropic
     const stream = anthropic.messages.stream({
-      model: 'claude-3-5-haiku-latest',
+      model: AI_STREAM_MODEL,
       max_tokens: 1024,
-      system: systemPrompt,
+      system: AI_STREAM_SYSTEM_PROMPT,
       messages
     })
 
