@@ -96,7 +96,7 @@ export function RoomListItem({
               onMouseEnter={handleMouseEnter}
               onClick={handleClick}
               className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative group',
+                'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative group cursor-pointer',
                 'hover:bg-muted/50',
                 isActive && 'bg-accent border-l-4 border-primary pl-2',
                 'justify-center px-2'
@@ -123,7 +123,7 @@ export function RoomListItem({
         onMouseEnter={handleMouseEnter}
         onClick={handleClick}
         className={cn(
-          'flex-1 flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative',
+          'flex-1 flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative cursor-pointer',
           'hover:bg-muted/50',
           isActive && 'bg-accent border-l-4 border-primary pl-2'
         )}
@@ -139,7 +139,7 @@ export function RoomListItem({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-7 w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+          className="h-7 w-7 shrink-0 cursor-pointer opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
           onClick={onDelete}
           disabled={isDeleting}
           aria-label={`Delete ${room.name} channel`}

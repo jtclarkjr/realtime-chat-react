@@ -35,7 +35,7 @@ export function CreateRoomCard({ user, initialRooms }: CreateRoomCardProps) {
       <div className="max-w-2xl mx-auto">
         <Button
           variant="outline"
-          className="w-full h-auto p-6 border-dashed border-2 hover:border-primary hover:bg-primary/5 transition-all group"
+          className="w-full h-auto p-6 border-dashed border-2 hover:border-primary hover:bg-primary/5 transition-all group cursor-pointer"
           onClick={() => setShowAddRoom(true)}
         >
           <div className="flex items-center gap-4 w-full">

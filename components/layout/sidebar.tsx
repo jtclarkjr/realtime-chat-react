@@ -45,7 +45,7 @@ export function Sidebar({
           variant="outline"
           size="icon"
           className={cn(
-            'absolute left-full top-4 z-20 h-7 w-7 -translate-x-1/2 rounded-full border-border !bg-background dark:!bg-background shadow-sm',
+            'absolute left-full top-4 z-20 h-7 w-7 -translate-x-1/2 rounded-full border-border !bg-background dark:!bg-background shadow-sm cursor-pointer',
             'hover:bg-accent hover:text-accent-foreground'
           )}
           onClick={toggleSidebar}
@@ -72,14 +72,21 @@ export function Sidebar({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 shrink-0"
+                className="h-8 w-8 shrink-0 cursor-pointer"
                 onClick={handleHomeClick}
                 title="Go to home"
               >
                 <Home className="h-4 w-4" />
                 <span className="sr-only">Go to home</span>
               </Button>
-              <h1 className="text-lg font-bold">Realtime Chat</h1>
+              <button
+                type="button"
+                onClick={handleHomeClick}
+                className="cursor-pointer text-lg font-bold hover:text-primary transition-colors"
+                title="Go to home"
+              >
+                Realtime Chat
+              </button>
             </div>
           </>
         ) : (
@@ -87,7 +94,7 @@ export function Sidebar({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 cursor-pointer"
               onClick={handleHomeClick}
               title="Go to home"
             >

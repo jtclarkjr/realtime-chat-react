@@ -34,7 +34,7 @@ export function UserSection({
   const [open, setOpen] = useState(false)
   const { isOnline } = useNetworkConnectivity()
   const { unreadCounts, hasHydrated } = useUIStore()
-  const effectiveOnline = hasHydrated ? isOnline : false
+  const effectiveOnline = hasHydrated ? isOnline : true
 
   const totalUnread = hasHydrated
     ? Object.values(unreadCounts).reduce((sum, count) => sum + count, 0)
@@ -56,7 +56,7 @@ export function UserSection({
       setOpen(false)
       if (user.isAnonymous) {
         // For anonymous users, just navigate to login without destroying session
-        router.push('/login')
+        router.push('/login?guest=1')
       } else {
         // For authenticated users, sign out normally
         await signOutAction()
@@ -78,7 +78,7 @@ export function UserSection({
           <PopoverTrigger asChild>
             <button
               className={cn(
-                'flex items-center gap-3 rounded-full bg-background/80 px-2.5 py-1.5 shadow-sm transition-colors hover:bg-muted/50',
+                'flex items-center gap-3 rounded-full bg-background/80 px-2.5 py-1.5 shadow-sm transition-colors hover:bg-muted/50 cursor-pointer',
                 collapsed ? 'justify-center w-full p-2' : 'flex-1'
               )}
             >
@@ -160,7 +160,7 @@ export function UserSection({
 
             <Button
               variant="ghost"
-              className="w-full justify-start gap-2 text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+              className="w-full justify-start gap-2 text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 cursor-pointer"
               onClick={handleSignOut}
             >
               <LogOut className="h-4 w-4" />
@@ -173,7 +173,7 @@ export function UserSection({
           <Button
             variant="ghost"
             size="icon"
-            className="relative h-9 w-9 rounded-full bg-background/80 shadow-sm hover:bg-muted/50"
+            className="relative h-9 w-9 rounded-full bg-background/80 shadow-sm hover:bg-muted/50 cursor-pointer"
           >
             <Bell className="h-4 w-4" />
             {totalUnread > 0 && (

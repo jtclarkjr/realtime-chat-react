@@ -92,7 +92,7 @@ export function RoomList({
             <Button
               variant="ghost"
               size="icon"
-              className={cn('h-6 w-6', collapsed && 'mx-auto')}
+              className={cn('h-6 w-6 cursor-pointer', collapsed && 'mx-auto')}
               onClick={() => setShowAddRoom(true)}
             >
               <Plus className="h-4 w-4" />

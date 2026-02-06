@@ -150,7 +150,7 @@ function Combobox({
                     onSelect={handleSelect}
                     role="option"
                     aria-selected={value === option.value}
-                    className="group"
+                    className="group cursor-pointer"
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="flex flex-col items-start min-w-0 flex-1">
@@ -174,7 +174,7 @@ function Combobox({
                                 variant="ghost"
                                 size="sm"
                                 className={cn(
-                                  'h-6 w-6 p-0 transition-opacity',
+                                  'h-6 w-6 p-0 transition-opacity cursor-pointer',
                                   action.variant === 'destructive' &&
                                     'hover:bg-destructive/10 hover:text-destructive',
                                   isDisabled && 'opacity-30 cursor-not-allowed'

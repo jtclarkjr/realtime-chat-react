@@ -189,7 +189,7 @@ export function AddRoomDialog({
             type="button"
             variant="outline"
             disabled={disabled}
-            className="flex items-center gap-2 shrink-0 h-auto min-h-9 px-3 py-2"
+            className="flex items-center gap-2 shrink-0 h-auto min-h-9 px-3 py-2 cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             Add Room
@@ -213,7 +213,7 @@ export function AddRoomDialog({
             disabled={
               createRoomMutation.isPending || generateRoomMutation.isPending
             }
-            className="w-full flex items-center gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full flex items-center gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             <Sparkles
               className={`h-4 w-4 transition-transform duration-500 ${
@@ -287,6 +287,7 @@ export function AddRoomDialog({
               type="button"
               variant="outline"
               onClick={handleCancel}
+              className="cursor-pointer"
               disabled={
                 createRoomMutation.isPending || generateRoomMutation.isPending
               }
@@ -295,6 +296,7 @@ export function AddRoomDialog({
             </Button>
             <Button
               type="submit"
+              className="cursor-pointer"
               disabled={
                 createRoomMutation.isPending ||
                 generateRoomMutation.isPending ||

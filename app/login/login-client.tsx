@@ -17,7 +17,7 @@ import {
   signUpWithEmailAction
 } from '@/lib/actions/auth-actions'
 import { Input } from '@/components/ui/input'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const isEmailAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_EMAIL_AUTH === 'true'
 const isGuestUsersEnabled =
@@ -31,6 +31,7 @@ export function LoginClient() {
   const [error, setError] = useState<string | null>(null)
   const [isAnonymous, setIsAnonymous] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Check if user is already signed in as anonymous on mount
   useEffect(() => {
@@ -202,7 +203,7 @@ export function LoginClient() {
 
   return (
     <div className="space-y-4">
-      {isAnonymous && (
+      {isAnonymous && searchParams.get('guest') === '1' && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <div className="space-y-3">
             <p className="text-sm text-blue-800 dark:text-blue-200">
@@ -223,7 +224,7 @@ export function LoginClient() {
         </div>
       )}
 
-      {isAnonymous && (
+      {isAnonymous && searchParams.get('guest') === '1' && (
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t border-gray-300 dark:border-gray-700" />

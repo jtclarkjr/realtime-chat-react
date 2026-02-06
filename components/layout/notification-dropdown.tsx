@@ -94,7 +94,7 @@ export function NotificationDropdown({
                   <button
                     type="button"
                     onClick={(event) => handleDismiss(event, room.id)}
-                    className="absolute top-2 right-9 h-6 w-6 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                    className="absolute top-2 right-9 h-6 w-6 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
                     aria-label={`Dismiss ${room.name} notification`}
                   >
                     <X className="h-3.5 w-3.5" />
@@ -128,7 +128,7 @@ export function NotificationDropdown({
                   <button
                     type="button"
                     onClick={(event) => handleDismiss(event, room.id)}
-                    className="absolute top-2 right-3 h-6 w-6 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                    className="absolute top-2 right-3 h-6 w-6 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
                     aria-label={`Dismiss ${room.name} notification`}
                   >
                     <X className="h-3.5 w-3.5" />
