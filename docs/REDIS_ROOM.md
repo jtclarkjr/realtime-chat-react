@@ -25,7 +25,8 @@ database queries. The implementation includes:
    - Provides database fallback when cache is unavailable
    - Manages cache TTL and invalidation strategies
 
-2. **RoomReconciliationService** (`lib/services/room/room-reconciliation-service.ts`)
+2. **RoomReconciliationService**
+   (`lib/services/room/room-reconciliation-service.ts`)
    - Background service to sync cached data with database
    - Detects changes and updates cache accordingly
    - Runs automatically in production or when `ENABLE_ROOM_RECONCILIATION=true`

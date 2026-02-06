@@ -217,13 +217,17 @@ export const swaggerSpec = {
           401: {
             description: 'Unauthorized',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           500: {
             description: 'Internal server error',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           }
         }
@@ -258,31 +262,41 @@ export const swaggerSpec = {
           400: {
             description: 'Invalid request',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           401: {
             description: 'Unauthorized',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           403: {
             description: 'Forbidden (anonymous users cannot create rooms)',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           409: {
             description: 'Room name conflict',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           500: {
             description: 'Internal server error',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           }
         }
@@ -312,31 +326,41 @@ export const swaggerSpec = {
           400: {
             description: 'Invalid query parameters',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           401: {
             description: 'Unauthorized',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           403: {
             description: 'Forbidden',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           404: {
             description: 'Room not found or unauthorized',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           500: {
             description: 'Internal server error',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           }
         }
@@ -373,25 +397,33 @@ export const swaggerSpec = {
           400: {
             description: 'Missing room id',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           401: {
             description: 'Unauthorized',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           404: {
             description: 'Room not found',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           500: {
             description: 'Internal server error',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           }
         }
@@ -428,25 +460,33 @@ export const swaggerSpec = {
           400: {
             description: 'Missing required parameters',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           401: {
             description: 'Unauthorized',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           403: {
             description: 'Forbidden (user mismatch)',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           500: {
             description: 'Internal server error',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           }
         }
@@ -483,25 +523,33 @@ export const swaggerSpec = {
           400: {
             description: 'Missing required fields',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           401: {
             description: 'Unauthorized',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           403: {
             description: 'Forbidden (user mismatch)',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           500: {
             description: 'Internal server error',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           }
         }
@@ -532,19 +580,25 @@ export const swaggerSpec = {
           401: {
             description: 'Unauthorized',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           403: {
             description: 'Forbidden (anonymous user restricted)',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           500: {
             description: 'AI generation failed',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           }
         }
@@ -582,25 +636,33 @@ export const swaggerSpec = {
           400: {
             description: 'Validation failed',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           401: {
             description: 'Unauthorized',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           403: {
             description: 'Forbidden (sender mismatch / anonymous)',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           500: {
             description: 'Failed to send message',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           }
         }
@@ -638,31 +700,41 @@ export const swaggerSpec = {
           400: {
             description: 'Validation failed',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           401: {
             description: 'Unauthorized',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           403: {
             description: 'Forbidden',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           404: {
             description: 'Message not found or not permitted',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           500: {
             description: 'Failed to unsend message',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           }
         }
@@ -693,25 +765,33 @@ export const swaggerSpec = {
           400: {
             description: 'Validation failed',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           401: {
             description: 'Unauthorized',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           403: {
             description: 'Forbidden (user mismatch)',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           500: {
             description: 'Failed to mark message as received',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           }
         }
@@ -743,25 +823,33 @@ export const swaggerSpec = {
           400: {
             description: 'Invalid request',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           401: {
             description: 'Unauthorized',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           403: {
             description: 'Forbidden',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           },
           500: {
             description: 'AI service error',
             content: {
-              'application/json': { schema: { $ref: '#/components/schemas/Error' } }
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' }
+              }
             }
           }
         }
