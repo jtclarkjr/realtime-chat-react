@@ -70,9 +70,23 @@ COMMENT ON COLUMN messages.deleted_by IS 'ID of the user who deleted/unsent the 
 COMMENT ON COLUMN messages.has_ai_response IS 'TRUE if this message triggered an AI response. Such messages cannot be unsent to maintain conversation context.';
 
 -- Add database constraint to ensure deleted_by equals user_id (security layer)
-ALTER TABLE messages ADD CONSTRAINT check_deleted_by_equals_user_id
-  CHECK ((deleted_at IS NULL AND deleted_by IS NULL) OR
-         (deleted_at IS NOT NULL AND deleted_by = user_id));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'check_deleted_by_equals_user_id'
+      AND conrelid = 'public.messages'::regclass
+  ) THEN
+    ALTER TABLE public.messages
+      ADD CONSTRAINT check_deleted_by_equals_user_id
+      CHECK (
+        (deleted_at IS NULL AND deleted_by IS NULL) OR
+        (deleted_at IS NOT NULL AND deleted_by = user_id)
+      );
+  END IF;
+END
+$$;
 
 -- ============================================================================
 -- HELPER FUNCTIONS (must be created before RLS policies that use them)
