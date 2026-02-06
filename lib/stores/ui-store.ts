@@ -95,6 +95,7 @@ export const useUIStore = create<UIState>()(
         }),
       dismissNotification: (roomId) =>
         set((state) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [roomId]: _, ...rest } = state.unreadCounts
           return {
             unreadCounts: rest,
@@ -123,8 +124,10 @@ export const useUIStore = create<UIState>()(
       readRooms: [],
       addReadRoom: (roomId) =>
         set((state) => ({
-          readRooms: [roomId, ...state.readRooms.filter((id) => id !== roomId)]
-            .slice(0, 20)
+          readRooms: [
+            roomId,
+            ...state.readRooms.filter((id) => id !== roomId)
+          ].slice(0, 20)
         })),
 
       // Mobile drawer (not persisted)

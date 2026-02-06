@@ -37,7 +37,7 @@ export function NotificationDropdown({
     .map((roomId) => rooms.find((room) => room.id === roomId))
     .filter(
       (room): room is DatabaseRoom =>
-        Boolean(room) && (unreadCounts[room.id] || 0) === 0
+        !!room && (unreadCounts[room.id] || 0) === 0
     )
 
   const handleRoomClick = (roomId: string) => {
