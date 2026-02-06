@@ -93,6 +93,7 @@ export function RoomListItem({
           <TooltipTrigger asChild>
             <Link
               href={`/room/${room.id}`}
+              prefetch={false}
               onMouseEnter={handleMouseEnter}
               onClick={handleClick}
               className={cn(
@@ -120,6 +121,7 @@ export function RoomListItem({
     <div className="flex items-center gap-1 group">
       <Link
         href={`/room/${room.id}`}
+        prefetch={false}
         onMouseEnter={handleMouseEnter}
         onClick={handleClick}
         className={cn(

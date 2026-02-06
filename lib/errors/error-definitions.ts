@@ -44,6 +44,18 @@ export const ERROR_DEFINITIONS = {
     message: 'Invalid path parameters',
     statusCode: 400
   },
+  INVALID_CONTENT_LENGTH: {
+    code: 'INVALID_CONTENT_LENGTH',
+    message: 'Invalid Content-Length',
+    statusCode: 400
+  },
+
+  // 411 - Length Required
+  LENGTH_REQUIRED: {
+    code: 'LENGTH_REQUIRED',
+    message: 'Content-Length required',
+    statusCode: 411
+  },
 
   // 401 - Unauthorized
   AUTHENTICATION_REQUIRED: {
@@ -106,6 +118,13 @@ export const ERROR_DEFINITIONS = {
     code: 'ROOM_NAME_EXISTS',
     message: 'A room with this name already exists',
     statusCode: 409
+  },
+
+  // 413 - Payload Too Large
+  PAYLOAD_TOO_LARGE: {
+    code: 'PAYLOAD_TOO_LARGE',
+    message: 'Payload too large',
+    statusCode: 413
   },
 
   // 500 - Internal Server Error
