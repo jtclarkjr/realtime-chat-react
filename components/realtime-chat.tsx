@@ -131,7 +131,7 @@ export const RealtimeChat = ({
     scrollToBottomInstant
   })
 
-  const effectiveIsConnected = hasHydrated ? isConnected : false
+  const effectiveIsConnected = hasHydrated ? isConnected : true
 
   // Handle clearing streaming messages when broadcast arrives
   useEffect(() => {
