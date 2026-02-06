@@ -19,7 +19,7 @@ interface MessageInsertPayload {
 
 export function UnreadMessageTracker({ userId }: UnreadMessageTrackerProps) {
   const activeRoomId = useActiveRoomId()
-  const { incrementUnread } = useUIStore()
+  const { incrementUnread, decrementUnread } = useUIStore()
   const supabaseRef = useRef(createClient())
   const activeRoomIdRef = useRef<string | null>(activeRoomId)
 
@@ -57,12 +57,45 @@ export function UnreadMessageTracker({ userId }: UnreadMessageTrackerProps) {
           incrementUnread(message.room_id)
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages'
+        },
+        (payload) => {
+          const message = payload.new as MessageInsertPayload
+          const previous = payload.old as MessageInsertPayload | undefined
+          if (!message?.room_id) return
+
+          const wasDeleted = Boolean(previous?.deleted_at)
+          const isDeleted = Boolean(message.deleted_at)
+
+          // Only handle new deletes (unsend).
+          if (wasDeleted || !isDeleted) return
+
+          // Do not adjust for messages sent by the current user.
+          if (message.user_id === userId) return
+
+          // Only count private messages visible to the current user.
+          const isVisiblePrivateMessage =
+            message.is_private &&
+            (message.requester_id === userId || message.user_id === userId)
+          if (message.is_private && !isVisiblePrivateMessage) return
+
+          // If room is active, it was effectively read already.
+          if (activeRoomIdRef.current === message.room_id) return
+
+          decrementUnread(message.room_id)
+        }
+      )
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [incrementUnread, userId])
+  }, [incrementUnread, decrementUnread, userId])
 
   return null
 }

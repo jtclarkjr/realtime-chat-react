@@ -15,6 +15,7 @@ interface UIState {
   // Unread counts per room
   unreadCounts: Record<string, number>
   incrementUnread: (roomId: string) => void
+  decrementUnread: (roomId: string) => void
   clearUnread: (roomId: string) => void
   markAsRead: (roomId: string) => void
   dismissNotification: (roomId: string) => void
@@ -69,6 +70,22 @@ export const useUIStore = create<UIState>()(
           },
           readRooms: state.readRooms.filter((id) => id !== roomId)
         })),
+      decrementUnread: (roomId) =>
+        set((state) => {
+          const current = state.unreadCounts[roomId] || 0
+          if (current <= 1) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { [roomId]: _, ...rest } = state.unreadCounts
+            return { unreadCounts: rest }
+          }
+
+          return {
+            unreadCounts: {
+              ...state.unreadCounts,
+              [roomId]: current - 1
+            }
+          }
+        }),
       clearUnread: (roomId) =>
         set((state) => {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
