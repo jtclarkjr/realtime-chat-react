@@ -139,11 +139,32 @@ $$;
 -- Enable Row Level Security
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
+-- Enable Realtime (postgres_changes) for messages table
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'messages'
+  ) THEN
+    EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE public.messages';
+  END IF;
+END
+$$;
+
 -- Create policies for authenticated users with proper security
 -- Updated to handle soft deletes with proper security
 CREATE POLICY "Allow authenticated users to read active messages" ON messages
   FOR SELECT 
   TO authenticated
+  USING (deleted_at IS NULL);
+
+-- Allow anonymous users to read active messages (guest sessions)
+CREATE POLICY "Allow anonymous users to read active messages" ON messages
+  FOR SELECT
+  TO anon
   USING (deleted_at IS NULL);
 
 CREATE POLICY "Allow users to read their own deleted messages" ON messages

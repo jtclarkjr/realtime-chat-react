@@ -5,7 +5,7 @@ import {
   PopoverContent,
   PopoverTrigger
 } from '@/components/ui/popover'
-import { Hash } from 'lucide-react'
+import { Hash, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useUIStore } from '@/lib/stores/ui-store'
 import { useRooms } from '@/lib/query/queries/use-rooms'
@@ -21,7 +21,8 @@ export function NotificationDropdown({
   children
 }: NotificationDropdownProps) {
   const router = useRouter()
-  const { unreadCounts, clearUnread } = useUIStore()
+  const { unreadCounts, readRooms, markAsRead, dismissNotification } =
+    useUIStore()
 
   const { data: rooms = [] } = useRooms({
     initialData: initialRooms.length > 0 ? initialRooms : undefined
@@ -32,9 +33,24 @@ export function NotificationDropdown({
     .filter((room) => (unreadCounts[room.id] || 0) > 0)
     .sort((a, b) => (unreadCounts[b.id] || 0) - (unreadCounts[a.id] || 0))
 
+  const readRoomList = readRooms
+    .map((roomId) => rooms.find((room) => room.id === roomId))
+    .filter(
+      (room): room is DatabaseRoom =>
+        Boolean(room) && (unreadCounts[room.id] || 0) === 0
+    )
+
   const handleRoomClick = (roomId: string) => {
-    clearUnread(roomId)
+    markAsRead(roomId)
     router.push(`/room/${roomId}`)
+  }
+
+  const handleDismiss = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    roomId: string
+  ) => {
+    event.stopPropagation()
+    dismissNotification(roomId)
   }
 
   return (
@@ -51,7 +67,7 @@ export function NotificationDropdown({
           )}
         </div>
         <div className="max-h-96 overflow-y-auto">
-          {unreadRooms.length === 0 ? (
+          {unreadRooms.length === 0 && readRoomList.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">
               <p>No new notifications</p>
               <p className="text-xs mt-2">You&apos;re all caught up!</p>
@@ -59,11 +75,30 @@ export function NotificationDropdown({
           ) : (
             <div className="py-2">
               {unreadRooms.map((room) => (
-                <button
-                  key={room.id}
+                <div
+                  key={`unread-${room.id}`}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleRoomClick(room.id)}
-                  className="w-full px-4 py-3 hover:bg-muted/50 transition-colors text-left flex items-center gap-3"
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      handleRoomClick(room.id)
+                    }
+                  }}
+                  className="relative w-full px-4 py-3 hover:bg-muted/50 transition-colors text-left flex items-center gap-3 cursor-pointer"
                 >
+                  <span className="absolute top-2 right-3 h-5 min-w-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-medium">
+                    {unreadCounts[room.id] > 99 ? '99+' : unreadCounts[room.id]}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(event) => handleDismiss(event, room.id)}
+                    className="absolute top-2 right-9 h-6 w-6 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                    aria-label={`Dismiss ${room.name} notification`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                   <div className="p-2 bg-muted rounded-lg">
                     <Hash className="h-4 w-4 text-muted-foreground" />
                   </div>
@@ -74,10 +109,37 @@ export function NotificationDropdown({
                       {unreadCounts[room.id] !== 1 ? 's' : ''}
                     </div>
                   </div>
-                  <div className="h-6 min-w-6 px-2 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium shrink-0">
-                    {unreadCounts[room.id] > 99 ? '99+' : unreadCounts[room.id]}
+                </div>
+              ))}
+              {readRoomList.map((room) => (
+                <div
+                  key={`read-${room.id}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleRoomClick(room.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      handleRoomClick(room.id)
+                    }
+                  }}
+                  className="relative w-full px-4 py-3 hover:bg-muted/50 transition-colors text-left flex items-center gap-3 cursor-pointer"
+                >
+                  <button
+                    type="button"
+                    onClick={(event) => handleDismiss(event, room.id)}
+                    className="absolute top-2 right-3 h-6 w-6 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                    aria-label={`Dismiss ${room.name} notification`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                  <div className="p-2 bg-muted rounded-lg">
+                    <Hash className="h-4 w-4 text-muted-foreground" />
                   </div>
-                </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm">{room.name}</div>
+                  </div>
+                </div>
               ))}
             </div>
           )}

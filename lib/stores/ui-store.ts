@@ -16,11 +16,17 @@ interface UIState {
   unreadCounts: Record<string, number>
   incrementUnread: (roomId: string) => void
   clearUnread: (roomId: string) => void
+  markAsRead: (roomId: string) => void
+  dismissNotification: (roomId: string) => void
   setUnreadCount: (roomId: string, count: number) => void
 
   // Recent rooms for dashboard
   recentRooms: string[]
   addRecentRoom: (roomId: string) => void
+
+  // Recently read rooms for notifications
+  readRooms: string[]
+  addReadRoom: (roomId: string) => void
 
   // Mobile drawer state (not persisted)
   mobileDrawerOpen: boolean
@@ -37,7 +43,7 @@ interface UIState {
 
 type PersistedState = Pick<
   UIState,
-  'sidebarCollapsed' | 'unreadCounts' | 'recentRooms'
+  'sidebarCollapsed' | 'unreadCounts' | 'recentRooms' | 'readRooms'
 >
 
 export const useUIStore = create<UIState>()(
@@ -60,13 +66,40 @@ export const useUIStore = create<UIState>()(
           unreadCounts: {
             ...state.unreadCounts,
             [roomId]: (state.unreadCounts[roomId] || 0) + 1
-          }
+          },
+          readRooms: state.readRooms.filter((id) => id !== roomId)
         })),
       clearUnread: (roomId) =>
         set((state) => {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [roomId]: _, ...rest } = state.unreadCounts
           return { unreadCounts: rest }
+        }),
+      markAsRead: (roomId) =>
+        set((state) => {
+          const hadUnread = (state.unreadCounts[roomId] || 0) > 0
+          if (!hadUnread) {
+            return state
+          }
+
+          return {
+            unreadCounts: {
+              ...state.unreadCounts,
+              [roomId]: 0
+            },
+            readRooms: [
+              roomId,
+              ...state.readRooms.filter((id) => id !== roomId)
+            ].slice(0, 20)
+          }
+        }),
+      dismissNotification: (roomId) =>
+        set((state) => {
+          const { [roomId]: _, ...rest } = state.unreadCounts
+          return {
+            unreadCounts: rest,
+            readRooms: state.readRooms.filter((id) => id !== roomId)
+          }
         }),
       setUnreadCount: (roomId, count) =>
         set((state) => ({
@@ -85,6 +118,14 @@ export const useUIStore = create<UIState>()(
             recentRooms: [roomId, ...filtered].slice(0, 10) // Keep last 10
           }
         }),
+
+      // Recently read rooms (persisted)
+      readRooms: [],
+      addReadRoom: (roomId) =>
+        set((state) => ({
+          readRooms: [roomId, ...state.readRooms.filter((id) => id !== roomId)]
+            .slice(0, 20)
+        })),
 
       // Mobile drawer (not persisted)
       mobileDrawerOpen: false,
@@ -117,7 +158,8 @@ export const useUIStore = create<UIState>()(
         ({
           sidebarCollapsed: state.sidebarCollapsed,
           unreadCounts: state.unreadCounts,
-          recentRooms: state.recentRooms
+          recentRooms: state.recentRooms,
+          readRooms: state.readRooms
         }) as PersistedState,
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)

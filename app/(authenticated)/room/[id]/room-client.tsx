@@ -17,7 +17,7 @@ interface RoomClientProps {
 
 export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   const router = useRouter()
-  const { addRecentRoom, clearUnread, setRoomPresence, setRoomPresenceUsers } =
+  const { addRecentRoom, markAsRead, setRoomPresence, setRoomPresenceUsers } =
     useUIStore()
 
   const userId = user.id
@@ -39,9 +39,9 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
   useEffect(() => {
     if (room?.id) {
       addRecentRoom(room.id)
-      clearUnread(room.id)
+      markAsRead(room.id)
     }
-  }, [room?.id, addRecentRoom, clearUnread])
+  }, [room?.id, addRecentRoom, markAsRead])
 
   // Prefetch dashboard on mount
   useEffect(() => {
