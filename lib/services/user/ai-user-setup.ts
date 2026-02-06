@@ -1,4 +1,4 @@
-import { getServiceClient } from '@/lib/supabase/service-client'
+import { getServiceClient } from '@/lib/supabase/server'
 
 /**
  * Creates or gets the AI Assistant user in Supabase Auth

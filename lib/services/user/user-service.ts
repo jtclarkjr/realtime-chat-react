@@ -1,4 +1,4 @@
-import { getServiceClient } from '@/lib/supabase/service-client'
+import { getServiceClient } from '@/lib/supabase/server'
 
 interface UserProfile {
   id: string

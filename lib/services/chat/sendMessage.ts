@@ -1,5 +1,6 @@
-import { getServiceClient } from '@/lib/supabase/service-client'
-import { userService } from '@/lib/services/user-service'
+import { getServiceClient } from '@/lib/supabase/server'
+import { getUserDisplayNameById, insertMessage } from '@/lib/supabase/db/chat'
+import { userService } from '@/lib/services/user/user-service'
 import { trackLatestMessage } from '@/lib/redis'
 import type {
   DatabaseMessageInsert,
@@ -7,7 +8,6 @@ import type {
   SendMessageRequest
 } from '@/lib/types/database'
 import { transformDatabaseMessage } from './transformDatabaseMessage'
-import { getUserDisplayName } from './getUserDisplayName'
 
 export const sendMessage = async (
   request: SendMessageRequest
@@ -16,8 +16,6 @@ export const sendMessage = async (
   if (!request.roomId || !request.userId || !request.content?.trim()) {
     throw new Error('Missing required fields for message')
   }
-
-  const supabase = getServiceClient()
 
   // Save to database (id will be auto-generated)
   const messageInsert: DatabaseMessageInsert = {
@@ -28,19 +26,17 @@ export const sendMessage = async (
     is_private: request.isPrivate || false
   }
 
-  const { data: message, error } = await supabase
-    .from('messages')
-    .insert(messageInsert)
-    .select()
-    .single()
-
-  if (error) {
+  let message
+  try {
+    message = await insertMessage(messageInsert)
+  } catch (error) {
     console.error('Error saving message to database:', error)
     throw new Error('Failed to save message')
   }
 
   // Get username from auth.users
-  const userName = await getUserDisplayName(supabase, message.user_id)
+  const supabase = getServiceClient()
+  const userName = await getUserDisplayNameById(supabase, message.user_id)
 
   // Get user avatar if available
   const userProfile = await userService.getUserProfile(message.user_id)

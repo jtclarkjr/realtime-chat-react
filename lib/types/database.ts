@@ -10,6 +10,17 @@ export type DatabaseMessageInsert =
   Database['public']['Tables']['messages']['Insert']
 export type DatabaseMessageUpdate =
   Database['public']['Tables']['messages']['Update']
+export type LatestVisibleMessage = Pick<
+  DatabaseMessage,
+  | 'room_id'
+  | 'content'
+  | 'created_at'
+  | 'user_id'
+  | 'is_ai_message'
+  | 'is_private'
+  | 'requester_id'
+  | 'deleted_at'
+>
 
 export type DatabaseRoom = Database['public']['Tables']['rooms']['Row']
 export type DatabaseRoomInsert = Database['public']['Tables']['rooms']['Insert']

@@ -1,6 +1,6 @@
 'use client'
 
-import { createAuthClient } from '@/lib/supabase/client-auth'
+import { createAuthClient } from '@/lib/supabase/client'
 
 export async function signInWithDiscord() {
   const supabase = createAuthClient()

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { withNonAnonymousAuth } from '@/lib/auth/middleware'
-import { roomCacheService } from '@/lib/services/room-cache-service'
+import { roomCacheService } from '@/lib/services/room/room-cache-service'
 
 interface GenerateRoomRequest {
   prompt?: string

@@ -1,5 +1,11 @@
-import { getServiceClient } from '@/lib/supabase/service-client'
-import { userService } from '@/lib/services/user-service'
+import {
+  fetchMessagesAfterTimestamp,
+  fetchRecentMessagesForRoom,
+  getMessageTimestampById,
+  getUserDisplayNameById
+} from '@/lib/supabase/db/chat'
+import { getServiceClient } from '@/lib/supabase/server'
+import { userService } from '@/lib/services/user/user-service'
 import {
   markMessageReceived,
   trackLatestMessage,
@@ -11,8 +17,6 @@ import type {
   MissedMessagesResponse
 } from '@/lib/types/database'
 import { transformDatabaseMessage } from './transformDatabaseMessage'
-import { getUserDisplayName } from './getUserDisplayName'
-import { getMessageTimestamp } from './getMessageTimestamp'
 
 export const getMissedMessages = async (
   userId: string,
@@ -27,24 +31,14 @@ export const getMissedMessages = async (
     if (!lastReceivedId) {
       // User is new or been away for 30+ days
       // Get recent messages from database (exclude private messages not for this user)
-      const { data: recentMessages, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('room_id', roomId)
-        .is('deleted_at', null)
-        .or(
-          `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
-        )
-        .order('created_at', { ascending: false })
-        .limit(50)
-
-      if (error) {
-        console.error('Error fetching recent messages:', error)
-        return { type: 'caught_up', messages: [], count: 0 }
-      }
+      const recentMessages = await fetchRecentMessagesForRoom(
+        roomId,
+        userId,
+        50
+      )
 
       // Mark user as caught up with the latest message BEFORE transformation
-      if (recentMessages && recentMessages.length > 0) {
+      if (recentMessages.length > 0) {
         // The most recent message is the first one since we ordered by created_at DESC
         const latestMessage = recentMessages[0]
         await trackLatestMessage(roomId, latestMessage.id)
@@ -54,7 +48,7 @@ export const getMissedMessages = async (
       // Get unique user IDs for avatar fetching (exclude AI messages)
       const userIds = [
         ...new Set(
-          (recentMessages || [])
+          recentMessages
             .filter((msg) => !msg.is_ai_message)
             .map((msg) => msg.user_id)
         )
@@ -65,9 +59,9 @@ export const getMissedMessages = async (
 
       // Transform and reverse to get chronological order
       const transformedMessages = await Promise.all(
-        (recentMessages || []).reverse().map(async (msg: DatabaseMessage) => {
+        recentMessages.reverse().map(async (msg: DatabaseMessage) => {
           const userProfile = userProfiles.get(msg.user_id)
-          const userName = await getUserDisplayName(supabase, msg.user_id)
+          const userName = await getUserDisplayNameById(supabase, msg.user_id)
           return transformDatabaseMessage(
             msg,
             userProfile?.avatar_url,
@@ -84,32 +78,22 @@ export const getMissedMessages = async (
     }
 
     // Get the timestamp of the last received message
-    const lastMessageTimestamp = await getMessageTimestamp(
+    const lastMessageTimestamp = await getMessageTimestampById(
       supabase,
       lastReceivedId
     )
 
     // Get messages after their last received message (exclude private messages not for this user)
-    const { data: missedMessages, error } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('room_id', roomId)
-      .is('deleted_at', null)
-      .gt('created_at', lastMessageTimestamp)
-      .or(
-        `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
-      )
-      .order('created_at', { ascending: true })
-
-    if (error) {
-      console.error('Error fetching missed messages:', error)
-      return { type: 'caught_up', messages: [], count: 0 }
-    }
+    const missedMessages = await fetchMessagesAfterTimestamp(
+      roomId,
+      userId,
+      lastMessageTimestamp
+    )
 
     // Get unique user IDs for avatar fetching (exclude AI messages)
     const userIds = [
       ...new Set(
-        (missedMessages || [])
+        missedMessages
           .filter((msg) => !msg.is_ai_message)
           .map((msg) => msg.user_id)
       )
@@ -119,9 +103,9 @@ export const getMissedMessages = async (
     const userProfiles = await userService.getUserProfiles(userIds)
 
     const transformedMessages = await Promise.all(
-      (missedMessages || []).map(async (msg: DatabaseMessage) => {
+      missedMessages.map(async (msg: DatabaseMessage) => {
         const userProfile = userProfiles.get(msg.user_id)
-        const userName = await getUserDisplayName(supabase, msg.user_id)
+        const userName = await getUserDisplayNameById(supabase, msg.user_id)
         return transformDatabaseMessage(msg, userProfile?.avatar_url, userName)
       })
     )
@@ -131,18 +115,13 @@ export const getMissedMessages = async (
 
     // If no missed messages, get recent messages for context
     if (transformedMessages.length === 0) {
-      const { data: recentMessages, error: recentError } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('room_id', roomId)
-        .is('deleted_at', null)
-        .or(
-          `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
-        )
-        .order('created_at', { ascending: false })
-        .limit(20) // Get last 20 messages for context
+      const recentMessages = await fetchRecentMessagesForRoom(
+        roomId,
+        userId,
+        20
+      )
 
-      if (!recentError && recentMessages && recentMessages.length > 0) {
+      if (recentMessages.length > 0) {
         // Get unique user IDs for avatar fetching (exclude AI messages)
         const recentUserIds = [
           ...new Set(
@@ -159,7 +138,7 @@ export const getMissedMessages = async (
         const recentTransformed = await Promise.all(
           recentMessages.reverse().map(async (msg: DatabaseMessage) => {
             const userProfile = recentUserProfiles.get(msg.user_id)
-            const userName = await getUserDisplayName(supabase, msg.user_id)
+            const userName = await getUserDisplayNameById(supabase, msg.user_id)
             return transformDatabaseMessage(
               msg,
               userProfile?.avatar_url,

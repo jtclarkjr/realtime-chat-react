@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { roomCacheService } from '@/lib/services/room-cache-service'
+import { roomCacheService } from '@/lib/services/room/room-cache-service'
 import { withAuth } from '@/lib/auth/middleware'
 
 export const GET = withAuth(

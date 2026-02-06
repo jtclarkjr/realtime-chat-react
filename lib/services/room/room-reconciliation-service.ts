@@ -1,5 +1,5 @@
 import { roomCacheService } from './room-cache-service'
-import { getServiceClient } from '@/lib/supabase/service-client'
+import { getServiceClient } from '@/lib/supabase/server'
 import type { DatabaseRoom } from '@/lib/types/database'
 
 export class RoomReconciliationService {

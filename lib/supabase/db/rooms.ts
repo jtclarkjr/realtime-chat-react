@@ -1,6 +1,6 @@
 'use server'
 
-import { getServiceClient } from './service-client'
+import { getServiceClient } from '@/lib/supabase/server/service-client'
 import type { DatabaseRoom, DatabaseRoomInsert } from '@/lib/types/database'
 
 export async function getRooms(): Promise<DatabaseRoom[]> {
@@ -103,10 +103,18 @@ export async function getRoomById(id: string): Promise<DatabaseRoom | null> {
   return data
 }
 
-export async function deleteRoom(roomId: string): Promise<boolean> {
+export async function deleteRoom(
+  roomId: string,
+  userId: string
+): Promise<boolean> {
   const supabase = getServiceClient()
 
-  const { error } = await supabase.from('rooms').delete().eq('id', roomId)
+  const { data, error } = await supabase
+    .from('rooms')
+    .delete()
+    .eq('id', roomId)
+    .eq('created_by', userId)
+    .select('id')
 
   if (error) {
     console.error('Error deleting room:', error)
@@ -119,5 +127,5 @@ export async function deleteRoom(roomId: string): Promise<boolean> {
     )
   }
 
-  return true
+  return (data?.length || 0) > 0
 }

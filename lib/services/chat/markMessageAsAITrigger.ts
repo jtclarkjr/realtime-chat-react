@@ -1,19 +1,10 @@
-import { getServiceClient } from '@/lib/supabase/service-client'
+import { setMessageHasAIResponse } from '@/lib/supabase/db/chat'
 
 export const markMessageAsAITrigger = async (
   messageId: string
 ): Promise<void> => {
-  const supabase = getServiceClient()
-
   try {
-    const { error } = await supabase
-      .from('messages')
-      .update({ has_ai_response: true })
-      .eq('id', messageId)
-
-    if (error) {
-      console.error('Error marking message as AI trigger:', error)
-    }
+    await setMessageHasAIResponse(messageId)
   } catch (error) {
     console.error('Error marking message as AI trigger:', error)
   }

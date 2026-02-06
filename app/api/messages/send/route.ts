@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendMessage } from '@/lib/services/chat'
-import { userService } from '@/lib/services/user-service'
+import { userService } from '@/lib/services/user/user-service'
 import { withNonAnonymousAuth, validateUserAccess } from '@/lib/auth/middleware'
 import { sendMessageSchema, validateRequestBody } from '@/lib/validation'
 import type { SendMessageRequest } from '@/lib/types/api'

@@ -1,13 +1,16 @@
 'use server'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { headers } from 'next/headers'
-import { roomCacheService } from '@/lib/services/room-cache-service'
-import { ensureDefaultRooms, getRoomById, getRooms } from '@/lib/supabase/rooms'
-import { createClient } from '@/lib/supabase/server'
+import { roomCacheService } from '@/lib/services/room/room-cache-service'
+import {
+  ensureDefaultRooms,
+  getRoomById,
+  getRooms
+} from '@/lib/supabase/db/rooms'
 import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import { getRecentMessages, getLastMessagesByRoom } from '@/lib/services/chat'
 import { isAnonymousUser } from '@/lib/auth/middleware'
+import { getAuthenticatedUser } from '@/lib/auth/server-user'
 
 /**
  * Server action to get initial rooms data for SSR
@@ -18,6 +21,14 @@ export async function getInitialRoomsData(): Promise<{
   defaultRoomId: string | null
 }> {
   try {
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return {
+        rooms: [],
+        defaultRoomId: null
+      }
+    }
+
     // Ensure default rooms exist before fetching
     await ensureDefaultRooms()
 
@@ -51,6 +62,9 @@ export async function getRoomByIdAction(
   roomId: string
 ): Promise<DatabaseRoom | null> {
   try {
+    const user = await getAuthenticatedUser()
+    if (!user) return null
+
     return await getRoomById(roomId)
   } catch (error) {
     console.error('Error fetching room by ID:', error)
@@ -78,18 +92,8 @@ export async function createRoomAction(
     }
 
     // Get authenticated user
-    const headersList = await headers()
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
-    const request = new Request(baseUrl, {
-      headers: Object.fromEntries(headersList.entries())
-    })
-    const { supabase } = createClient(request)
-    const {
-      data: { user },
-      error: authError
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const user = await getAuthenticatedUser()
+    if (!user) {
       return {
         success: false,
         error: 'Authentication required'
@@ -150,14 +154,19 @@ export async function createRoomAction(
  * IMPORTANT: We don't cache messages here because the system needs to
  * respect the missed message tracking system for each user individually
  */
-export async function getRoomDataWithMessages(
-  roomId: string,
-  userId?: string
-): Promise<{
+export async function getRoomDataWithMessages(roomId: string): Promise<{
   room: DatabaseRoom | null
   messages: ChatMessageWithDB[]
 }> {
   try {
+    const user = await getAuthenticatedUser()
+    if (!user) {
+      return {
+        room: null,
+        messages: []
+      }
+    }
+
     // Always read fresh room details for each request.
     const room = await getRoomById(roomId)
 
@@ -172,7 +181,7 @@ export async function getRoomDataWithMessages(
     // (NOT cached - each user needs fresh data for missed message tracking)
     // This ensures the missed message system works correctly when users rejoin
     // AND respects private message visibility
-    const messages = await getRecentMessages(roomId, userId, 50)
+    const messages = await getRecentMessages(roomId, user.id, 50)
 
     return {
       room,
@@ -203,18 +212,8 @@ export async function deleteRoomAction(roomId: string): Promise<{
     }
 
     // Get authenticated user
-    const headersList = await headers()
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
-    const request = new Request(baseUrl, {
-      headers: Object.fromEntries(headersList.entries())
-    })
-    const { supabase } = createClient(request)
-    const {
-      data: { user },
-      error: authError
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const user = await getAuthenticatedUser()
+    if (!user) {
       return {
         success: false,
         error: 'Authentication required'
@@ -228,7 +227,7 @@ export async function deleteRoomAction(roomId: string): Promise<{
       }
     }
 
-    const success = await roomCacheService.deleteRoom(roomId)
+    const success = await roomCacheService.deleteRoom(roomId, user.id)
 
     if (!success) {
       return {
@@ -290,15 +289,18 @@ export interface RoomWithLastMessage extends DatabaseRoom {
 /**
  * Server action to get rooms with their last message for the dashboard
  */
-export async function getRoomsWithLastMessage(
-  userId?: string
-): Promise<RoomWithLastMessage[]> {
+export async function getRoomsWithLastMessage(): Promise<
+  RoomWithLastMessage[]
+> {
   try {
+    const user = await getAuthenticatedUser()
+    if (!user) return []
+
     const { rooms } = await getInitialRoomsData()
     if (rooms.length === 0) return []
 
     const roomIds = rooms.map((room) => room.id)
-    const latestByRoom = await getLastMessagesByRoom(roomIds, userId)
+    const latestByRoom = await getLastMessagesByRoom(roomIds, user.id)
 
     const roomsWithMessages = rooms.map((room) => {
       const lastMsg = latestByRoom.get(room.id)

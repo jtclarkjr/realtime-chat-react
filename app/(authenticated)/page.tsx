@@ -29,7 +29,7 @@ export default async function DashboardPage() {
   }
 
   const userData = toPublicUser(user)
-  const roomsWithLastMessage = await getRoomsWithLastMessage(user.id)
+  const roomsWithLastMessage = await getRoomsWithLastMessage()
 
   return (
     <div className="h-full overflow-auto">

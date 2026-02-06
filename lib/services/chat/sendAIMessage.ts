@@ -1,5 +1,6 @@
-import { getServiceClient } from '@/lib/supabase/service-client'
-import { AI_USER_ID } from '@/lib/services/ai-user-setup'
+import { getServiceClient } from '@/lib/supabase/server'
+import { getUserDisplayNameById, insertMessage } from '@/lib/supabase/db/chat'
+import { AI_USER_ID } from '@/lib/services/user/ai-user-setup'
 import { trackLatestMessage } from '@/lib/redis'
 import type {
   DatabaseMessageInsert,
@@ -7,7 +8,6 @@ import type {
   SendAIMessageRequest
 } from '@/lib/types/database'
 import { transformDatabaseMessage } from './transformDatabaseMessage'
-import { getUserDisplayName } from './getUserDisplayName'
 
 export const sendAIMessage = async (
   request: SendAIMessageRequest
@@ -22,8 +22,6 @@ export const sendAIMessage = async (
     throw new Error('AI_USER_ID is not configured')
   }
 
-  const supabase = getServiceClient()
-
   // Save AI message to database
   const aiMessageInsert: DatabaseMessageInsert = {
     room_id: request.roomId,
@@ -34,19 +32,17 @@ export const sendAIMessage = async (
     requester_id: request.isPrivate ? request.requesterId : null
   }
 
-  const { data: message, error } = await supabase
-    .from('messages')
-    .insert(aiMessageInsert)
-    .select()
-    .single()
-
-  if (error) {
+  let message
+  try {
+    message = await insertMessage(aiMessageInsert)
+  } catch (error) {
     console.error('Error saving AI message to database:', error)
     throw new Error('Failed to save AI message')
   }
 
   // For AI messages, use a stable fallback if no display name is set
-  let aiUserName = await getUserDisplayName(supabase, AI_USER_ID)
+  const supabase = getServiceClient()
+  let aiUserName = await getUserDisplayNameById(supabase, AI_USER_ID)
   if (!aiUserName || aiUserName === 'Unknown User') {
     aiUserName = 'AI Assistant'
   }

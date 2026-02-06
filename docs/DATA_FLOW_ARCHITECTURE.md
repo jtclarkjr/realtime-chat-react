@@ -4,6 +4,26 @@ This document provides a comprehensive overview of how data flows through the
 realtime chat application, including React Query integration, WebSocket updates,
 and cache management.
 
+## Supabase Module Layout
+
+The codebase uses a split Supabase layer:
+
+1. `lib/supabase/client/*`
+
+- Browser clients for realtime/auth redirect flows.
+
+2. `lib/supabase/server/*`
+
+- Server clients for request-bound auth (`createClient`) and service-role access
+  (`getServiceClient`).
+
+3. `lib/supabase/db/*`
+
+- Raw data-access functions (room/message queries and mutations).
+
+Services and API/server-action layers consume `lib/supabase/db/*` instead of
+embedding raw query code directly.
+
 ## Table of Contents
 
 - [System Overview](#system-overview)
@@ -34,6 +54,7 @@ graph TB
     end
 
     subgraph "Data Layer"
+        DAL[Supabase DB Adapters<br/>lib/supabase/db]
         DB[(Supabase PostgreSQL)]
         Redis[(Redis Cache)]
         RT[Supabase Realtime]
@@ -44,8 +65,9 @@ graph TB
     RQ -->|Direct Call| SA
     UI -->|Subscribe| WS
     WS -->|WebSocket| RT
-    API -->|Read/Write| DB
-    SA -->|Read/Write| DB
+    API -->|Read/Write| DAL
+    SA -->|Read/Write| DAL
+    DAL -->|SQL| DB
     API -->|Track| Redis
     RT -->|Broadcast| WS
     SSR -->|Initial Data| UI
@@ -73,6 +95,13 @@ Three types of API communication:
 1. **HTTP API Routes** - Traditional REST endpoints
 2. **Server Actions** - Next.js server-side functions
 3. **WebSocket** - Realtime bidirectional communication
+
+Auth boundary rules:
+
+1. API routes use auth wrappers (`withAuth` / `withNonAnonymousAuth`)
+2. Server actions perform explicit auth checks before data access
+3. Realtime uses Supabase channel authentication from server-managed session
+   cookies
 
 ```mermaid
 flowchart TD
@@ -363,7 +392,7 @@ sequenceDiagram
     participant Browser
     participant SSR as Server Component
     participant SA as getInitialRoomsData
-    participant Cache as Next.js Cache
+    participant DAL as Supabase DB Adapter
     participant DB
     participant UI as Client Component
     participant RQ as useRooms Query
@@ -372,15 +401,10 @@ sequenceDiagram
 
     Browser->>SSR: Request page
     SSR->>SA: Call server action
-    SA->>Cache: Check unstable_cache
-
-    alt Cache valid (< 30s)
-        Cache-->>SA: Cached rooms
-    else Cache stale
-        SA->>DB: SELECT rooms
-        DB-->>SA: Fresh data
-        SA->>Cache: Update cache
-    end
+    SA->>DAL: getRooms()
+    DAL->>DB: SELECT rooms
+    DB-->>DAL: Fresh data
+    DAL-->>SA: Rooms
 
     SA-->>SSR: {rooms, defaultRoomId}
     SSR-->>Browser: HTML with initial data
@@ -389,7 +413,7 @@ sequenceDiagram
 
     Browser->>UI: Mount component
     UI->>RQ: useRooms({initialData})
-    Note over RQ: Starts with SSR data<br/>No initial fetch needed
+    Note over RQ: Starts with SSR data
 
     Note over Browser,RQ: Background Refetch
 

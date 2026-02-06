@@ -8,7 +8,7 @@ import {
   RetryButton,
   FailedMessageBubble
 } from '@/components/chat'
-import { AI_USER_ID } from '@/lib/services/ai-user-setup'
+import { AI_USER_ID } from '@/lib/services/user/ai-user-setup'
 
 interface ChatMessageItemProps {
   message: ChatMessage

@@ -1,6 +1,10 @@
-import { getServiceClient } from '@/lib/supabase/service-client'
-import type { DatabaseMessage } from '@/lib/types/database'
-import { getUserDisplayName } from './getUserDisplayName'
+import {
+  fetchLatestMessageForRoom,
+  fetchLatestMessagesByRoomBatch,
+  getUserDisplayNameById
+} from '@/lib/supabase/db/chat'
+import { getServiceClient } from '@/lib/supabase/server'
+import type { LatestVisibleMessage } from '@/lib/types/database'
 
 export interface RoomLastMessage {
   content: string
@@ -17,24 +21,13 @@ export const getLastMessagesByRoom = async (
     return new Map()
   }
 
-  const supabase = getServiceClient()
-
   const latestByRoom = new Map<
     string,
     Pick<
-      DatabaseMessage,
+      LatestVisibleMessage,
       'room_id' | 'content' | 'created_at' | 'user_id' | 'is_ai_message'
     >
   >()
-
-  const applyVisibilityFilter = (query: ReturnType<typeof supabase.from>) => {
-    if (userId) {
-      return query.or(
-        `is_private.eq.false,and(is_private.eq.true,requester_id.eq.${userId}),and(is_private.eq.true,user_id.eq.${userId})`
-      )
-    }
-    return query.eq('is_private', false)
-  }
 
   // First pass: paged global query (bounded) to avoid unbounded scans.
   const batchSize = Math.min(Math.max(roomIds.length * 4, 100), 500)
@@ -42,36 +35,29 @@ export const getLastMessagesByRoom = async (
   let offset = 0
 
   for (let i = 0; i < maxBatches; i++) {
-    let query = supabase
-      .from('messages')
-      .select(
-        'room_id, content, created_at, user_id, is_ai_message, is_private, requester_id, deleted_at'
+    try {
+      const rows = await fetchLatestMessagesByRoomBatch(
+        roomIds,
+        userId,
+        offset,
+        batchSize
       )
-      .in('room_id', roomIds)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + batchSize - 1)
 
-    query = applyVisibilityFilter(query)
+      for (const message of rows) {
+        if (!latestByRoom.has(message.room_id)) {
+          latestByRoom.set(message.room_id, message)
+        }
+      }
 
-    const { data, error } = await query
-    if (error) {
+      if (latestByRoom.size >= roomIds.length || rows.length < batchSize) {
+        break
+      }
+
+      offset += rows.length
+    } catch (error) {
       console.error('Error fetching last messages by room:', error)
       break
     }
-
-    const rows = data || []
-    for (const message of rows) {
-      if (!latestByRoom.has(message.room_id)) {
-        latestByRoom.set(message.room_id, message)
-      }
-    }
-
-    if (latestByRoom.size >= roomIds.length || rows.length < batchSize) {
-      break
-    }
-
-    offset += rows.length
   }
 
   // Fallback for rooms not found in bounded pass: fetch 1 row per missing room.
@@ -79,26 +65,15 @@ export const getLastMessagesByRoom = async (
   if (missingRoomIds.length > 0) {
     const perRoomResults = await Promise.all(
       missingRoomIds.map(async (roomId) => {
-        let query = supabase
-          .from('messages')
-          .select(
-            'room_id, content, created_at, user_id, is_ai_message, is_private, requester_id, deleted_at'
-          )
-          .eq('room_id', roomId)
-          .is('deleted_at', null)
-          .order('created_at', { ascending: false })
-          .limit(1)
-
-        query = applyVisibilityFilter(query)
-        const { data, error } = await query
-        if (error) {
+        try {
+          return await fetchLatestMessageForRoom(roomId, userId)
+        } catch (error) {
           console.error(
             `Error fetching last message for room ${roomId}:`,
             error
           )
           return null
         }
-        return data?.[0] || null
       })
     )
 
@@ -112,11 +87,12 @@ export const getLastMessagesByRoom = async (
   const uniqueUserIds = [
     ...new Set(Array.from(latestByRoom.values()).map((msg) => msg.user_id))
   ]
+  const supabase = getServiceClient()
   const userNameEntries = await Promise.all(
     uniqueUserIds.map(
       async (id): Promise<readonly [string, string]> => [
         id,
-        await getUserDisplayName(supabase, id)
+        await getUserDisplayNameById(supabase, id)
       ]
     )
   )

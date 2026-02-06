@@ -36,7 +36,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
   const userData = toPublicUser(user)
 
   // Fetch initial room data and messages server-side
-  const { room, messages } = await getRoomDataWithMessages(id, user.id)
+  const { room, messages } = await getRoomDataWithMessages(id)
 
   // If room doesn't exist, show 404
   if (!room) {

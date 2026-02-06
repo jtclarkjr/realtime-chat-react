@@ -3,7 +3,7 @@ import {
   createRoom as createRoomInDB,
   getRoomById as getRoomByIdFromDB,
   deleteRoom as deleteRoomFromDB
-} from '@/lib/supabase/rooms'
+} from '@/lib/supabase/db/rooms'
 import type { DatabaseRoom, DatabaseRoomInsert } from '@/lib/types/database'
 import {
   getRedisClient,
@@ -289,10 +289,10 @@ export class RoomCacheService {
   /**
    * Delete a room and update cache
    */
-  async deleteRoom(roomId: string): Promise<boolean> {
+  async deleteRoom(roomId: string, userId: string): Promise<boolean> {
     try {
-      // Delete room from database (RLS will handle authorization)
-      const success = await deleteRoomFromDB(roomId)
+      // Delete room from database with explicit owner enforcement.
+      const success = await deleteRoomFromDB(roomId, userId)
 
       if (success) {
         // Invalidate all room caches
