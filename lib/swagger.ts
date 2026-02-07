@@ -366,7 +366,7 @@ export const swaggerSpec = {
         }
       }
     },
-    '/api/rooms/by-id/{roomId}': {
+    '/api/rooms/{roomId}': {
       get: {
         summary: 'Get room by ID',
         tags: ['Rooms'],

@@ -17,6 +17,11 @@ export interface RoomsResponse {
   rooms: DatabaseRoom[]
 }
 
+// GET /api/rooms/{roomId} - Fetch room by ID
+export interface RoomByIdResponse {
+  room: DatabaseRoom
+}
+
 // GET /api/rooms/{roomId}/rejoin - Fetch missed messages
 // Similar to DB_MissedMessagesResponse but uses ApiMessage[] from API
 export interface MissedMessagesResponse {

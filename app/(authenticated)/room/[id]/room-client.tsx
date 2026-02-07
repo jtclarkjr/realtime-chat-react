@@ -8,17 +8,29 @@ import { useUIStore } from '@/lib/stores/ui-store'
 import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import type { PresenceState } from '@/lib/types/presence'
 import type { PublicUser } from '@/lib/types/user'
+import { useRoomById } from '@/lib/query/queries'
 
 interface RoomClientProps {
-  room: DatabaseRoom
+  roomId: string
+  initialRoom: DatabaseRoom
   initialMessages: ChatMessageWithDB[]
   user: PublicUser
 }
 
-export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
+export function RoomClient({
+  roomId,
+  initialRoom,
+  initialMessages,
+  user
+}: RoomClientProps) {
   const router = useRouter()
   const { addRecentRoom, markAsRead, setRoomPresence, setRoomPresenceUsers } =
     useUIStore()
+  const { data: room } = useRoomById({
+    roomId,
+    initialData: initialRoom
+  })
+  const activeRoomId = room?.id ?? roomId
 
   const userId = user.id
   const displayName = user.username
@@ -28,34 +40,34 @@ export function RoomClient({ room, initialMessages, user }: RoomClientProps) {
     (users: PresenceState) => {
       // Update presence count in UI store for room list
       const onlineCount = Object.keys(users).length
-      setRoomPresence(room.id, onlineCount)
+      setRoomPresence(activeRoomId, onlineCount)
       // Update full presence users for avatar display
-      setRoomPresenceUsers(room.id, users)
+      setRoomPresenceUsers(activeRoomId, users)
     },
-    [room.id, setRoomPresence, setRoomPresenceUsers]
+    [activeRoomId, setRoomPresence, setRoomPresenceUsers]
   )
 
   // Track this room as recently visited and clear unread count
   useEffect(() => {
-    if (room?.id) {
-      addRecentRoom(room.id)
-      markAsRead(room.id)
+    if (activeRoomId) {
+      addRecentRoom(activeRoomId)
+      markAsRead(activeRoomId)
     }
-  }, [room?.id, addRecentRoom, markAsRead])
+  }, [activeRoomId, addRecentRoom, markAsRead])
 
   // Prefetch dashboard on mount
   useEffect(() => {
     router.prefetch('/')
   }, [router])
 
-  if (!userId) {
+  if (!userId || !room) {
     return <RoomSkeleton />
   }
 
   return (
     <div className="h-full flex flex-col bg-background">
       <RealtimeChat
-        roomId={room.id}
+        roomId={activeRoomId}
         username={displayName}
         userId={userId}
         userAvatarUrl={user.avatarUrl}

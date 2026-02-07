@@ -2,6 +2,7 @@ import ky from 'ky'
 import type { ApiMessage, ChatMessage } from '@/lib/types/database'
 import type {
   RoomsResponse,
+  RoomByIdResponse,
   MissedMessagesResponse,
   SendMessageRequest,
   SendMessageResponse,
@@ -13,6 +14,17 @@ import type {
 
 export const getRooms = async (): Promise<RoomsResponse> => {
   return ky.get('/api/rooms').json<RoomsResponse>()
+}
+
+export const getRoomById = async (
+  roomId: string,
+  signal?: AbortSignal
+): Promise<RoomByIdResponse> => {
+  return ky
+    .get(`/api/rooms/${roomId}`, {
+      signal
+    })
+    .json<RoomByIdResponse>()
 }
 
 export const getMissedMessages = async (

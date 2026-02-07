@@ -170,7 +170,7 @@ Background reconciliation logs show:
 
 - `GET /api/rooms`: Now uses cache-first strategy
 - `POST /api/rooms`: Automatically invalidates cache
-- `GET /api/rooms/by-id/[roomId]`: Uses individual room cache
+- `GET /api/rooms/[roomId]`: Uses individual room cache
 
 ### Response Times
 

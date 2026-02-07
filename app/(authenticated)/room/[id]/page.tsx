@@ -43,5 +43,12 @@ export default async function RoomPage({ params }: RoomPageProps) {
     notFound()
   }
 
-  return <RoomClient room={room} initialMessages={messages} user={userData} />
+  return (
+    <RoomClient
+      roomId={id}
+      initialRoom={room}
+      initialMessages={messages}
+      user={userData}
+    />
+  )
 }
