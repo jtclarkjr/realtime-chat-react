@@ -73,6 +73,21 @@ NEXT_PUBLIC_ENABLE_GUEST_USERS=true
 # Site Configuration
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
+# External API Routing (optional) since not setting will not use it anyways
+# Base URL for external API server (example: http://localhost:8000)
+NEXT_PUBLIC_EXTERNAL_API_BASE_URL=http://localhost:8000
+# Global fallback flag for all client-side API calls
+NEXT_PUBLIC_USE_EXTERNAL_API=false
+# Per-endpoint overrides (take priority over global flag when set)
+NEXT_PUBLIC_USE_EXTERNAL_API_ROOMS_LIST=false
+NEXT_PUBLIC_USE_EXTERNAL_API_ROOMS_BY_ID=false
+NEXT_PUBLIC_USE_EXTERNAL_API_ROOMS_REJOIN=false
+NEXT_PUBLIC_USE_EXTERNAL_API_ROOMS_GENERATE=false
+NEXT_PUBLIC_USE_EXTERNAL_API_MESSAGES_SEND=false
+NEXT_PUBLIC_USE_EXTERNAL_API_MESSAGES_UNSEND=false
+NEXT_PUBLIC_USE_EXTERNAL_API_MESSAGES_MARK_RECEIVED=false
+NEXT_PUBLIC_USE_EXTERNAL_API_AI_STREAM=false
+
 # Redis Configuration (Local Development)
 REDIS_URL=redis://localhost:6379
 

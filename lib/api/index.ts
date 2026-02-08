@@ -4,6 +4,8 @@ export {
   sendMessage,
   unsendMessage,
   generateRoomSuggestion,
+  markMessageAsReceived,
+  streamAIMessage,
   transformApiMessage
 } from './client'
 export type {
@@ -15,5 +17,7 @@ export type {
   UnsendMessageResponse,
   GenerateRoomRequest,
   GenerateRoomResponse,
+  MarkMessageAsReceivedRequest,
+  StreamAIMessageRequest,
   ApiResponse
 } from '@/lib/types/api'

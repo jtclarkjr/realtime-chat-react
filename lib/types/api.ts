@@ -72,3 +72,24 @@ export interface GenerateRoomResponse {
   }
   error?: string
 }
+
+// POST /api/messages/mark-received - Mark a message as received
+export interface MarkMessageAsReceivedRequest {
+  userId: string
+  roomId: string
+  messageId: string
+}
+
+// POST /api/ai/stream - Stream AI response
+export interface StreamAIMessageRequest {
+  roomId: string
+  userId: string
+  message: string
+  previousMessages: Array<{
+    content: string
+    isAi: boolean
+    userName: string
+  }>
+  isPrivate: boolean
+  triggerMessageId?: string
+}

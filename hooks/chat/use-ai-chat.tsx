@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import ky from 'ky'
+import { streamAIMessage } from '@/lib/api/client'
 import type { ChatMessage } from '@/lib/types/database'
 
 interface UseAIChatProps {
@@ -64,15 +64,13 @@ export function useAIChat({
         }))
 
         // Call AI streaming API
-        const response = await ky.post('/api/ai/stream', {
-          json: {
-            roomId,
-            userId,
-            message: content.trim(),
-            previousMessages: messageContext,
-            isPrivate: isAIPrivate,
-            triggerMessageId
-          }
+        const response = await streamAIMessage({
+          roomId,
+          userId,
+          message: content.trim(),
+          previousMessages: messageContext,
+          isPrivate: isAIPrivate,
+          triggerMessageId
         })
 
         if (!response.ok) {

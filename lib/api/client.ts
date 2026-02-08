@@ -1,5 +1,6 @@
 import ky from 'ky'
 import type { ApiMessage, ChatMessage } from '@/lib/types/database'
+import { getApiEndpointUrl } from '@/lib/api/endpoints'
 import type {
   RoomsResponse,
   RoomByIdResponse,
@@ -9,11 +10,15 @@ import type {
   UnsendMessageRequest,
   UnsendMessageResponse,
   GenerateRoomRequest,
-  GenerateRoomResponse
+  GenerateRoomResponse,
+  MarkMessageAsReceivedRequest,
+  StreamAIMessageRequest
 } from '@/lib/types/api'
 
 export const getRooms = async (): Promise<RoomsResponse> => {
-  return ky.get('/api/rooms').json<RoomsResponse>()
+  return ky
+    .get(getApiEndpointUrl('rooms.list', '/api/rooms'))
+    .json<RoomsResponse>()
 }
 
 export const getRoomById = async (
@@ -21,7 +26,7 @@ export const getRoomById = async (
   signal?: AbortSignal
 ): Promise<RoomByIdResponse> => {
   return ky
-    .get(`/api/rooms/${roomId}`, {
+    .get(getApiEndpointUrl('rooms.byId', `/api/rooms/${roomId}`), {
       signal
     })
     .json<RoomByIdResponse>()
@@ -32,10 +37,18 @@ export const getMissedMessages = async (
   userId: string,
   signal?: AbortSignal
 ): Promise<MissedMessagesResponse> => {
+  const searchParams = new URLSearchParams({ userId })
+
   return ky
-    .get(`/api/rooms/${roomId}/rejoin?userId=${userId}`, {
-      signal
-    })
+    .get(
+      getApiEndpointUrl(
+        'rooms.rejoin',
+        `/api/rooms/${roomId}/rejoin?${searchParams.toString()}`
+      ),
+      {
+        signal
+      }
+    )
     .json<MissedMessagesResponse>()
 }
 
@@ -43,7 +56,7 @@ export const sendMessage = async (
   data: SendMessageRequest
 ): Promise<SendMessageResponse> => {
   return ky
-    .post('/api/messages/send', {
+    .post(getApiEndpointUrl('messages.send', '/api/messages/send'), {
       json: data
     })
     .json<SendMessageResponse>()
@@ -53,7 +66,7 @@ export const unsendMessage = async (
   data: UnsendMessageRequest
 ): Promise<UnsendMessageResponse> => {
   return ky
-    .post('/api/messages/unsend', {
+    .post(getApiEndpointUrl('messages.unsend', '/api/messages/unsend'), {
       json: data
     })
     .json<UnsendMessageResponse>()
@@ -63,10 +76,29 @@ export const generateRoomSuggestion = async (
   data: GenerateRoomRequest
 ): Promise<GenerateRoomResponse> => {
   return ky
-    .post('/api/rooms/generate', {
+    .post(getApiEndpointUrl('rooms.generate', '/api/rooms/generate'), {
       json: data
     })
     .json<GenerateRoomResponse>()
+}
+
+export const markMessageAsReceived = async (
+  data: MarkMessageAsReceivedRequest
+): Promise<void> => {
+  await ky.post(
+    getApiEndpointUrl('messages.markReceived', '/api/messages/mark-received'),
+    {
+      json: data
+    }
+  )
+}
+
+export const streamAIMessage = async (
+  data: StreamAIMessageRequest
+): Promise<Response> => {
+  return ky.post(getApiEndpointUrl('ai.stream', '/api/ai/stream'), {
+    json: data
+  })
 }
 
 export const transformApiMessage = (msg: ApiMessage): ChatMessage => {

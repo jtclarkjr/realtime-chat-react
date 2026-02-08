@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import ky from 'ky'
+import { markMessageAsReceived } from '@/lib/api/client'
 import type { ChatMessage } from '@/lib/types/database'
 import type { PresenceState } from '@/lib/types/presence'
 import { useNetworkConnectivity, useWebSocketConnection } from '../connection'
@@ -67,12 +67,10 @@ export function useRealtimeChat({
       })
 
       // Mark message as received (async, don't wait)
-      ky.post('/api/messages/mark-received', {
-        json: {
-          userId,
-          roomId: roomId,
-          messageId: receivedMessage.id
-        }
+      markMessageAsReceived({
+        userId,
+        roomId,
+        messageId: receivedMessage.id
       }).catch((error) =>
         console.error('Error marking message as received:', error)
       )
