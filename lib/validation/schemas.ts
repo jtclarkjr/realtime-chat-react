@@ -134,6 +134,7 @@ export const aiStreamRequestSchema = z
       }
     ),
     isPrivate: z.boolean().optional(),
+    responseFormat: z.enum(['plain', 'markdown']).optional(),
     triggerMessageId: nonEmptyString.optional(),
     // Limit previous messages array to prevent excessive payload
     previousMessages: z

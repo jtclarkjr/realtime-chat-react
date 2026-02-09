@@ -5,7 +5,10 @@ import { requireNonAnonymousAuth } from '@/lib/auth/middleware'
 import { aiStreamRequestSchema, validateRequestBody } from '@/lib/validation'
 import { plainErrorResponse, formatSSEError } from '@/lib/errors'
 import { AI_STREAM_MODEL } from '@/lib/ai/constants'
-import { AI_STREAM_SYSTEM_PROMPT } from '@/lib/ai/prompts'
+import {
+  AI_STREAM_SYSTEM_PROMPT,
+  AI_STREAM_MARKDOWN_SYSTEM_PROMPT
+} from '@/lib/ai/prompts'
 
 // Configure route for streaming with body size limit
 export const runtime = 'nodejs'
@@ -78,10 +81,15 @@ export const POST = async (request: NextRequest) => {
     })
 
     // Create streaming response with Anthropic
+    const systemPrompt =
+      body.responseFormat === 'markdown'
+        ? AI_STREAM_MARKDOWN_SYSTEM_PROMPT
+        : AI_STREAM_SYSTEM_PROMPT
+
     const stream = anthropic.messages.stream({
       model: AI_STREAM_MODEL,
       max_tokens: 1024,
-      system: AI_STREAM_SYSTEM_PROMPT,
+      system: systemPrompt,
       messages
     })
 

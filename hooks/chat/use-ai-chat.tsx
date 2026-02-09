@@ -68,6 +68,7 @@ export function useAIChat({
           roomId,
           userId,
           message: content.trim(),
+          responseFormat: 'markdown',
           previousMessages: messageContext,
           isPrivate: isAIPrivate,
           triggerMessageId

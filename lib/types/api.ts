@@ -85,6 +85,7 @@ export interface StreamAIMessageRequest {
   roomId: string
   userId: string
   message: string
+  responseFormat?: 'plain' | 'markdown'
   previousMessages: Array<{
     content: string
     isAi: boolean

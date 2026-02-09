@@ -15,6 +15,7 @@ export const useSmartAutoScroll = ({
   scrollToBottomInstant
 }: UseSmartAutoScrollProps) => {
   const previousMessageCountRef = useRef(0)
+  const previousStreamingCursorRef = useRef<string>('')
   const isAutoScrollingRef = useRef(false)
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false)
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
@@ -86,6 +87,37 @@ export const useSmartAutoScroll = ({
 
     previousMessageCountRef.current = currentMessageCount
   }, [messages.length, scrollToBottom, isNearBottom, userHasScrolledUp])
+
+  // Keep viewport pinned to bottom while a streaming message grows.
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1]
+    if (!lastMessage?.isStreaming) {
+      previousStreamingCursorRef.current = ''
+      return
+    }
+
+    const streamingCursor = `${lastMessage.id}:${lastMessage.content.length}`
+    const hasProgressed = streamingCursor !== previousStreamingCursorRef.current
+    previousStreamingCursorRef.current = streamingCursor
+
+    if (!hasProgressed) return
+
+    const shouldAutoScroll = !userHasScrolledUp || isNearBottom()
+    if (!shouldAutoScroll) return
+
+    const scroll = scrollToBottomInstant || scrollToBottom
+    const frame = requestAnimationFrame(() => {
+      scroll()
+    })
+
+    return () => cancelAnimationFrame(frame)
+  }, [
+    messages,
+    userHasScrolledUp,
+    isNearBottom,
+    scrollToBottom,
+    scrollToBottomInstant
+  ])
 
   // Reset scroll state when component mounts or messages are initially loaded
   useEffect(() => {
