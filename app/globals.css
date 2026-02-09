@@ -155,3 +155,43 @@
     transform: translateX(100%);
   }
 }
+
+/* Syntax highlighting for markdown code blocks rendered in Tiptap */
+.tiptap-markdown .hljs-keyword,
+.tiptap-markdown .hljs-selector-tag,
+.tiptap-markdown .hljs-literal,
+.tiptap-markdown .hljs-name,
+.tiptap-markdown .hljs-strong {
+  color: #f472b6;
+}
+
+.tiptap-markdown .hljs-string,
+.tiptap-markdown .hljs-title,
+.tiptap-markdown .hljs-section,
+.tiptap-markdown .hljs-attribute,
+.tiptap-markdown .hljs-symbol,
+.tiptap-markdown .hljs-bullet,
+.tiptap-markdown .hljs-addition {
+  color: #86efac;
+}
+
+.tiptap-markdown .hljs-comment,
+.tiptap-markdown .hljs-quote,
+.tiptap-markdown .hljs-deletion {
+  color: #94a3b8;
+}
+
+.tiptap-markdown .hljs-number,
+.tiptap-markdown .hljs-regexp,
+.tiptap-markdown .hljs-meta,
+.tiptap-markdown .hljs-link {
+  color: #fbbf24;
+}
+
+.tiptap-markdown .hljs-function,
+.tiptap-markdown .hljs-variable,
+.tiptap-markdown .hljs-template-variable,
+.tiptap-markdown .hljs-params,
+.tiptap-markdown .hljs-type {
+  color: #93c5fd;
+}
