@@ -11,21 +11,15 @@ import {
   AI_STREAM_MARKDOWN_SYSTEM_PROMPT,
   AI_WEB_SEARCH_INSTRUCTIONS
 } from '@/lib/ai/prompts'
-import { isTavilyQuotaExceededError } from '@/lib/ai/web-search'
 import { shouldUseWebSearch } from '@/lib/ai/recency-detector'
+import { resolveEffectiveAIFlags } from '@/lib/ai/feature-flags'
 import { resolveAIModel } from '@/lib/ai/model-selector'
-import {
-  disableTavilyTemporarily,
-  getCurrentDateContext,
-  getWebSearchConfig,
-  isTavilyTemporarilyDisabled,
-  type WebSearchConfig
-} from '@/lib/ai/stream-config'
+import { getCurrentDateContext, getWebSearchConfig } from '@/lib/ai/stream-config'
 import {
   streamAnthropicTextToSSE,
   enqueueContentByChunks
 } from '@/lib/ai/stream-sse'
-import { runToolEnabledGeneration } from '@/lib/ai/stream-tool-generation'
+import { generateAIResponse } from '@/lib/ai/response-strategy'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -57,91 +51,6 @@ const buildDatedSystemPrompt = ({
   ).replace('{{NOW_UTC}}', nowUtc)
 
   return `${systemPrompt}\n\n${timeContext}`
-}
-
-const streamStandardAIResponse = async ({
-  anthropic,
-  selectedModel,
-  systemPrompt,
-  messages,
-  controller,
-  encoder,
-  messageId
-}: {
-  anthropic: Anthropic
-  selectedModel: string
-  systemPrompt: string
-  messages: Anthropic.MessageParam[]
-  controller: ReadableStreamDefaultController
-  encoder: TextEncoder
-  messageId: string
-}): Promise<string> => {
-  const stream = anthropic.messages.stream({
-    model: selectedModel,
-    max_tokens: 1024,
-    system: systemPrompt,
-    messages
-  })
-
-  return streamAnthropicTextToSSE({
-    stream,
-    controller,
-    encoder,
-    messageId
-  })
-}
-
-const streamSearchEnabledAIResponse = async ({
-  anthropic,
-  selectedModel,
-  systemPrompt,
-  messages,
-  controller,
-  encoder,
-  messageId,
-  webSearchConfig
-}: {
-  anthropic: Anthropic
-  selectedModel: string
-  systemPrompt: string
-  messages: Anthropic.MessageParam[]
-  controller: ReadableStreamDefaultController
-  encoder: TextEncoder
-  messageId: string
-  webSearchConfig: WebSearchConfig
-}): Promise<string> => {
-  try {
-    const generated = await runToolEnabledGeneration({
-      anthropic,
-      selectedModel,
-      systemPrompt,
-      messages,
-      maxResults: webSearchConfig.maxResults,
-      timeoutMs: webSearchConfig.timeoutMs
-    })
-
-    enqueueContentByChunks(controller, encoder, messageId, generated)
-    return generated
-  } catch (error) {
-    if (!isTavilyQuotaExceededError(error)) {
-      throw error
-    }
-
-    disableTavilyTemporarily(webSearchConfig.quotaCooldownMs)
-    console.warn(
-      `Tavily quota exceeded. Disabling web search for ${webSearchConfig.quotaCooldownMs}ms.`
-    )
-
-    return streamStandardAIResponse({
-      anthropic,
-      selectedModel,
-      systemPrompt,
-      messages,
-      controller,
-      encoder,
-      messageId
-    })
-  }
 }
 
 const persistAndBroadcastAIMessage = async ({
@@ -263,25 +172,21 @@ export const POST = async (request: NextRequest) => {
       responseFormat: body.responseFormat
     })
 
-    const webSearchConfig = getWebSearchConfig()
-    const isWebSearchConfigured = Boolean(process.env.TAVILY_API_KEY)
-    if (webSearchConfig.enabled && !isWebSearchConfigured) {
-      console.warn('AI web search enabled but TAVILY_API_KEY is not configured')
+    const flags = resolveEffectiveAIFlags()
+    if (flags.fallbackApplied && flags.reason) {
+      console.warn(`AI feature flag fallback applied: ${flags.reason}`)
     }
 
-    const searchNeeded =
-      webSearchConfig.enabled &&
-      isWebSearchConfigured &&
-      !isTavilyTemporarilyDisabled() &&
-      shouldUseWebSearch({
-        userMessage: body.message,
-        customPrompt: body.customPrompt,
-        targetMessageContent: body.targetMessageContent
-      })
+    const webSearchConfig = getWebSearchConfig()
+    const searchRequested = shouldUseWebSearch({
+      userMessage: body.message,
+      customPrompt: body.customPrompt,
+      targetMessageContent: body.targetMessageContent
+    })
 
     const datedSystemPrompt = buildDatedSystemPrompt({
       responseFormat: body.responseFormat,
-      searchNeeded
+      searchNeeded: webSearchConfig.enabled && searchRequested
     })
 
     const tempMessageId = crypto.randomUUID()
@@ -299,26 +204,33 @@ export const POST = async (request: NextRequest) => {
             encoder.encode(`data: ${JSON.stringify(initialData)}\n\n`)
           )
 
-          const fullResponse = searchNeeded
-            ? await streamSearchEnabledAIResponse({
-                anthropic,
-                selectedModel,
-                systemPrompt: datedSystemPrompt,
-                messages,
-                controller,
-                encoder,
-                messageId: tempMessageId,
-                webSearchConfig
-              })
-            : await streamStandardAIResponse({
-                anthropic,
-                selectedModel,
-                systemPrompt: datedSystemPrompt,
-                messages,
-                controller,
-                encoder,
-                messageId: tempMessageId
-              })
+          const generation = await generateAIResponse({
+            anthropic,
+            selectedModel,
+            systemPrompt: datedSystemPrompt,
+            messages,
+            flags,
+            webSearchConfig,
+            searchRequested
+          })
+
+          const fullResponse =
+            generation.streamMode === 'native_stream'
+              ? await streamAnthropicTextToSSE({
+                  stream: generation.stream,
+                  controller,
+                  encoder,
+                  messageId: tempMessageId
+                })
+              : (() => {
+                  enqueueContentByChunks(
+                    controller,
+                    encoder,
+                    tempMessageId,
+                    generation.fullResponse
+                  )
+                  return generation.fullResponse
+                })()
 
           const trimmedResponse = fullResponse.trim()
           let persistedMessageId = tempMessageId
