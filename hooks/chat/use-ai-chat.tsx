@@ -23,6 +23,33 @@ interface UseAIChatReturn {
     previousMessages: ChatMessage[],
     triggerMessageId?: string
   ) => Promise<void>
+  generateReplyDraft: (params: {
+    previousMessages: ChatMessage[]
+    targetMessage: {
+      id: string
+      content: string
+    }
+    customPrompt?: string
+  }) => Promise<string>
+}
+
+interface StreamAIResponseOptions {
+  content: string
+  previousMessages: ChatMessage[]
+  triggerMessageId?: string
+  targetMessage?: {
+    id: string
+    content: string
+  }
+  customPrompt?: string
+  draftOnly?: boolean
+  onStart?: (messageId: string, user: ChatMessage['user']) => void
+  onContent?: (fullContent: string, messageId: string) => void
+  onComplete?: (payload: {
+    fullContent: string
+    messageId: string
+    createdAt?: string
+  }) => void
 }
 
 export function useAIChat({
@@ -35,6 +62,88 @@ export function useAIChat({
   const [isAIEnabled, setIsAIEnabled] = useState<boolean>(false)
   const [isAIPrivate, setIsAIPrivate] = useState<boolean>(false)
   const [isAILoading, setIsAILoading] = useState<boolean>(false)
+
+  const streamAIResponse = useCallback(
+    async ({
+      content,
+      previousMessages = [],
+      triggerMessageId,
+      targetMessage,
+      customPrompt,
+      draftOnly = false,
+      onStart,
+      onContent,
+      onComplete
+    }: StreamAIResponseOptions): Promise<void> => {
+      // Prepare context from previous messages
+      const messageContext = previousMessages.map((msg) => ({
+        content: msg.content,
+        isAi: msg.isAI || false,
+        userName: msg.user.name
+      }))
+
+      // Call AI streaming API
+      const response = await streamAIMessage({
+        roomId,
+        userId,
+        message: content.trim(),
+        responseFormat: 'markdown',
+        previousMessages: messageContext,
+        isPrivate: isAIPrivate,
+        triggerMessageId,
+        targetMessageId: targetMessage?.id,
+        targetMessageContent: targetMessage?.content,
+        customPrompt,
+        draftOnly
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response')
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('No response body')
+
+      const decoder = new TextDecoder()
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+
+          try {
+            const data = JSON.parse(line.slice(6))
+
+            if (data.type === 'start') {
+              onStart?.(data.messageId, data.user)
+            } else if (data.type === 'content') {
+              onContent?.(data.fullContent, data.messageId)
+            } else if (data.type === 'complete') {
+              onComplete?.({
+                fullContent: data.fullContent || '',
+                messageId: data.messageId,
+                createdAt: data.createdAt
+              })
+            } else if (data.type === 'error') {
+              throw new Error(data.error)
+            }
+          } catch (parseError) {
+            if (parseError instanceof SyntaxError) {
+              console.error('Error parsing stream data:', parseError)
+            } else {
+              throw parseError
+            }
+          }
+        }
+      }
+    },
+    [isAIPrivate, roomId, userId]
+  )
 
   const sendAIMessage = useCallback(
     async (
@@ -56,102 +165,61 @@ export function useAIChat({
         // const delay = Math.random() * 1000 + 1000 // Random delay between 1-2 seconds
         // await new Promise((resolve) => setTimeout(resolve, delay))
 
-        // Prepare context from previous messages
-        const messageContext = previousMessages.map((msg) => ({
-          content: msg.content,
-          isAi: msg.isAI || false,
-          userName: msg.user.name
-        }))
-
-        // Call AI streaming API
-        const response = await streamAIMessage({
-          roomId,
-          userId,
-          message: content.trim(),
-          responseFormat: 'markdown',
-          previousMessages: messageContext,
-          isPrivate: isAIPrivate,
-          triggerMessageId
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to get AI response')
-        }
-
-        // Handle streaming response
-        const reader = response.body?.getReader()
-        if (!reader) throw new Error('No response body')
-
-        const decoder = new TextDecoder()
         let streamingMessage: ChatMessage | null = null
 
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          const chunk = decoder.decode(value, { stream: true })
-          const lines = chunk.split('\n')
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6))
-
-                if (data.type === 'start') {
-                  // Initialize streaming message with server's database ID
-                  streamingMessage = {
-                    id: data.messageId, // Use the database ID from the start
-                    content: '',
-                    user: data.user,
-                    createdAt: new Date().toISOString(),
-                    roomId,
-                    isAI: true,
-                    isStreaming: true, // Mark as streaming message
-                    isPrivate: isAIPrivate,
-                    requesterId: userId
-                  }
-                  onStreamingMessage(streamingMessage)
-                } else if (data.type === 'content' && streamingMessage) {
-                  // Update streaming message content (same ID)
-                  streamingMessage = {
-                    id: streamingMessage.id,
-                    user: streamingMessage.user,
-                    createdAt: streamingMessage.createdAt,
-                    roomId: streamingMessage.roomId,
-                    isAI: streamingMessage.isAI,
-                    isStreaming: streamingMessage.isStreaming,
-                    isPrivate: streamingMessage.isPrivate,
-                    requesterId: streamingMessage.requesterId,
-                    content: data.fullContent
-                  }
-                  onStreamingMessage(streamingMessage)
-                } else if (data.type === 'complete' && streamingMessage) {
-                  // Create the final completed message (same ID as streaming)
-                  const finalMessage: ChatMessage = {
-                    id: streamingMessage.id, // Keep the same ID
-                    user: streamingMessage.user,
-                    roomId: streamingMessage.roomId,
-                    isAI: streamingMessage.isAI,
-                    isPrivate: streamingMessage.isPrivate,
-                    requesterId: streamingMessage.requesterId,
-                    content: data.fullContent,
-                    createdAt: data.createdAt || streamingMessage.createdAt,
-                    isStreaming: false // Mark as completed
-                  }
-                  onCompleteMessage(finalMessage)
-
-                  // Clear streaming reference
-                  streamingMessage = null
-                } else if (data.type === 'error') {
-                  console.error('Streaming error:', data.error)
-                  throw new Error(data.error)
-                }
-              } catch (parseError) {
-                console.error('Error parsing stream data:', parseError)
-              }
+        await streamAIResponse({
+          content,
+          previousMessages,
+          triggerMessageId,
+          onStart: (messageId, user) => {
+            // Initialize streaming message with server's database ID
+            streamingMessage = {
+              id: messageId,
+              content: '',
+              user,
+              createdAt: new Date().toISOString(),
+              roomId,
+              isAI: true,
+              isStreaming: true,
+              isPrivate: isAIPrivate,
+              requesterId: userId
             }
+            onStreamingMessage(streamingMessage)
+          },
+          onContent: (fullContent) => {
+            if (!streamingMessage) return
+
+            streamingMessage = {
+              id: streamingMessage.id,
+              user: streamingMessage.user,
+              createdAt: streamingMessage.createdAt,
+              roomId: streamingMessage.roomId,
+              isAI: streamingMessage.isAI,
+              isStreaming: streamingMessage.isStreaming,
+              isPrivate: streamingMessage.isPrivate,
+              requesterId: streamingMessage.requesterId,
+              content: fullContent
+            }
+            onStreamingMessage(streamingMessage)
+          },
+          onComplete: ({ fullContent, createdAt }) => {
+            if (!streamingMessage) return
+
+            const finalMessage: ChatMessage = {
+              id: streamingMessage.id,
+              user: streamingMessage.user,
+              roomId: streamingMessage.roomId,
+              isAI: streamingMessage.isAI,
+              isPrivate: streamingMessage.isPrivate,
+              requesterId: streamingMessage.requesterId,
+              content: fullContent,
+              createdAt: createdAt || streamingMessage.createdAt,
+              isStreaming: false
+            }
+            onCompleteMessage(finalMessage)
+            streamingMessage = null
           }
-        }
+        })
       } catch (error) {
         console.error('Error calling AI streaming API:', error)
 
@@ -179,8 +247,67 @@ export function useAIChat({
       isAILoading,
       isAIPrivate,
       onStreamingMessage,
-      onCompleteMessage
+      onCompleteMessage,
+      streamAIResponse
     ]
+  )
+
+  const generateReplyDraft = useCallback(
+    async ({
+      previousMessages = [],
+      targetMessage,
+      customPrompt
+    }: {
+      previousMessages: ChatMessage[]
+      targetMessage: {
+        id: string
+        content: string
+      }
+      customPrompt?: string
+    }): Promise<string> => {
+      if (!isConnected || isAILoading) {
+        throw new Error('AI is not available right now')
+      }
+
+      const trimmedTargetContent = targetMessage.content.trim()
+      if (!trimmedTargetContent) {
+        throw new Error('Target message is empty')
+      }
+
+      setIsAILoading(true)
+
+      try {
+        let generatedText = ''
+
+        await streamAIResponse({
+          content:
+            customPrompt?.trim() || 'Write a direct reply to this message.',
+          previousMessages,
+          targetMessage: {
+            id: targetMessage.id,
+            content: trimmedTargetContent
+          },
+          customPrompt: customPrompt?.trim() || undefined,
+          draftOnly: true,
+          onContent: (fullContent) => {
+            generatedText = fullContent
+          },
+          onComplete: ({ fullContent }) => {
+            generatedText = fullContent
+          }
+        })
+
+        const trimmed = generatedText.trim()
+        if (!trimmed) {
+          throw new Error('No AI reply generated')
+        }
+
+        return trimmed
+      } finally {
+        setIsAILoading(false)
+      }
+    },
+    [isConnected, isAILoading, streamAIResponse]
   )
 
   return {
@@ -189,6 +316,7 @@ export function useAIChat({
     isAIPrivate,
     setIsAIPrivate,
     isAILoading,
-    sendAIMessage
+    sendAIMessage,
+    generateReplyDraft
   }
 }

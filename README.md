@@ -64,6 +64,12 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 # AI Assistant Configuration (Anthropic Claude)
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 AI_USER_ID=your_ai_user_id_here
+AI_STREAM_DEFAULT_MODEL=claude-haiku-4-5
+AI_STREAM_CODE_MODEL=claude-sonnet-4-5
+TAVILY_API_KEY=your_tavily_api_key_here
+AI_WEB_SEARCH_ENABLED=false
+AI_WEB_SEARCH_MAX_RESULTS=5
+AI_WEB_SEARCH_TIMEOUT_MS=6000
 
 # Authentication Configuration
 NEXT_PUBLIC_AUTH_CALLBACK_URL=http://localhost:3000/auth/callback
@@ -201,7 +207,22 @@ Add your Anthropic API key to `.env.local`:
 # AI Assistant Configuration
 ANTHROPIC_API_KEY=your_actual_api_key_here
 AI_USER_ID=your_ai_user_id_here
+AI_STREAM_DEFAULT_MODEL=claude-haiku-4-5
+AI_STREAM_CODE_MODEL=claude-sonnet-4-5
+TAVILY_API_KEY=your_tavily_api_key_here
+
+# Optional: Internet-aware assistant (latest/current data)
+AI_WEB_SEARCH_ENABLED=false
+AI_WEB_SEARCH_MAX_RESULTS=5
+AI_WEB_SEARCH_TIMEOUT_MS=6000
 ```
+
+When `AI_WEB_SEARCH_ENABLED=true`, the assistant can automatically use Tavily
+for time-sensitive prompts (for example "latest", "today", "current price") and
+will include inline source links in responses.
+
+The assistant also supports dynamic model routing: it uses the default model for
+normal prompts and switches to the code model for coding-intent prompts.
 
 ### AI Assistant User Setup
 

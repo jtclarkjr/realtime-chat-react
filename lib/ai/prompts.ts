@@ -32,3 +32,9 @@ CONTENT RULES:
 - Do not explain unless asked.
 
 Be friendly and respectful, but brevity is mandatory.`
+
+export const AI_WEB_SEARCH_INSTRUCTIONS = `WEB SEARCH POLICY:
+- If web search tool results are available, prioritize them for time-sensitive facts.
+- If web search was used, add a short "Sources:" line with markdown links.
+- Never claim live internet access unless tool results were actually provided.
+- If time-sensitive info is requested but search fails, state uncertainty briefly.`

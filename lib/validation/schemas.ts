@@ -136,6 +136,22 @@ export const aiStreamRequestSchema = z
     isPrivate: z.boolean().optional(),
     responseFormat: z.enum(['plain', 'markdown']).optional(),
     triggerMessageId: nonEmptyString.optional(),
+    targetMessageId: nonEmptyString.optional(),
+    targetMessageContent: validatedTrimmedString(
+      1,
+      5000,
+      'Target message content'
+    )
+      .refine((val) => byteLength(val) <= 20480, {
+        message: 'Target message exceeds maximum size of 20KB'
+      })
+      .optional(),
+    customPrompt: validatedTrimmedString(1, 1000, 'Custom prompt')
+      .refine((val) => byteLength(val) <= 4096, {
+        message: 'Custom prompt exceeds maximum size of 4KB'
+      })
+      .optional(),
+    draftOnly: z.boolean().optional(),
     // Limit previous messages array to prevent excessive payload
     previousMessages: z
       .array(aiMessageSchema)
