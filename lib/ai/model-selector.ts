@@ -74,7 +74,9 @@ const getConfiguredModel = (
   if (!trimmed) return fallback
 
   if (!ALLOWED_AI_MODELS.has(trimmed)) {
-    console.warn(`Invalid ${envKey} value "${trimmed}", falling back to ${fallback}`)
+    console.warn(
+      `Invalid ${envKey} value "${trimmed}", falling back to ${fallback}`
+    )
     return fallback
   }
 
