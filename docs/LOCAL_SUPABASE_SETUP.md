@@ -210,6 +210,10 @@ SUPABASE_SERVICE_ROLE_KEY=your_local_supabase_service_role_jwt_key
 # Enable email/password auth for local development only
 NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true
 NEXT_PUBLIC_ENABLE_GUEST_USERS=true
+NEXT_PUBLIC_ENABLE_DISCORD_AUTH=true
+NEXT_PUBLIC_ENABLE_GITHUB_AUTH=true
+NEXT_PUBLIC_ENABLE_GOOGLE_AUTH=true
+NEXT_PUBLIC_ENABLE_APPLE_AUTH=true
 
 # Redis Configuration (keep as-is)
 REDIS_URL=redis://localhost:6379
@@ -449,6 +453,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_hosted_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_hosted_service_key
 NEXT_PUBLIC_ENABLE_EMAIL_AUTH=false  # OAuth only
 NEXT_PUBLIC_ENABLE_GUEST_USERS=true  # Show guest login option
+NEXT_PUBLIC_ENABLE_DISCORD_AUTH=true
+NEXT_PUBLIC_ENABLE_GITHUB_AUTH=true
+NEXT_PUBLIC_ENABLE_GOOGLE_AUTH=true
+NEXT_PUBLIC_ENABLE_APPLE_AUTH=true
 ```
 
 **`.env.development.local`** (local Supabase):
@@ -459,6 +467,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 NEXT_PUBLIC_ENABLE_EMAIL_AUTH=true  # Email auth for local
 NEXT_PUBLIC_ENABLE_GUEST_USERS=true  # Show guest login option
+NEXT_PUBLIC_ENABLE_DISCORD_AUTH=true
+NEXT_PUBLIC_ENABLE_GITHUB_AUTH=true
+NEXT_PUBLIC_ENABLE_GOOGLE_AUTH=true
+NEXT_PUBLIC_ENABLE_APPLE_AUTH=true
 ```
 
 Next.js loads `.env.development.local` in development, which takes precedence

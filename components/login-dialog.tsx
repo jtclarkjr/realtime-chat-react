@@ -30,7 +30,16 @@ import {
 } from '@/components/ui/dialog'
 import { useRouter } from 'next/navigation'
 
-const isEmailAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_EMAIL_AUTH === 'true'
+const isEmailAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_EMAIL_AUTH
+const isDiscordAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_DISCORD_AUTH
+const isGitHubAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_GITHUB_AUTH
+const isGoogleAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_GOOGLE_AUTH
+const isAppleAuthEnabled = process.env.NEXT_PUBLIC_ENABLE_APPLE_AUTH
+const hasOAuthProvidersEnabled =
+  isDiscordAuthEnabled ||
+  isGitHubAuthEnabled ||
+  isGoogleAuthEnabled ||
+  isAppleAuthEnabled
 
 interface LoginDialogProps {
   open: boolean
@@ -227,98 +236,108 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                 </button>
               </form>
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-gray-300 dark:border-gray-700" />
+              {hasOAuthProvidersEnabled && (
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gray-300 dark:border-gray-700" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-gray-500 dark:text-gray-400">
+                      Or continue with
+                    </span>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-gray-500 dark:text-gray-400">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
+              )}
             </>
           )}
 
-          <Button
-            onClick={handleDiscordSignIn}
-            disabled={!!loading}
-            variant="discord"
-            size="xl"
-            className="w-full"
-          >
-            {loading === 'discord' ? (
-              <span className="flex items-center gap-2">
-                <Spinner variant="white" />
-                Signing in...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <DiscordIcon />
-                Continue with Discord
-              </span>
-            )}
-          </Button>
+          {isDiscordAuthEnabled && (
+            <Button
+              onClick={handleDiscordSignIn}
+              disabled={!!loading}
+              variant="discord"
+              size="xl"
+              className="w-full"
+            >
+              {loading === 'discord' ? (
+                <span className="flex items-center gap-2">
+                  <Spinner variant="white" />
+                  Signing in...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <DiscordIcon />
+                  Continue with Discord
+                </span>
+              )}
+            </Button>
+          )}
 
-          <Button
-            onClick={handleGitHubSignIn}
-            disabled={!!loading}
-            variant="github"
-            size="xl"
-            className="w-full"
-          >
-            {loading === 'github' ? (
-              <span className="flex items-center gap-2">
-                <Spinner />
-                Signing in...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <GitHubIcon />
-                Continue with GitHub
-              </span>
-            )}
-          </Button>
+          {isGitHubAuthEnabled && (
+            <Button
+              onClick={handleGitHubSignIn}
+              disabled={!!loading}
+              variant="github"
+              size="xl"
+              className="w-full"
+            >
+              {loading === 'github' ? (
+                <span className="flex items-center gap-2">
+                  <Spinner />
+                  Signing in...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <GitHubIcon />
+                  Continue with GitHub
+                </span>
+              )}
+            </Button>
+          )}
 
-          <Button
-            onClick={handleGoogleSignIn}
-            disabled={!!loading}
-            variant="google"
-            size="xl"
-            className="w-full"
-          >
-            {loading === 'google' ? (
-              <span className="flex items-center gap-2">
-                <Spinner />
-                Signing in...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <GoogleIcon />
-                Continue with Google
-              </span>
-            )}
-          </Button>
+          {isGoogleAuthEnabled && (
+            <Button
+              onClick={handleGoogleSignIn}
+              disabled={!!loading}
+              variant="google"
+              size="xl"
+              className="w-full"
+            >
+              {loading === 'google' ? (
+                <span className="flex items-center gap-2">
+                  <Spinner />
+                  Signing in...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <GoogleIcon />
+                  Continue with Google
+                </span>
+              )}
+            </Button>
+          )}
 
-          <Button
-            onClick={handleAppleSignIn}
-            disabled={!!loading}
-            variant="apple"
-            size="xl"
-            className="w-full"
-          >
-            {loading === 'apple' ? (
-              <span className="flex items-center gap-2">
-                <Spinner variant="white" />
-                Signing in...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <AppleIcon />
-                Continue with Apple
-              </span>
-            )}
-          </Button>
+          {isAppleAuthEnabled && (
+            <Button
+              onClick={handleAppleSignIn}
+              disabled={!!loading}
+              variant="apple"
+              size="xl"
+              className="w-full"
+            >
+              {loading === 'apple' ? (
+                <span className="flex items-center gap-2">
+                  <Spinner variant="white" />
+                  Signing in...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <AppleIcon />
+                  Continue with Apple
+                </span>
+              )}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
