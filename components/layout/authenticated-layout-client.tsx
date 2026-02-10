@@ -5,7 +5,12 @@ import { TopBar } from './top-bar'
 import { UnreadMessageTracker } from './unread-message-tracker'
 import { AnonymousBanner } from '@/components/anonymous-banner'
 import { useUIStore } from '@/lib/stores/ui-store'
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle
+} from '@/components/ui/sheet'
 import { usePathname } from 'next/navigation'
 import { RoomsRealtimeSync } from './rooms-realtime-sync'
 import type { DatabaseRoom } from '@/lib/types/database'
