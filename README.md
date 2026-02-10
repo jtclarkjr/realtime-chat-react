@@ -70,6 +70,7 @@ TAVILY_API_KEY=your_tavily_api_key_here
 AI_WEB_SEARCH_ENABLED=false
 AI_WEB_SEARCH_MAX_RESULTS=5
 AI_WEB_SEARCH_TIMEOUT_MS=6000
+AI_WEB_SEARCH_QUOTA_COOLDOWN_MS=3600000
 
 # Authentication Configuration
 NEXT_PUBLIC_AUTH_CALLBACK_URL=http://localhost:3000/auth/callback
@@ -215,11 +216,15 @@ TAVILY_API_KEY=your_tavily_api_key_here
 AI_WEB_SEARCH_ENABLED=false
 AI_WEB_SEARCH_MAX_RESULTS=5
 AI_WEB_SEARCH_TIMEOUT_MS=6000
+AI_WEB_SEARCH_QUOTA_COOLDOWN_MS=3600000
 ```
 
 When `AI_WEB_SEARCH_ENABLED=true`, the assistant can automatically use Tavily
 for time-sensitive prompts (for example "latest", "today", "current price") and
 will include inline source links in responses.
+If Tavily quota is exceeded, web search is temporarily disabled for
+`AI_WEB_SEARCH_QUOTA_COOLDOWN_MS` and the assistant falls back to normal AI
+responses without blocking chat.
 
 The assistant also supports dynamic model routing: it uses the default model for
 normal prompts and switches to the code model for coding-intent prompts.

@@ -10,7 +10,11 @@ import {
   AI_STREAM_MARKDOWN_SYSTEM_PROMPT,
   AI_WEB_SEARCH_INSTRUCTIONS
 } from '@/lib/ai/prompts'
-import { searchWeb, buildSourcesMarkdown } from '@/lib/ai/web-search'
+import {
+  searchWeb,
+  buildSourcesMarkdown,
+  isTavilyQuotaExceededError
+} from '@/lib/ai/web-search'
 import { shouldUseWebSearch } from '@/lib/ai/recency-detector'
 import { resolveAIModel } from '@/lib/ai/model-selector'
 
@@ -26,6 +30,7 @@ const AI_ASSISTANT = {
 
 const WEB_SEARCH_TOOL_NAME = 'web_search'
 const TOOL_LOOP_LIMIT = 2
+let tavilyDisabledUntil = 0
 
 const getParsedPositiveInt = (value: string | undefined, fallback: number) => {
   const parsed = Number.parseInt(value || '', 10)
@@ -36,7 +41,11 @@ const getParsedPositiveInt = (value: string | undefined, fallback: number) => {
 const getWebSearchConfig = () => ({
   enabled: process.env.AI_WEB_SEARCH_ENABLED !== 'false',
   maxResults: getParsedPositiveInt(process.env.AI_WEB_SEARCH_MAX_RESULTS, 5),
-  timeoutMs: getParsedPositiveInt(process.env.AI_WEB_SEARCH_TIMEOUT_MS, 6000)
+  timeoutMs: getParsedPositiveInt(process.env.AI_WEB_SEARCH_TIMEOUT_MS, 6000),
+  quotaCooldownMs: getParsedPositiveInt(
+    process.env.AI_WEB_SEARCH_QUOTA_COOLDOWN_MS,
+    3600000
+  )
 })
 
 const getCurrentDateContext = () => {
@@ -45,6 +54,12 @@ const getCurrentDateContext = () => {
     nowIso: now.toISOString(),
     nowUtc: now.toUTCString()
   }
+}
+
+const isTavilyTemporarilyDisabled = () => Date.now() < tavilyDisabledUntil
+
+const disableTavilyTemporarily = (cooldownMs: number) => {
+  tavilyDisabledUntil = Date.now() + cooldownMs
 }
 
 const extractTextFromBlocks = (blocks: Anthropic.ContentBlock[]): string =>
@@ -194,6 +209,9 @@ const runToolEnabledGeneration = async ({
           })
         })
       } catch (error) {
+        if (isTavilyQuotaExceededError(error)) {
+          throw error
+        }
         console.error('Web search tool failed:', error)
         toolResults.push({
           type: 'tool_result',
@@ -311,12 +329,14 @@ export const POST = async (request: NextRequest) => {
 
     const webSearchConfig = getWebSearchConfig()
     const isWebSearchConfigured = Boolean(process.env.TAVILY_API_KEY)
+    const tavilyTemporarilyDisabled = isTavilyTemporarilyDisabled()
     if (webSearchConfig.enabled && !isWebSearchConfigured) {
       console.warn('AI web search enabled but TAVILY_API_KEY is not configured')
     }
     const searchNeeded =
       webSearchConfig.enabled &&
       isWebSearchConfigured &&
+      !tavilyTemporarilyDisabled &&
       shouldUseWebSearch({
         userMessage: body.message,
         customPrompt: body.customPrompt,
@@ -358,21 +378,63 @@ export const POST = async (request: NextRequest) => {
           )
 
           if (searchNeeded) {
-            fullResponse = await runToolEnabledGeneration({
-              anthropic,
-              selectedModel,
-              systemPrompt: datedSystemPrompt,
-              messages,
-              maxResults: webSearchConfig.maxResults,
-              timeoutMs: webSearchConfig.timeoutMs
-            })
+            let alreadyStreamed = false
+            try {
+              fullResponse = await runToolEnabledGeneration({
+                anthropic,
+                selectedModel,
+                systemPrompt: datedSystemPrompt,
+                messages,
+                maxResults: webSearchConfig.maxResults,
+                timeoutMs: webSearchConfig.timeoutMs
+              })
+            } catch (error) {
+              if (isTavilyQuotaExceededError(error)) {
+                disableTavilyTemporarily(webSearchConfig.quotaCooldownMs)
+                console.warn(
+                  `Tavily quota exceeded. Disabling web search for ${webSearchConfig.quotaCooldownMs}ms.`
+                )
+                const fallbackStream = anthropic.messages.stream({
+                  model: selectedModel,
+                  max_tokens: 1024,
+                  system: datedSystemPrompt,
+                  messages
+                })
 
-            enqueueContentByChunks(
-              controller,
-              encoder,
-              tempMessageId,
-              fullResponse
-            )
+                for await (const chunk of fallbackStream) {
+                  if (
+                    chunk.type === 'content_block_delta' &&
+                    chunk.delta.type === 'text_delta'
+                  ) {
+                    const content = chunk.delta.text
+                    if (content) {
+                      fullResponse += content
+                      const streamData = {
+                        type: 'content',
+                        messageId: tempMessageId,
+                        content,
+                        fullContent: fullResponse
+                      }
+                      controller.enqueue(
+                        encoder.encode(`data: ${JSON.stringify(streamData)}\n\n`)
+                      )
+                    }
+                  }
+                }
+                alreadyStreamed = true
+              } else {
+                throw error
+              }
+            }
+
+            if (!alreadyStreamed) {
+              enqueueContentByChunks(
+                controller,
+                encoder,
+                tempMessageId,
+                fullResponse
+              )
+            }
           } else {
             const stream = anthropic.messages.stream({
               model: selectedModel,

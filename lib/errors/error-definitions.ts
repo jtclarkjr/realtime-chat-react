@@ -120,6 +120,13 @@ export const ERROR_DEFINITIONS = {
     statusCode: 409
   },
 
+  // 429 - Too Many Requests
+  TAVILY_QUOTA_EXCEEDED: {
+    code: 'TAVILY_QUOTA_EXCEEDED',
+    message: 'Web search quota exceeded',
+    statusCode: 429
+  },
+
   // 413 - Payload Too Large
   PAYLOAD_TOO_LARGE: {
     code: 'PAYLOAD_TOO_LARGE',

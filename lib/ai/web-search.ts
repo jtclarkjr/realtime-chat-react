@@ -1,3 +1,5 @@
+import { ERROR_DEFINITIONS } from '@/lib/errors/error-definitions'
+
 export interface WebSearchResult {
   title: string
   url: string
@@ -13,6 +15,21 @@ interface TavilyResponse {
     published_date?: string
   }>
 }
+const TAVILY_QUOTA_EXCEEDED_CODE =
+  ERROR_DEFINITIONS.TAVILY_QUOTA_EXCEEDED.code
+
+const asCodedError = (message: string, code: string): Error & { code: string } =>
+  Object.assign(new Error(message), { code })
+
+export const isTavilyQuotaExceededError = (
+  error: unknown
+): error is Error & { code: string } =>
+  Boolean(
+    error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: unknown }).code === TAVILY_QUOTA_EXCEEDED_CODE
+  )
 
 const DEFAULT_MAX_RESULTS = 5
 const DEFAULT_TIMEOUT_MS = 6000
@@ -108,6 +125,12 @@ export const searchWeb = async (
     })
 
     if (!response.ok) {
+      if (response.status === 429 || response.status === 402) {
+        throw asCodedError(
+          `Tavily quota/rate limit reached (status ${response.status})`,
+          TAVILY_QUOTA_EXCEEDED_CODE
+        )
+      }
       throw new Error(`Tavily request failed with status ${response.status}`)
     }
 
