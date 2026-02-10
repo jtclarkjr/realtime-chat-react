@@ -36,6 +36,13 @@ const sanitizeHttpUrl = (rawUrl: string): string | null => {
   }
 }
 
+const getPublishedTimestamp = (publishedDate?: string): number => {
+  if (!publishedDate) return Number.NEGATIVE_INFINITY
+  const parsed = Date.parse(publishedDate)
+  if (!Number.isFinite(parsed)) return Number.NEGATIVE_INFINITY
+  return parsed
+}
+
 export const buildSourcesMarkdown = (
   results: WebSearchResult[],
   maxSources: number = 3
@@ -120,6 +127,12 @@ export const searchWeb = async (
         publishedDate: item.published_date?.trim() || undefined
       })
     }
+
+    normalized.sort((a, b) => {
+      const aTs = getPublishedTimestamp(a.publishedDate)
+      const bTs = getPublishedTimestamp(b.publishedDate)
+      return bTs - aTs
+    })
 
     return normalized
   } catch (error) {

@@ -39,6 +39,14 @@ const getWebSearchConfig = () => ({
   timeoutMs: getParsedPositiveInt(process.env.AI_WEB_SEARCH_TIMEOUT_MS, 6000)
 })
 
+const getCurrentDateContext = () => {
+  const now = new Date()
+  return {
+    nowIso: now.toISOString(),
+    nowUtc: now.toUTCString()
+  }
+}
+
 const extractTextFromBlocks = (blocks: Anthropic.ContentBlock[]): string =>
   blocks
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
@@ -323,6 +331,12 @@ export const POST = async (request: NextRequest) => {
     const systemPrompt = searchNeeded
       ? `${baseSystemPrompt}\n\n${AI_WEB_SEARCH_INSTRUCTIONS}`
       : baseSystemPrompt
+    const { nowIso, nowUtc } = getCurrentDateContext()
+    const datedSystemPrompt = `${systemPrompt}\n\nCURRENT TIME CONTEXT:
+- Current date/time (UTC ISO): ${nowIso}
+- Current date/time (UTC text): ${nowUtc}
+- Interpret relative dates like "today", "yesterday", and "last week" against this timestamp.
+- Prefer the newest reliable sources and state absolute dates for release/news claims.`
 
     // Create a TransformStream for processing the Anthropic stream
     let fullResponse = ''
@@ -347,7 +361,7 @@ export const POST = async (request: NextRequest) => {
             fullResponse = await runToolEnabledGeneration({
               anthropic,
               selectedModel,
-              systemPrompt,
+              systemPrompt: datedSystemPrompt,
               messages,
               maxResults: webSearchConfig.maxResults,
               timeoutMs: webSearchConfig.timeoutMs
@@ -363,7 +377,7 @@ export const POST = async (request: NextRequest) => {
             const stream = anthropic.messages.stream({
               model: selectedModel,
               max_tokens: 1024,
-              system: systemPrompt,
+              system: datedSystemPrompt,
               messages
             })
 

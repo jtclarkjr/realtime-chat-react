@@ -68,5 +68,17 @@ export const shouldUseWebSearch = ({
     return false
   }
 
+  const hasModelTerm =
+    /\b(gpt|openai|claude|gemini|llama|mistral|o1|o3|o4)\b/i.test(combinedText)
+  const hasVersionOrReleaseSignal =
+    /\b\d+(\.\d+){1,2}\b/.test(combinedText) ||
+    /\b(version|release|released|announced|launch|latest model|new model)\b/i.test(
+      combinedText
+    )
+
+  if (hasModelTerm && hasVersionOrReleaseSignal) {
+    return true
+  }
+
   return RECENCY_PATTERNS.some((pattern) => pattern.test(combinedText))
 }
