@@ -5,6 +5,7 @@ import { requireNonAnonymousAuth } from '@/lib/auth/middleware'
 import { aiStreamRequestSchema, validateRequestBody } from '@/lib/validation'
 import { plainErrorResponse, formatSSEError } from '@/lib/errors'
 import { AI_STREAM_MODEL } from '@/lib/ai/constants'
+import { getServiceClient } from '@/lib/supabase/server'
 import {
   AI_STREAM_SYSTEM_PROMPT,
   AI_STREAM_MARKDOWN_SYSTEM_PROMPT
@@ -161,15 +162,33 @@ export const POST = async (request: NextRequest) => {
           // Only broadcast public AI messages via Supabase Realtime
           // Private messages are only visible to the requesting user
           if (!body.isPrivate) {
-            await supabase.channel(body.roomId).httpSend('message', {
-              id: aiMessage.id,
-              content: aiMessage.content,
-              user: AI_ASSISTANT,
-              createdAt: aiMessage.createdAt,
+            const broadcastMessage = {
+              ...aiMessage,
               roomId: body.roomId,
+              channelId: body.roomId,
               isAI: true,
               isPrivate: false
-            })
+            }
+
+            try {
+              const supabaseService = getServiceClient()
+              await supabaseService
+                .channel(body.roomId)
+                .httpSend('message', broadcastMessage)
+            } catch (broadcastError) {
+              // Fallback to the request-scoped client if service broadcast fails.
+              try {
+                await supabase
+                  .channel(body.roomId)
+                  .httpSend('message', broadcastMessage)
+              } catch (fallbackError) {
+                // Keep the stream successful for the requester even if broadcast fails.
+                console.error('AI broadcast failed (primary + fallback):', {
+                  broadcastError,
+                  fallbackError
+                })
+              }
+            }
           }
 
           controller.close()
