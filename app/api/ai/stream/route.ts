@@ -12,7 +12,7 @@ import {
   AI_WEB_SEARCH_INSTRUCTIONS
 } from '@/lib/ai/prompts'
 import { shouldUseWebSearch } from '@/lib/ai/recency-detector'
-import { resolveEffectiveAIFlags } from '@/lib/ai/feature-flags'
+import { getEffectiveAIFlags } from '@/lib/ai/feature-flags-runtime'
 import { resolveAIModel } from '@/lib/ai/model-selector'
 import { getCurrentDateContext, getWebSearchConfig } from '@/lib/ai/stream-config'
 import {
@@ -172,7 +172,7 @@ export const POST = async (request: NextRequest) => {
       responseFormat: body.responseFormat
     })
 
-    const flags = resolveEffectiveAIFlags()
+    const flags = await getEffectiveAIFlags()
     if (flags.fallbackApplied && flags.reason) {
       console.warn(`AI feature flag fallback applied: ${flags.reason}`)
     }

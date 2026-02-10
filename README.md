@@ -63,6 +63,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # AI Assistant Configuration (Anthropic Claude)
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
+FLAGS_SECRET=your_flags_secret_here
 AI_USER_ID=your_ai_user_id_here
 AI_STREAM_DEFAULT_MODEL=claude-haiku-4-5
 AI_STREAM_CODE_MODEL=claude-sonnet-4-5
@@ -71,6 +72,7 @@ AI_SEARCH_DRIVER=auto
 AI_FLAG_FAIL_OPEN=true
 AI_SDK_PROVIDER=anthropic
 AI_SDK_ENABLED=false
+AI_FLAGS_MIGRATION_MODE=shadow
 TAVILY_API_KEY=your_tavily_api_key_here
 AI_WEB_SEARCH_ENABLED=false
 AI_WEB_SEARCH_MAX_RESULTS=5
@@ -212,6 +214,7 @@ Add your Anthropic API key to `.env.local`:
 ```bash
 # AI Assistant Configuration
 ANTHROPIC_API_KEY=your_actual_api_key_here
+FLAGS_SECRET=your_flags_secret_here
 AI_USER_ID=your_ai_user_id_here
 AI_STREAM_DEFAULT_MODEL=claude-haiku-4-5
 AI_STREAM_CODE_MODEL=claude-sonnet-4-5
@@ -220,6 +223,7 @@ AI_SEARCH_DRIVER=auto
 AI_FLAG_FAIL_OPEN=true
 AI_SDK_PROVIDER=anthropic
 AI_SDK_ENABLED=false
+AI_FLAGS_MIGRATION_MODE=shadow
 TAVILY_API_KEY=your_tavily_api_key_here
 
 # Optional: Internet-aware assistant (latest/current data)
@@ -239,8 +243,14 @@ Backend/search execution is feature-flagged:
 - `AI_BACKEND_MODE=anthropic_tavily`: Anthropic direct + Tavily web search
 - `AI_BACKEND_MODE=anthropic_native_web`: Anthropic direct + Anthropic native web search
 - `AI_BACKEND_MODE=vercel_ai_sdk`: Vercel AI SDK + Anthropic provider + native web search (no Tavily required)
+- In `vercel_ai_sdk` mode, `AI_SEARCH_DRIVER=tavily` is also supported (SDK + Tavily tool path).
 
 Use `AI_SEARCH_DRIVER=auto` to map search driver by backend mode. Invalid flag combinations fail open when `AI_FLAG_FAIL_OPEN=true`.
+
+Flags migration rollout:
+- `AI_FLAGS_MIGRATION_MODE=shadow` (default): evaluates both resolvers, logs mismatch, keeps legacy env resolver active.
+- `AI_FLAGS_MIGRATION_MODE=active`: uses `flags/next` runtime evaluation as source of truth.
+- Local/dev values can come from environment variables; Vercel can override via Flags Explorer. `FLAGS_SECRET` is required for Flags SDK.
 
 The assistant also supports dynamic model routing: it uses the default model for
 normal prompts and switches to the code model for coding-intent prompts.

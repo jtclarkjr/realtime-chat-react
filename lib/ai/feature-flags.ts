@@ -116,20 +116,6 @@ export const resolveEffectiveAIFlags = (
     }
   }
 
-  if (backendMode === 'vercel_ai_sdk' && searchDriverRaw === 'tavily') {
-    if (failOpen) {
-      fallbackApplied = true
-      reason = reason
-        ? `${reason}; AI_SEARCH_DRIVER=tavily is unsupported in vercel_ai_sdk mode`
-        : 'AI_SEARCH_DRIVER=tavily is unsupported in vercel_ai_sdk mode'
-      searchDriverRaw = 'anthropic_web_search'
-    } else {
-      throw new Error(
-        'AI_SEARCH_DRIVER=tavily is unsupported in vercel_ai_sdk mode'
-      )
-    }
-  }
-
   const resolvedSearchDriver =
     searchDriverRaw === 'auto' ? resolveAutoDriver(backendMode) : searchDriverRaw
 

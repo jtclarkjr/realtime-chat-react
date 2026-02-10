@@ -1,9 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { anthropic as anthropicProvider } from '@ai-sdk/anthropic'
-import { generateText, type ModelMessage } from 'ai'
+import { tavilySearch } from '@tavily/ai-sdk'
+import { generateText, stepCountIs, type ModelMessage } from 'ai'
 import { appendSourcesIfMissing } from '@/lib/ai/stream-sse'
+import type { AISearchDriver } from '@/lib/ai/feature-flags'
 
 const MAX_WEB_SEARCH_USES = 2
+const TOOL_STEP_LIMIT = 3
 
 const toModelMessages = (
   messages: Anthropic.MessageParam[]
@@ -54,7 +57,7 @@ const buildSourcesMarkdown = (
   return `Sources: ${links.join(' | ')}`
 }
 
-const generateWithSearch = async ({
+const generateWithAnthropicNativeSearch = async ({
   selectedModel,
   systemPrompt,
   messages
@@ -72,7 +75,29 @@ const generateWithSearch = async ({
       web_search: anthropicProvider.tools.webSearch_20250305({
         maxUses: MAX_WEB_SEARCH_USES
       })
-    }
+    },
+    stopWhen: stepCountIs(TOOL_STEP_LIMIT)
+  })
+}
+
+const generateWithTavilySearch = async ({
+  selectedModel,
+  systemPrompt,
+  messages
+}: {
+  selectedModel: string
+  systemPrompt: string
+  messages: Anthropic.MessageParam[]
+}) => {
+  return generateText({
+    model: anthropicProvider(selectedModel),
+    system: systemPrompt,
+    messages: toModelMessages(messages),
+    maxOutputTokens: 1024,
+    tools: {
+      web_search: tavilySearch()
+    },
+    stopWhen: stepCountIs(TOOL_STEP_LIMIT)
   })
 }
 
@@ -98,12 +123,14 @@ export const runVercelSDKGeneration = async ({
   systemPrompt,
   messages,
   useWebSearch,
+  searchDriver,
   failOpen
 }: {
   selectedModel: string
   systemPrompt: string
   messages: Anthropic.MessageParam[]
   useWebSearch: boolean
+  searchDriver: Exclude<AISearchDriver, 'auto'>
   failOpen: boolean
 }): Promise<string> => {
   if (!useWebSearch) {
@@ -116,11 +143,18 @@ export const runVercelSDKGeneration = async ({
   }
 
   try {
-    const result = await generateWithSearch({
-      selectedModel,
-      systemPrompt,
-      messages
-    })
+    const result =
+      searchDriver === 'tavily'
+        ? await generateWithTavilySearch({
+            selectedModel,
+            systemPrompt,
+            messages
+          })
+        : await generateWithAnthropicNativeSearch({
+            selectedModel,
+            systemPrompt,
+            messages
+          })
     return appendSourcesIfMissing(result.text, buildSourcesMarkdown(result.sources))
   } catch (error) {
     if (!failOpen) throw error

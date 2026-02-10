@@ -127,6 +127,7 @@ const generateWithVercelSDK = async ({
       systemPrompt,
       messages,
       useWebSearch: searchRequested,
+      searchDriver: flags.searchDriver,
       failOpen: flags.failOpen
     })
 
@@ -172,7 +173,7 @@ export const generateAIResponse = async (
   if (flags.backendMode === 'vercel_ai_sdk') {
     return generateWithVercelSDK({
       ...params,
-      searchRequested: useSearch && flags.searchDriver === 'anthropic_web_search'
+      searchRequested: useSearch
     })
   }
 
