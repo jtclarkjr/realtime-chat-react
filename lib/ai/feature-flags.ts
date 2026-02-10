@@ -44,9 +44,12 @@ const resolveAutoDriver = (
   return 'anthropic_web_search'
 }
 
-const asValidBackendMode = (value: string | undefined): AIBackendMode | null => {
+const asValidBackendMode = (
+  value: string | undefined
+): AIBackendMode | null => {
   if (!value) return null
-  if (VALID_BACKEND_MODES.has(value as AIBackendMode)) return value as AIBackendMode
+  if (VALID_BACKEND_MODES.has(value as AIBackendMode))
+    return value as AIBackendMode
   return null
 }
 
@@ -60,7 +63,9 @@ const asValidSearchDriver = (
   return null
 }
 
-const asValidSDKProvider = (value: string | undefined): AISDKProvider | null => {
+const asValidSDKProvider = (
+  value: string | undefined
+): AISDKProvider | null => {
   if (!value) return null
   if (VALID_SDK_PROVIDERS.has(value as AISDKProvider)) {
     return value as AISDKProvider
@@ -117,7 +122,9 @@ export const resolveEffectiveAIFlags = (
   }
 
   const resolvedSearchDriver =
-    searchDriverRaw === 'auto' ? resolveAutoDriver(backendMode) : searchDriverRaw
+    searchDriverRaw === 'auto'
+      ? resolveAutoDriver(backendMode)
+      : searchDriverRaw
 
   return {
     backendMode,

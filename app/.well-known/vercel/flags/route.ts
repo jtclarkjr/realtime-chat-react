@@ -1,7 +1,4 @@
-import {
-  createFlagsDiscoveryEndpoint,
-  getProviderData
-} from 'flags/next'
+import { createFlagsDiscoveryEndpoint, getProviderData } from 'flags/next'
 import {
   aiBackendModeFlag,
   aiFailOpenFlag,

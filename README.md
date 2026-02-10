@@ -240,17 +240,26 @@ search is temporarily disabled for `AI_WEB_SEARCH_QUOTA_COOLDOWN_MS` and the
 assistant falls back to normal AI responses without blocking chat.
 
 Backend/search execution is feature-flagged:
-- `AI_BACKEND_MODE=anthropic_tavily`: Anthropic direct + Tavily web search
-- `AI_BACKEND_MODE=anthropic_native_web`: Anthropic direct + Anthropic native web search
-- `AI_BACKEND_MODE=vercel_ai_sdk`: Vercel AI SDK + Anthropic provider + native web search (no Tavily required)
-- In `vercel_ai_sdk` mode, `AI_SEARCH_DRIVER=tavily` is also supported (SDK + Tavily tool path).
 
-Use `AI_SEARCH_DRIVER=auto` to map search driver by backend mode. Invalid flag combinations fail open when `AI_FLAG_FAIL_OPEN=true`.
+- `AI_BACKEND_MODE=anthropic_tavily`: Anthropic direct + Tavily web search
+- `AI_BACKEND_MODE=anthropic_native_web`: Anthropic direct + Anthropic native
+  web search
+- `AI_BACKEND_MODE=vercel_ai_sdk`: Vercel AI SDK + Anthropic provider + native
+  web search (no Tavily required)
+- In `vercel_ai_sdk` mode, `AI_SEARCH_DRIVER=tavily` is also supported (SDK +
+  Tavily tool path).
+
+Use `AI_SEARCH_DRIVER=auto` to map search driver by backend mode. Invalid flag
+combinations fail open when `AI_FLAG_FAIL_OPEN=true`.
 
 Flags migration rollout:
-- `AI_FLAGS_MIGRATION_MODE=shadow` (default): evaluates both resolvers, logs mismatch, keeps legacy env resolver active.
-- `AI_FLAGS_MIGRATION_MODE=active`: uses `flags/next` runtime evaluation as source of truth.
-- Local/dev values can come from environment variables; Vercel can override via Flags Explorer. `FLAGS_SECRET` is required for Flags SDK.
+
+- `AI_FLAGS_MIGRATION_MODE=shadow` (default): evaluates both resolvers, logs
+  mismatch, keeps legacy env resolver active.
+- `AI_FLAGS_MIGRATION_MODE=active`: uses `flags/next` runtime evaluation as
+  source of truth.
+- Local/dev values can come from environment variables; Vercel can override via
+  Flags Explorer. `FLAGS_SECRET` is required for Flags SDK.
 
 The assistant also supports dynamic model routing: it uses the default model for
 normal prompts and switches to the code model for coding-intent prompts.

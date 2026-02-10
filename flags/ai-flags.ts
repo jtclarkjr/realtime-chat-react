@@ -5,7 +5,9 @@ import type {
   AISearchDriver
 } from '@/lib/ai/feature-flags'
 
-const asBackendMode = (value: string | undefined): AIBackendMode | undefined => {
+const asBackendMode = (
+  value: string | undefined
+): AIBackendMode | undefined => {
   if (
     value === 'anthropic_tavily' ||
     value === 'anthropic_native_web' ||
@@ -27,7 +29,9 @@ const asSearchDriver = (
   }
 }
 
-const asSDKProvider = (value: string | undefined): AISDKProvider | undefined => {
+const asSDKProvider = (
+  value: string | undefined
+): AISDKProvider | undefined => {
   if (value === 'anthropic') return value
 }
 
@@ -55,7 +59,8 @@ export const aiSearchDriverFlag = flag<AISearchDriver>({
 
 export const aiFailOpenFlag = flag<boolean>({
   key: 'ai-flag-fail-open',
-  description: 'Fallback to safe defaults when AI flags are invalid/misconfigured.',
+  description:
+    'Fallback to safe defaults when AI flags are invalid/misconfigured.',
   options: [
     { label: 'On', value: true },
     { label: 'Off', value: false }

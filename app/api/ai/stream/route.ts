@@ -14,7 +14,10 @@ import {
 import { shouldUseWebSearch } from '@/lib/ai/recency-detector'
 import { getEffectiveAIFlags } from '@/lib/ai/feature-flags-runtime'
 import { resolveAIModel } from '@/lib/ai/model-selector'
-import { getCurrentDateContext, getWebSearchConfig } from '@/lib/ai/stream-config'
+import {
+  getCurrentDateContext,
+  getWebSearchConfig
+} from '@/lib/ai/stream-config'
 import {
   streamAnthropicTextToSSE,
   enqueueContentByChunks

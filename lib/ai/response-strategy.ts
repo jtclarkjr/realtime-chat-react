@@ -57,7 +57,12 @@ const generateWithTavily = async ({
   searchRequested
 }: GenerateAIResponseParams): Promise<AIResponseGenerationResult> => {
   if (!searchRequested || !isTavilyReady()) {
-    return streamAnthropicDirect(anthropic, selectedModel, systemPrompt, messages)
+    return streamAnthropicDirect(
+      anthropic,
+      selectedModel,
+      systemPrompt,
+      messages
+    )
   }
 
   try {
@@ -97,7 +102,12 @@ const generateWithAnthropicNativeSearch = async ({
   searchRequested
 }: GenerateAIResponseParams): Promise<AIResponseGenerationResult> => {
   if (!searchRequested) {
-    return streamAnthropicDirect(anthropic, selectedModel, systemPrompt, messages)
+    return streamAnthropicDirect(
+      anthropic,
+      selectedModel,
+      systemPrompt,
+      messages
+    )
   }
 
   const fullResponse = await runAnthropicNativeSearchGeneration({
@@ -156,7 +166,12 @@ const generateWithVercelSDK = async ({
       // Fall through to baseline no-search streaming.
     }
 
-    return streamAnthropicDirect(anthropic, selectedModel, systemPrompt, messages)
+    return streamAnthropicDirect(
+      anthropic,
+      selectedModel,
+      systemPrompt,
+      messages
+    )
   }
 }
 

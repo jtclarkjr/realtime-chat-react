@@ -8,9 +8,7 @@ import type { AISearchDriver } from '@/lib/ai/feature-flags'
 const MAX_WEB_SEARCH_USES = 2
 const TOOL_STEP_LIMIT = 3
 
-const toModelMessages = (
-  messages: Anthropic.MessageParam[]
-): ModelMessage[] =>
+const toModelMessages = (messages: Anthropic.MessageParam[]): ModelMessage[] =>
   messages
     .filter(
       (
@@ -155,7 +153,10 @@ export const runVercelSDKGeneration = async ({
             systemPrompt,
             messages
           })
-    return appendSourcesIfMissing(result.text, buildSourcesMarkdown(result.sources))
+    return appendSourcesIfMissing(
+      result.text,
+      buildSourcesMarkdown(result.sources)
+    )
   } catch (error) {
     if (!failOpen) throw error
 

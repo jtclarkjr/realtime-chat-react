@@ -1,5 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { appendSourcesIfMissing, getMessageTextContent } from '@/lib/ai/stream-sse'
+import {
+  appendSourcesIfMissing,
+  getMessageTextContent
+} from '@/lib/ai/stream-sse'
 
 const NATIVE_WEB_SEARCH_TOOL_NAME = 'web_search'
 const NATIVE_WEB_SEARCH_MAX_USES = 2
