@@ -351,7 +351,9 @@ export const POST = async (request: NextRequest) => {
           controller.close()
         } catch (error) {
           console.error('Streaming error:', error)
-          controller.enqueue(encoder.encode(formatSSEError('AI_RESPONSE_FAILED')))
+          controller.enqueue(
+            encoder.encode(formatSSEError('AI_RESPONSE_FAILED'))
+          )
           controller.close()
         }
       }
