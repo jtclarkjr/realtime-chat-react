@@ -73,6 +73,7 @@ export const MarkdownMessageContent = ({
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        link: false,
         heading: {
           levels: [1, 2, 3, 4, 5, 6]
         }
