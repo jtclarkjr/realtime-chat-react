@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs'
-import { DiscordIcon, GitHubIcon, AppleIcon } from '../icons'
+import { DiscordIcon, GitHubIcon, AppleIcon, GoogleIcon } from '../icons'
 
 const meta = {
   title: 'UI/Icons',
@@ -25,6 +25,10 @@ export const Apple: Story = {
   render: () => <AppleIcon />
 }
 
+export const Google: Story = {
+  render: () => <GoogleIcon />
+}
+
 export const AllIcons: Story = {
   render: () => (
     <div className="flex gap-6 items-center">
@@ -39,6 +43,10 @@ export const AllIcons: Story = {
       <div className="flex flex-col items-center gap-2">
         <AppleIcon />
         <span className="text-sm text-muted-foreground">Apple</span>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <GoogleIcon />
+        <span className="text-sm text-muted-foreground">Google</span>
       </div>
     </div>
   )
@@ -61,6 +69,7 @@ export const CustomColor: Story = {
       <DiscordIcon className="text-blue-500" />
       <GitHubIcon className="text-gray-800" />
       <AppleIcon className="text-black dark:text-white" />
+      <GoogleIcon />
     </div>
   )
 }
@@ -79,6 +88,10 @@ export const InButtons: Story = {
       <button className="flex items-center gap-2 rounded-md bg-black text-white px-4 py-2 hover:bg-gray-800">
         <AppleIcon className="w-5 h-5" />
         Continue with Apple
+      </button>
+      <button className="flex items-center gap-2 rounded-md border bg-white text-black px-4 py-2 hover:bg-gray-100 dark:bg-zinc-900 dark:text-white dark:border-zinc-700 dark:hover:bg-zinc-800">
+        <GoogleIcon className="w-5 h-5" />
+        Continue with Google
       </button>
     </div>
   )

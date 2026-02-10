@@ -22,6 +22,7 @@ const meta = {
         'discord',
         'github',
         'apple',
+        'google',
         'text-danger'
       ]
     },
@@ -101,6 +102,13 @@ export const Apple: Story = {
   args: {
     children: 'Continue with Apple',
     variant: 'apple'
+  }
+}
+
+export const Google: Story = {
+  args: {
+    children: 'Continue with Google',
+    variant: 'google'
   }
 }
 
@@ -184,6 +192,7 @@ export const AllVariants: Story = {
         <Button variant="discord">Discord</Button>
         <Button variant="github">GitHub</Button>
         <Button variant="apple">Apple</Button>
+        <Button variant="google">Google</Button>
         <Button variant="text-danger">Text Danger</Button>
       </div>
     </div>

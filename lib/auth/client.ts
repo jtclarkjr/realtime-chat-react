@@ -41,6 +41,19 @@ export async function signInWithApple() {
   return { data, error }
 }
 
+export async function signInWithGoogle() {
+  const supabase = createAuthClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo:
+        process.env.NEXT_PUBLIC_AUTH_CALLBACK_URL ||
+        `${window.location.origin}/auth/callback`
+    }
+  })
+  return { data, error }
+}
+
 export async function signInAnonymously() {
   const supabase = createAuthClient()
   const { data, error } = await supabase.auth.signInAnonymously()

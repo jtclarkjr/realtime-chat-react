@@ -5,11 +5,17 @@ import { track } from '@vercel/analytics/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
-import { DiscordIcon, GitHubIcon, AppleIcon } from '@/components/ui/icons'
+import {
+  DiscordIcon,
+  GitHubIcon,
+  AppleIcon,
+  GoogleIcon
+} from '@/components/ui/icons'
 import {
   signInWithDiscord,
   signInWithGitHub,
-  signInWithApple
+  signInWithApple,
+  signInWithGoogle
 } from '@/lib/auth/client'
 import {
   signInWithEmailAction,
@@ -78,7 +84,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   }, [])
 
   const handleOAuthSignIn = async (
-    provider: 'discord' | 'github' | 'apple',
+    provider: 'discord' | 'github' | 'apple' | 'google',
     signIn: () => Promise<{ error: Error | null }>
   ) => {
     track('event_login_attempt', { provider, source: 'dialog' })
@@ -107,6 +113,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     handleOAuthSignIn('discord', signInWithDiscord)
   const handleGitHubSignIn = () => handleOAuthSignIn('github', signInWithGitHub)
   const handleAppleSignIn = () => handleOAuthSignIn('apple', signInWithApple)
+  const handleGoogleSignIn = () => handleOAuthSignIn('google', signInWithGoogle)
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -269,6 +276,26 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
               <span className="flex items-center gap-2">
                 <GitHubIcon />
                 Continue with GitHub
+              </span>
+            )}
+          </Button>
+
+          <Button
+            onClick={handleGoogleSignIn}
+            disabled={!!loading}
+            variant="google"
+            size="xl"
+            className="w-full"
+          >
+            {loading === 'google' ? (
+              <span className="flex items-center gap-2">
+                <Spinner />
+                Signing in...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <GoogleIcon />
+                Continue with Google
               </span>
             )}
           </Button>
