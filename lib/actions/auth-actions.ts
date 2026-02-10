@@ -2,7 +2,6 @@
 
 import { createServerClient } from '@supabase/ssr'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 
 export async function signInWithEmailAction(
@@ -130,5 +129,5 @@ export async function signOutAction() {
 
   await supabase.auth.signOut()
   revalidatePath('/', 'layout')
-  redirect('/login')
+  return { success: true as const }
 }

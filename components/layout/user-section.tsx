@@ -54,13 +54,34 @@ export function UserSection({
   const handleSignOut = async () => {
     try {
       setOpen(false)
-      if (user.isAnonymous) {
-        // For anonymous users, just navigate to login without destroying session
-        router.push('/login?guest=1')
-      } else {
-        // For authenticated users, sign out normally
-        await signOutAction()
+
+      // Force clear any lingering client-side Supabase auth/PKCE artifacts.
+      const clearClientAuthState = () => {
+        if (typeof window === 'undefined') return
+        const isAuthKey = (key: string) =>
+          /^sb-.*auth-token/i.test(key) ||
+          /^sb-.*code-verifier/i.test(key) ||
+          /^supabase-auth/i.test(key)
+
+        for (let i = window.localStorage.length - 1; i >= 0; i--) {
+          const key = window.localStorage.key(i)
+          if (key && isAuthKey(key)) {
+            window.localStorage.removeItem(key)
+          }
+        }
+
+        for (let i = window.sessionStorage.length - 1; i >= 0; i--) {
+          const key = window.sessionStorage.key(i)
+          if (key && isAuthKey(key)) {
+            window.sessionStorage.removeItem(key)
+          }
+        }
       }
+
+      await signOutAction()
+      clearClientAuthState()
+      router.replace('/login')
+      router.refresh()
     } catch (error) {
       console.error('Error signing out:', error)
     }
@@ -164,7 +185,7 @@ export function UserSection({
               onClick={handleSignOut}
             >
               <LogOut className="h-4 w-4" />
-              <span>{user.isAnonymous ? 'Leave' : 'Sign Out'}</span>
+              <span>{user.isAnonymous ? 'Log Out' : 'Sign Out'}</span>
             </Button>
           </PopoverContent>
         </Popover>
