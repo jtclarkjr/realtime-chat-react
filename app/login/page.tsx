@@ -6,6 +6,8 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 export default async function LoginPage() {
+  const appName = process.env.APP_NAME || 'Realtime Chat'
+
   // Check if user is already signed in
   const headersList = await headers()
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
@@ -30,7 +32,7 @@ export default async function LoginPage() {
             <MessageCircle className="h-12 w-12 text-primary" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold">
-            Welcome to Realtime Chat
+            Welcome to {appName}
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
             Sign in to join the conversation

@@ -17,14 +17,19 @@ const geistMono = Geist_Mono({
   subsets: ['latin']
 })
 
+const appName = process.env.APP_NAME || 'Realtime Chat'
+
 export const metadata: Metadata = {
-  title: 'Realtime Chat App',
+  title: {
+    default: appName,
+    template: `%s | ${appName}`
+  },
   description:
     'A modern, real-time chat application. Features instant messaging, message persistence, and reconnection handling.',
   keywords: ['chat', 'realtime', 'nextjs', 'supabase', 'redis', 'websocket'],
   authors: [{ name: 'James' }],
   openGraph: {
-    title: 'Realtime Chat App',
+    title: appName,
     description:
       'A modern, real-time chat application with instant messaging and message persistence.',
     type: 'website'
