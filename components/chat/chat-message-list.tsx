@@ -17,6 +17,8 @@ interface ChatMessageListProps {
   onRetry: (messageId: string) => void
   onUnsend?: (messageId: string) => void
   isUnsending?: (messageId: string) => boolean
+  onReplyWithAI?: (message: ChatMessage, customPrompt?: string) => Promise<void>
+  isReplyingWithAI?: (messageId: string) => boolean
   onUserScroll?: () => void
   isAnonymous?: boolean
 }
@@ -32,6 +34,8 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
       onRetry,
       onUnsend,
       isUnsending,
+      onReplyWithAI,
+      isReplyingWithAI,
       onUserScroll,
       isAnonymous = false
     },
@@ -131,6 +135,8 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                           onRetry={onRetry}
                           onUnsend={onUnsend}
                           isUnsending={isUnsending}
+                          onReplyWithAI={onReplyWithAI}
+                          isReplyingWithAI={isReplyingWithAI}
                           isAnonymous={isAnonymous}
                         />
                       </div>
@@ -170,6 +176,8 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                             onRetry={onRetry}
                             onUnsend={onUnsend}
                             isUnsending={isUnsending}
+                            onReplyWithAI={onReplyWithAI}
+                            isReplyingWithAI={isReplyingWithAI}
                             isAnonymous={isAnonymous}
                           />
                         </motion.div>
@@ -188,6 +196,8 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
                             onRetry={onRetry}
                             onUnsend={onUnsend}
                             isUnsending={isUnsending}
+                            onReplyWithAI={onReplyWithAI}
+                            isReplyingWithAI={isReplyingWithAI}
                             isAnonymous={isAnonymous}
                           />
                         </div>

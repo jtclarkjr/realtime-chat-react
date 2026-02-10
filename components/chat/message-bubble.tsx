@@ -17,6 +17,12 @@ interface MessageBubbleProps {
   isStreaming: boolean
   isUnsending?: boolean
   onUnsend?: (messageId: string) => void
+  onReplyWithAI?: (message: ChatMessage) => Promise<void>
+  onReplyWithAICustom?: (
+    message: ChatMessage,
+    customPrompt: string
+  ) => Promise<void>
+  isReplyingWithAI?: boolean
   isAnonymous: boolean
 }
 
@@ -27,6 +33,9 @@ export const MessageBubble = ({
   isPrivateForCurrentUser,
   isStreaming,
   onUnsend,
+  onReplyWithAI,
+  onReplyWithAICustom,
+  isReplyingWithAI = false,
   isUnsending = false,
   isAnonymous
 }: MessageBubbleProps) => {
@@ -46,6 +55,13 @@ export const MessageBubble = ({
   const showMarkdownContent = isAIMessage
   const hasStreamingContent = isStreaming && !!message.content.trim()
   const canCopy = !!message.content.trim()
+  const hasAIReplyHandlers = !!onReplyWithAI && !!onReplyWithAICustom
+  const canReplyWithAI =
+    hasAIReplyHandlers &&
+    !isAnonymous &&
+    !isStreaming &&
+    !message.isDeleted &&
+    !!message.content.trim()
 
   const handleCopyMessage = useCallback(async () => {
     if (!canCopy) return
@@ -124,14 +140,23 @@ export const MessageBubble = ({
     </div>
   )
 
-  // Only wrap with MessageOptions if user can potentially unsend
-  if (canUnsend && onUnsend) {
+  // Wrap with MessageOptions when there is at least one available message action.
+  if (canUnsend || canReplyWithAI) {
     return (
       <MessageOptions
         messageId={message.serverId || message.id}
+        messageContent={message.content}
         onUnsend={onUnsend}
+        onReplyWithAI={onReplyWithAI ? () => onReplyWithAI(message) : undefined}
+        onReplyWithAICustom={
+          onReplyWithAICustom
+            ? (customPrompt) => onReplyWithAICustom(message, customPrompt)
+            : undefined
+        }
         isUnsending={isUnsending}
         canUnsend={canUnsend}
+        canReplyWithAI={canReplyWithAI}
+        isReplyingWithAI={isReplyingWithAI}
       >
         {bubbleContent}
       </MessageOptions>

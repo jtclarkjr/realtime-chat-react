@@ -4,42 +4,121 @@ import { sendAIMessage, markMessageAsAITrigger } from '@/lib/services/chat'
 import { requireNonAnonymousAuth } from '@/lib/auth/middleware'
 import { aiStreamRequestSchema, validateRequestBody } from '@/lib/validation'
 import { plainErrorResponse, formatSSEError } from '@/lib/errors'
-import { AI_STREAM_MODEL } from '@/lib/ai/constants'
 import { getServiceClient } from '@/lib/supabase/server'
+import { CURRENT_TIME_CONTEXT_TEMPLATE } from '@/lib/ai/constants'
 import {
   AI_STREAM_SYSTEM_PROMPT,
-  AI_STREAM_MARKDOWN_SYSTEM_PROMPT
+  AI_STREAM_MARKDOWN_SYSTEM_PROMPT,
+  AI_WEB_SEARCH_INSTRUCTIONS
 } from '@/lib/ai/prompts'
+import { shouldUseWebSearch } from '@/lib/ai/recency-detector'
+import { resolveEffectiveAIFlags } from '@/lib/ai/feature-flags'
+import { resolveAIModel } from '@/lib/ai/model-selector'
+import { getCurrentDateContext, getWebSearchConfig } from '@/lib/ai/stream-config'
+import {
+  streamAnthropicTextToSSE,
+  enqueueContentByChunks
+} from '@/lib/ai/stream-sse'
+import { generateAIResponse } from '@/lib/ai/response-strategy'
 
-// Configure route for streaming with body size limit
 export const runtime = 'nodejs'
-export const maxDuration = 60 // 60 seconds max for AI responses
+export const maxDuration = 60
 
-// AI Assistant user constants
 const AI_ASSISTANT = {
   id: 'ai-assistant',
   name: 'AI Assistant'
 }
 
-export const POST = async (request: NextRequest) => {
-  // Authentication check - requires full (non-anonymous) account
-  const authResult = await requireNonAnonymousAuth(request)
+const buildDatedSystemPrompt = ({
+  responseFormat,
+  searchNeeded
+}: {
+  responseFormat?: 'plain' | 'markdown'
+  searchNeeded: boolean
+}) => {
+  const baseSystemPrompt =
+    responseFormat === 'markdown'
+      ? AI_STREAM_MARKDOWN_SYSTEM_PROMPT
+      : AI_STREAM_SYSTEM_PROMPT
+  const systemPrompt = searchNeeded
+    ? `${baseSystemPrompt}\n\n${AI_WEB_SEARCH_INSTRUCTIONS}`
+    : baseSystemPrompt
 
-  // If auth failed, return error response
-  if (authResult instanceof Response) {
-    return authResult
+  const { nowIso, nowUtc } = getCurrentDateContext()
+  const timeContext = CURRENT_TIME_CONTEXT_TEMPLATE.replace(
+    '{{NOW_ISO}}',
+    nowIso
+  ).replace('{{NOW_UTC}}', nowUtc)
+
+  return `${systemPrompt}\n\n${timeContext}`
+}
+
+const persistAndBroadcastAIMessage = async ({
+  roomId,
+  userId,
+  triggerMessageId,
+  isPrivate,
+  content,
+  supabase
+}: {
+  roomId: string
+  userId: string
+  triggerMessageId?: string
+  isPrivate?: boolean
+  content: string
+  supabase: {
+    channel: (roomId: string) => {
+      httpSend: (event: string, payload: unknown) => Promise<unknown>
+    }
   }
+}) => {
+  const aiMessage = await sendAIMessage({
+    roomId,
+    content,
+    isPrivate: isPrivate || false,
+    requesterId: userId
+  })
+
+  if (triggerMessageId) {
+    await markMessageAsAITrigger(triggerMessageId)
+  }
+
+  if (isPrivate) return aiMessage
+
+  const broadcastMessage = {
+    ...aiMessage,
+    roomId,
+    channelId: roomId,
+    isAI: true,
+    isPrivate: false
+  }
+
+  try {
+    const supabaseService = getServiceClient()
+    await supabaseService.channel(roomId).httpSend('message', broadcastMessage)
+  } catch (broadcastError) {
+    try {
+      await supabase.channel(roomId).httpSend('message', broadcastMessage)
+    } catch (fallbackError) {
+      console.error('AI broadcast failed (primary + fallback):', {
+        broadcastError,
+        fallbackError
+      })
+    }
+  }
+
+  return aiMessage
+}
+
+export const POST = async (request: NextRequest) => {
+  const authResult = await requireNonAnonymousAuth(request)
+  if (authResult instanceof Response) return authResult
 
   const { user, supabase } = authResult
 
   try {
-    // STREAMING VALIDATION PATTERN:
-    // For streaming endpoints, we validate the entire body BEFORE initiating the stream.
-    // This prevents resource allocation for invalid requests.
-    // Body size is already limited by middleware to 50KB.
     const validation = await validateRequestBody(request, aiStreamRequestSchema)
     if (!validation.success) {
-      // Convert NextResponse to regular Response for streaming endpoint
       return new Response(validation.response.body, {
         status: validation.response.status,
         headers: { 'Content-Type': 'application/json' }
@@ -48,62 +127,74 @@ export const POST = async (request: NextRequest) => {
 
     const body = validation.data
 
-    // Validate that the user making the request matches the userId
     if (user.id !== body.userId) {
       return plainErrorResponse('AI_REQUEST_SELF_ONLY')
     }
-
-    // Initialize Anthropic
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY
-    })
 
     if (!process.env.ANTHROPIC_API_KEY) {
       console.error('Anthropic API key not configured')
       return plainErrorResponse('AI_SERVICE_NOT_CONFIGURED')
     }
 
-    const messages: Anthropic.MessageParam[] = []
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY
+    })
 
-    // Add previous messages for context (if provided)
-    if (body.previousMessages && body.previousMessages.length > 0) {
-      body.previousMessages.forEach((msg) => {
-        messages.push({
-          role: msg.isAi ? 'assistant' : 'user',
-          content: msg.isAi ? msg.content : `${msg.userName}: ${msg.content}`
-        })
+    const messages: Anthropic.MessageParam[] = []
+    for (const msg of body.previousMessages || []) {
+      messages.push({
+        role: msg.isAi ? 'assistant' : 'user',
+        content: msg.isAi ? msg.content : `${msg.userName}: ${msg.content}`
       })
     }
 
-    // Add the current user message
-    messages.push({
-      role: 'user',
-      content: body.message
+    const hasTargetMessage = Boolean(
+      body.targetMessageId && body.targetMessageContent
+    )
+    const currentUserMessage = hasTargetMessage
+      ? [
+          'You are drafting a chat reply for the user.',
+          `Selected message to reply to:\n"""${body.targetMessageContent}"""`,
+          body.customPrompt
+            ? `Custom instruction for the reply:\n${body.customPrompt}`
+            : 'Write a natural, context-aware reply to the selected message.',
+          'Return only the final reply text the user should send.',
+          'Do not include prefaces, labels, quotes, or explanations.'
+        ].join('\n\n')
+      : body.message
+
+    messages.push({ role: 'user', content: currentUserMessage })
+
+    const selectedModel = resolveAIModel({
+      message: body.message,
+      customPrompt: body.customPrompt,
+      targetMessageContent: body.targetMessageContent,
+      responseFormat: body.responseFormat
     })
 
-    // Create streaming response with Anthropic
-    const systemPrompt =
-      body.responseFormat === 'markdown'
-        ? AI_STREAM_MARKDOWN_SYSTEM_PROMPT
-        : AI_STREAM_SYSTEM_PROMPT
+    const flags = resolveEffectiveAIFlags()
+    if (flags.fallbackApplied && flags.reason) {
+      console.warn(`AI feature flag fallback applied: ${flags.reason}`)
+    }
 
-    const stream = anthropic.messages.stream({
-      model: AI_STREAM_MODEL,
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages
+    const webSearchConfig = getWebSearchConfig()
+    const searchRequested = shouldUseWebSearch({
+      userMessage: body.message,
+      customPrompt: body.customPrompt,
+      targetMessageContent: body.targetMessageContent
     })
 
-    // Create a TransformStream for processing the Anthropic stream
-    let fullResponse = ''
-    // Use a temporary ID first, will be replaced with database ID
+    const datedSystemPrompt = buildDatedSystemPrompt({
+      responseFormat: body.responseFormat,
+      searchNeeded: webSearchConfig.enabled && searchRequested
+    })
+
     const tempMessageId = crypto.randomUUID()
-
     const encoder = new TextEncoder()
+
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
-          // Send initial message metadata
           const initialData = {
             type: 'start',
             messageId: tempMessageId,
@@ -113,83 +204,61 @@ export const POST = async (request: NextRequest) => {
             encoder.encode(`data: ${JSON.stringify(initialData)}\n\n`)
           )
 
-          for await (const chunk of stream) {
-            if (
-              chunk.type === 'content_block_delta' &&
-              chunk.delta.type === 'text_delta'
-            ) {
-              const content = chunk.delta.text
-              if (content) {
-                fullResponse += content
-
-                // Send streaming content
-                const streamData = {
-                  type: 'content',
-                  messageId: tempMessageId,
-                  content,
-                  fullContent: fullResponse
-                }
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(streamData)}\n\n`)
-                )
-              }
-            }
-          }
-
-          // Save complete message to database
-          const aiMessage = await sendAIMessage({
-            roomId: body.roomId,
-            content: fullResponse.trim(),
-            isPrivate: body.isPrivate || false,
-            requesterId: body.userId
+          const generation = await generateAIResponse({
+            anthropic,
+            selectedModel,
+            systemPrompt: datedSystemPrompt,
+            messages,
+            flags,
+            webSearchConfig,
+            searchRequested
           })
 
-          if (body.triggerMessageId) {
-            await markMessageAsAITrigger(body.triggerMessageId)
+          const fullResponse =
+            generation.streamMode === 'native_stream'
+              ? await streamAnthropicTextToSSE({
+                  stream: generation.stream,
+                  controller,
+                  encoder,
+                  messageId: tempMessageId
+                })
+              : (() => {
+                  enqueueContentByChunks(
+                    controller,
+                    encoder,
+                    tempMessageId,
+                    generation.fullResponse
+                  )
+                  return generation.fullResponse
+                })()
+
+          const trimmedResponse = fullResponse.trim()
+          let persistedMessageId = tempMessageId
+          let persistedCreatedAt = new Date().toISOString()
+
+          if (!body.draftOnly) {
+            const aiMessage = await persistAndBroadcastAIMessage({
+              roomId: body.roomId,
+              userId: body.userId,
+              triggerMessageId: body.triggerMessageId,
+              isPrivate: body.isPrivate,
+              content: trimmedResponse,
+              supabase
+            })
+
+            persistedMessageId = aiMessage.id
+            persistedCreatedAt = aiMessage.createdAt
           }
 
-          // Send completion with database info
           const completeData = {
             type: 'complete',
-            messageId: aiMessage.id,
-            fullContent: fullResponse.trim(),
-            createdAt: aiMessage.createdAt
+            messageId: persistedMessageId,
+            fullContent: trimmedResponse,
+            createdAt: persistedCreatedAt
           }
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify(completeData)}\n\n`)
           )
-
-          // Only broadcast public AI messages via Supabase Realtime
-          // Private messages are only visible to the requesting user
-          if (!body.isPrivate) {
-            const broadcastMessage = {
-              ...aiMessage,
-              roomId: body.roomId,
-              channelId: body.roomId,
-              isAI: true,
-              isPrivate: false
-            }
-
-            try {
-              const supabaseService = getServiceClient()
-              await supabaseService
-                .channel(body.roomId)
-                .httpSend('message', broadcastMessage)
-            } catch (broadcastError) {
-              // Fallback to the request-scoped client if service broadcast fails.
-              try {
-                await supabase
-                  .channel(body.roomId)
-                  .httpSend('message', broadcastMessage)
-              } catch (fallbackError) {
-                // Keep the stream successful for the requester even if broadcast fails.
-                console.error('AI broadcast failed (primary + fallback):', {
-                  broadcastError,
-                  fallbackError
-                })
-              }
-            }
-          }
 
           controller.close()
         } catch (error) {

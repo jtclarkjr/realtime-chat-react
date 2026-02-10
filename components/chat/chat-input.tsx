@@ -19,6 +19,7 @@ interface ChatInputProps {
   setIsAIPrivate: (isPrivate: boolean) => void
   isAILoading: boolean
   isAnonymous: boolean
+  inputRef?: React.RefObject<HTMLTextAreaElement | null>
 }
 
 export const ChatInput = ({
@@ -32,7 +33,8 @@ export const ChatInput = ({
   isAIPrivate,
   setIsAIPrivate,
   isAILoading,
-  isAnonymous
+  isAnonymous,
+  inputRef
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -78,7 +80,12 @@ export const ChatInput = ({
         )} // temp removed loading
       >
         <Textarea
-          ref={textareaRef}
+          ref={(node) => {
+            textareaRef.current = node
+            if (inputRef) {
+              inputRef.current = node
+            }
+          }}
           className="flex-1 border-0 bg-transparent shadow-none px-0 py-1 min-h-0 h-auto resize-none max-h-40 overflow-y-scroll scrollbar-none leading-relaxed focus-visible:ring-0 focus-visible:border-transparent dark:bg-transparent"
           value={newMessage}
           onChange={(e) => {

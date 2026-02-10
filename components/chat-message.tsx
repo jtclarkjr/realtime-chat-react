@@ -18,6 +18,8 @@ interface ChatMessageItemProps {
   onRetry?: (messageId: string) => void
   onUnsend?: (messageId: string) => void
   isUnsending?: (messageId: string) => boolean
+  onReplyWithAI?: (message: ChatMessage, customPrompt?: string) => Promise<void>
+  isReplyingWithAI?: (messageId: string) => boolean
   isAnonymous?: boolean
 }
 
@@ -29,6 +31,8 @@ const ChatMessageItemComponent = ({
   onRetry,
   onUnsend,
   isUnsending,
+  onReplyWithAI,
+  isReplyingWithAI,
   isAnonymous = false
 }: ChatMessageItemProps) => {
   const isAIMessage =
@@ -103,6 +107,22 @@ const ChatMessageItemComponent = ({
               isUnsending={
                 isUnsending
                   ? isUnsending(message.serverId || message.id)
+                  : false
+              }
+              onReplyWithAI={
+                onReplyWithAI
+                  ? async (targetMessage) => onReplyWithAI(targetMessage)
+                  : undefined
+              }
+              onReplyWithAICustom={
+                onReplyWithAI
+                  ? async (targetMessage, customPrompt) =>
+                      onReplyWithAI(targetMessage, customPrompt)
+                  : undefined
+              }
+              isReplyingWithAI={
+                isReplyingWithAI
+                  ? isReplyingWithAI(message.serverId || message.id)
                   : false
               }
               isAnonymous={isAnonymous}

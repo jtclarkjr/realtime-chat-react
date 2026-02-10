@@ -11,8 +11,15 @@ import {
 } from '@/components/chat'
 import type { ChatMessage } from '@/lib/types/database'
 import type { PresenceState } from '@/lib/types/presence'
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore
+} from 'react'
 import { track } from '@vercel/analytics/react'
+import { toast } from 'sonner'
 
 interface RealtimeChatProps {
   roomId: string
@@ -79,7 +86,8 @@ export const RealtimeChat = ({
     isAIPrivate,
     setIsAIPrivate,
     isAILoading,
-    sendAIMessage
+    sendAIMessage,
+    generateReplyDraft
   } = useAIChat({
     roomId,
     userId,
@@ -98,6 +106,10 @@ export const RealtimeChat = ({
   })
 
   const [newMessage, setNewMessage] = useState<string>('')
+  const [replyingMessageId, setReplyingMessageId] = useState<string | null>(
+    null
+  )
+  const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const hasHydrated = useSyncExternalStore(
     subscribeNoop,
     () => true,
@@ -209,6 +221,61 @@ export const RealtimeChat = ({
     ]
   )
 
+  const handleReplyWithAI = useCallback(
+    async (selectedMessage: ChatMessage, customPrompt?: string) => {
+      const selectedMessageId = selectedMessage.serverId || selectedMessage.id
+      const selectedMessageContent = selectedMessage.content.trim()
+
+      if (!selectedMessageId || !selectedMessageContent) {
+        toast.error('Unable to generate a reply for this message')
+        return
+      }
+
+      setReplyingMessageId(selectedMessageId)
+
+      try {
+        const recentMessages = allMessages
+          .filter((message) => !message.isDeleted)
+          .slice(-10)
+
+        const selectedInRecentMessages = recentMessages.some(
+          (message) =>
+            (message.serverId || message.id) === selectedMessageId &&
+            message.content.trim() === selectedMessageContent
+        )
+
+        const previousMessages = selectedInRecentMessages
+          ? recentMessages
+          : [...recentMessages, selectedMessage]
+
+        const generatedReply = await generateReplyDraft({
+          previousMessages,
+          targetMessage: {
+            id: selectedMessageId,
+            content: selectedMessageContent
+          },
+          customPrompt
+        })
+
+        setNewMessage(generatedReply)
+        setIsAIEnabled(!!selectedMessage.isAI)
+        inputRef.current?.focus()
+      } catch (error) {
+        console.error('Failed to generate AI reply:', error)
+        toast.error('Failed to generate AI reply')
+        throw error
+      } finally {
+        setReplyingMessageId(null)
+      }
+    },
+    [allMessages, generateReplyDraft, setIsAIEnabled]
+  )
+
+  const isReplyingWithAI = useCallback(
+    (messageId: string) => replyingMessageId === messageId,
+    [replyingMessageId]
+  )
+
   return (
     <div className="relative flex flex-col h-full w-full bg-background text-foreground antialiased">
       <ConnectionStatusBar
@@ -227,6 +294,8 @@ export const RealtimeChat = ({
         onRetry={retryMessage}
         onUnsend={unsendMessage}
         isUnsending={isUnsending}
+        onReplyWithAI={handleReplyWithAI}
+        isReplyingWithAI={isReplyingWithAI}
         onUserScroll={handleUserScroll}
         isAnonymous={isAnonymous}
       />
@@ -249,6 +318,7 @@ export const RealtimeChat = ({
         setIsAIPrivate={setIsAIPrivate}
         isAILoading={isAILoading}
         isAnonymous={isAnonymous}
+        inputRef={inputRef}
       />
     </div>
   )

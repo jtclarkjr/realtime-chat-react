@@ -93,4 +93,8 @@ export interface StreamAIMessageRequest {
   }>
   isPrivate: boolean
   triggerMessageId?: string
+  targetMessageId?: string
+  targetMessageContent?: string
+  customPrompt?: string
+  draftOnly?: boolean
 }
