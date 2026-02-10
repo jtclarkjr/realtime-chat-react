@@ -15,20 +15,21 @@ interface TavilyResponse {
     published_date?: string
   }>
 }
-const TAVILY_QUOTA_EXCEEDED_CODE =
-  ERROR_DEFINITIONS.TAVILY_QUOTA_EXCEEDED.code
+const TAVILY_QUOTA_EXCEEDED_CODE = ERROR_DEFINITIONS.TAVILY_QUOTA_EXCEEDED.code
 
-const asCodedError = (message: string, code: string): Error & { code: string } =>
-  Object.assign(new Error(message), { code })
+const asCodedError = (
+  message: string,
+  code: string
+): Error & { code: string } => Object.assign(new Error(message), { code })
 
 export const isTavilyQuotaExceededError = (
   error: unknown
 ): error is Error & { code: string } =>
   Boolean(
     error &&
-      typeof error === 'object' &&
-      'code' in error &&
-      (error as { code?: unknown }).code === TAVILY_QUOTA_EXCEEDED_CODE
+    typeof error === 'object' &&
+    'code' in error &&
+    (error as { code?: unknown }).code === TAVILY_QUOTA_EXCEEDED_CODE
   )
 
 const DEFAULT_MAX_RESULTS = 5
