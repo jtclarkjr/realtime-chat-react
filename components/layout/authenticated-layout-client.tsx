@@ -7,6 +7,7 @@ import { AnonymousBanner } from '@/components/anonymous-banner'
 import { useUIStore } from '@/lib/stores/ui-store'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { usePathname } from 'next/navigation'
+import { RoomsRealtimeSync } from './rooms-realtime-sync'
 import type { DatabaseRoom } from '@/lib/types/database'
 import type { PublicUser } from '@/lib/types/user'
 import { cn } from '@/lib/utils'
@@ -42,6 +43,7 @@ export function AuthenticatedLayoutClient({
 
   return (
     <div className="h-dvh flex flex-col w-full">
+      <RoomsRealtimeSync userId={user.id} />
       <UnreadMessageTracker userId={user.id} />
       {user.isAnonymous && <AnonymousBanner />}
 
