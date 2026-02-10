@@ -14,6 +14,13 @@ interface ModelSelectorInput {
   responseFormat?: 'plain' | 'markdown'
 }
 
+const ALLOWED_AI_MODELS = new Set<string>([
+  AI_STREAM_MODEL,
+  AI_STREAM_CODE_MODEL,
+  'claude-sonnet-4-5',
+  'claude-haiku-4-5'
+])
+
 const normalize = (value: string) => value.toLowerCase()
 
 const includesAny = (text: string, hints: string[]) =>
@@ -24,23 +31,32 @@ export const shouldUseCodeModel = ({
   customPrompt,
   targetMessageContent
 }: ModelSelectorInput): boolean => {
-  const fullText = [message, customPrompt, targetMessageContent]
+  const instructionText = [message, customPrompt]
     .filter(Boolean)
     .join('\n')
     .trim()
+  const contextText = (targetMessageContent || '').trim()
 
-  if (!fullText) return false
+  if (!instructionText && !contextText) return false
 
-  const normalized = normalize(fullText)
-  const hasCodePattern = CODE_PATTERN_REGEXES.some((regex) =>
-    regex.test(fullText)
+  const normalizedInstruction = normalize(instructionText)
+  const hasCodePatternInInstruction = CODE_PATTERN_REGEXES.some((regex) =>
+    regex.test(instructionText)
   )
-  const hasActionHint = includesAny(normalized, ACTION_HINTS)
-  const hasLanguageHint = includesAny(normalized, LANGUAGE_HINTS)
-  const hasConceptOnly = includesAny(normalized, CONCEPT_ONLY_HINTS)
+  const hasCodePatternInContext = CODE_PATTERN_REGEXES.some((regex) =>
+    regex.test(contextText)
+  )
+  const hasActionHint = includesAny(normalizedInstruction, ACTION_HINTS)
+  const hasLanguageHint = includesAny(normalizedInstruction, LANGUAGE_HINTS)
+  const hasConceptOnly = includesAny(normalizedInstruction, CONCEPT_ONLY_HINTS)
 
-  if (hasCodePattern) return true
-  if (hasActionHint && (hasLanguageHint || normalized.includes('code'))) {
+  if (hasCodePatternInInstruction) return true
+  if (
+    hasActionHint &&
+    (hasLanguageHint ||
+      normalizedInstruction.includes('code') ||
+      hasCodePatternInContext)
+  ) {
     return true
   }
 
@@ -50,19 +66,29 @@ export const shouldUseCodeModel = ({
 }
 
 const getConfiguredModel = (
+  envKey: string,
   value: string | undefined,
   fallback: string
 ): string => {
   const trimmed = value?.trim()
-  return trimmed ? trimmed : fallback
+  if (!trimmed) return fallback
+
+  if (!ALLOWED_AI_MODELS.has(trimmed)) {
+    console.warn(`Invalid ${envKey} value "${trimmed}", falling back to ${fallback}`)
+    return fallback
+  }
+
+  return trimmed
 }
 
 export const resolveAIModel = (input: ModelSelectorInput): string => {
   const defaultModel = getConfiguredModel(
+    'AI_STREAM_DEFAULT_MODEL',
     process.env.AI_STREAM_DEFAULT_MODEL,
     AI_STREAM_MODEL
   )
   const codeModel = getConfiguredModel(
+    'AI_STREAM_CODE_MODEL',
     process.env.AI_STREAM_CODE_MODEL,
     AI_STREAM_CODE_MODEL
   )
