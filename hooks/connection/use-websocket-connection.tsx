@@ -55,9 +55,12 @@ export function useWebSocketConnection({
 
     // Get fresh supabase client
     const supabase = supabaseRef.current
+    let channel: ReturnType<typeof supabase.channel> | null = null
 
-    const emitPresenceSync = (): void => {
-      const presenceState = newChannel.presenceState<PresenceUser>()
+    const emitPresenceSync = (
+      realtimeChannel: ReturnType<typeof supabase.channel>
+    ): void => {
+      const presenceState = realtimeChannel.presenceState<PresenceUser>()
       const transformedState: PresenceState = {}
       const now = Date.now()
 
@@ -105,95 +108,92 @@ export function useWebSocketConnection({
       onPresenceSync?.({})
     }
 
-    const newChannel = supabase
-      .channel(roomId, {
-        config: {
-          broadcast: { self: false }, // Don't receive own messages via broadcast
-          presence: { key: userId } // Track presence with userId
+    const refreshRealtimeAuth = async (): Promise<void> => {
+      try {
+        const {
+          data: { session },
+          error
+        } = await supabase.auth.getSession()
+
+        if (error) {
+          console.warn('Failed to fetch Supabase session for realtime:', error)
+          return
         }
-      })
-      .on('broadcast', { event: EVENT_MESSAGE_TYPE }, (payload) => {
-        // Supabase broadcast wraps data in payload.payload
-        const receivedMessage = payload.payload as ChatMessage
-        // Reset missed heartbeats when we receive a message
-        missedHeartbeats = 0
-        // Only process messages that have content and valid structure
-        if (
-          receivedMessage &&
-          receivedMessage.content &&
-          receivedMessage.content.trim() &&
-          receivedMessage.user?.name
-        ) {
-          onMessage(receivedMessage)
+
+        if (session?.access_token) {
+          supabase.realtime.setAuth(session.access_token)
         }
-      })
-      .on('broadcast', { event: 'message_unsent' }, (payload) => {
-        // Handle message unsend events - Supabase broadcast wraps data in payload.payload
-        const { messageId } = payload.payload as { messageId: string }
-        if (messageId && onMessageUnsent) {
-          onMessageUnsent(messageId)
+      } catch (sessionError) {
+        console.warn('Realtime auth sync failed:', sessionError)
+      }
+    }
+
+    const scheduleReconnect = (): void => {
+      if (isCleanedUp) return
+
+      clearTimeout(reconnectTimeout)
+      reconnectTimeout = setTimeout(() => {
+        if (channel) {
+          void supabase.removeChannel(channel)
         }
-      })
-      .on('presence', { event: 'sync' }, () => {
-        // Handle presence sync events
-        emitPresenceSync()
-      })
-      .on('system', {}, (payload) => {
-        // Handle system events (connection state changes)
-        if (
-          payload.extension === 'postgres_changes' &&
-          payload.type === 'error'
-        ) {
-          console.error('Channel error:', payload)
-          setIsConnected(false)
-          isSubscribed = false
-          // Attempt to reconnect after error
-          if (!isCleanedUp) {
-            clearTimeout(reconnectTimeout)
-            reconnectTimeout = setTimeout(() => {
-              void supabase.removeChannel(newChannel)
-              // Trigger reconnect by incrementing trigger
-              setReconnectTrigger((prev) => prev + 1)
-            }, 3000)
+        setReconnectTrigger((prev) => prev + 1)
+      }, 3000)
+    }
+
+    void (async () => {
+      await refreshRealtimeAuth()
+      if (isCleanedUp) return
+
+      const nextChannel = supabase
+        .channel(roomId, {
+          config: {
+            broadcast: { self: false }, // Don't receive own messages via broadcast
+            presence: { key: userId } // Track presence with userId
           }
-        }
-      })
-      .subscribe(async (status, error) => {
-        if (status === 'SUBSCRIBED') {
-          isSubscribed = true
-          setIsConnected(true)
-          missedHeartbeats = 0
+        })
+        .on('broadcast', { event: EVENT_MESSAGE_TYPE }, (payload) => {
+          // Supabase broadcast wraps data in payload.payload
+          const receivedMessage = payload.payload as ChatMessage
+          // Only process messages that have content and valid structure
+          if (
+            receivedMessage &&
+            receivedMessage.content &&
+            receivedMessage.content.trim()
+          ) {
+            onMessage(receivedMessage)
+          }
+        })
+        .on('broadcast', { event: 'message_unsent' }, (payload) => {
+          // Handle message unsend events - Supabase broadcast wraps data in payload.payload
+          const { messageId } = payload.payload as { messageId: string }
+          if (messageId && onMessageUnsent) {
+            onMessageUnsent(messageId)
+          }
+        })
+        .on('presence', { event: 'sync' }, () => {
+          // Handle presence sync events
+          emitPresenceSync(nextChannel)
+        })
+        .on('system', {}, (payload) => {
+          // Handle system events (connection state changes)
+          if (
+            payload.extension === 'postgres_changes' &&
+            payload.type === 'error'
+          ) {
+            console.error('Channel error:', payload)
+            setIsConnected(false)
+            isSubscribed = false
+            scheduleReconnect()
+          }
+        })
+        .subscribe(async (status, error) => {
+          if (status === 'SUBSCRIBED') {
+            isSubscribed = true
+            setIsConnected(true)
+            missedHeartbeats = 0
 
-          // Track user presence with metadata
-          await newChannel.track({
-            online: true,
-            userId,
-            name: username || 'Anonymous',
-            avatar_url: userAvatarUrl,
-            online_at: Date.now(),
-            timestamp: Date.now()
-          })
-
-          // Start heartbeat to keep connection alive
-          clearInterval(heartbeatInterval)
-          heartbeatInterval = setInterval(() => {
-            missedHeartbeats++
-
-            // If we've missed too many heartbeats, reconnect
-            if (missedHeartbeats > 3) {
-              console.warn('Connection appears stale, reconnecting...')
-              clearInterval(heartbeatInterval)
-              setIsConnected(false)
-              isSubscribed = false
-              if (!isCleanedUp) {
-                void supabase.removeChannel(newChannel)
-                setReconnectTrigger((prev) => prev + 1)
-              }
-              return
-            }
-
-            // Send a presence update as heartbeat
-            newChannel.track({
+            // Track user presence with metadata
+            await nextChannel.track({
               online: true,
               userId,
               name: username || 'Anonymous',
@@ -201,43 +201,67 @@ export function useWebSocketConnection({
               online_at: Date.now(),
               timestamp: Date.now()
             })
-          }, PRESENCE_HEARTBEAT_INTERVAL_MS) // Send heartbeat every 10 seconds
 
-          clearInterval(presencePruneInterval)
-          presencePruneInterval = setInterval(() => {
-            emitPresenceSync()
-          }, PRESENCE_PRUNE_INTERVAL_MS)
-        } else if (status === 'CHANNEL_ERROR') {
-          isSubscribed = false
-          setIsConnected(false)
-          if (error && Object.keys(error).length > 0) {
-            console.error('Channel subscription error:', error)
+            // Start heartbeat to keep connection alive
+            clearInterval(heartbeatInterval)
+            heartbeatInterval = setInterval(() => {
+              // Send a presence update as heartbeat
+              void nextChannel
+                .track({
+                  online: true,
+                  userId,
+                  name: username || 'Anonymous',
+                  avatar_url: userAvatarUrl,
+                  online_at: Date.now(),
+                  timestamp: Date.now()
+                })
+                .then(() => {
+                  // Heartbeat acknowledged by realtime transport.
+                  missedHeartbeats = 0
+                })
+                .catch((trackError) => {
+                  missedHeartbeats++
+
+                  if (trackError) {
+                    console.warn('Presence heartbeat failed:', trackError)
+                  }
+
+                  // If we consistently fail to send heartbeats, reconnect.
+                  if (missedHeartbeats > 3) {
+                    console.warn('Connection appears stale, reconnecting...')
+                    clearInterval(heartbeatInterval)
+                    setIsConnected(false)
+                    isSubscribed = false
+                    scheduleReconnect()
+                  }
+                })
+            }, PRESENCE_HEARTBEAT_INTERVAL_MS)
+
+            clearInterval(presencePruneInterval)
+            presencePruneInterval = setInterval(() => {
+              emitPresenceSync(nextChannel)
+            }, PRESENCE_PRUNE_INTERVAL_MS)
+          } else if (status === 'CHANNEL_ERROR') {
+            isSubscribed = false
+            setIsConnected(false)
+            if (error && Object.keys(error).length > 0) {
+              console.error('Channel subscription error:', error)
+            }
+            // Refresh auth before reconnecting in case token changed during SPA navigation.
+            void refreshRealtimeAuth().finally(() => {
+              scheduleReconnect()
+            })
+          } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
+            isSubscribed = false
+            setIsConnected(false)
+            void refreshRealtimeAuth().finally(() => {
+              scheduleReconnect()
+            })
           }
-          // Attempt reconnection
-          if (!isCleanedUp) {
-            clearTimeout(reconnectTimeout)
-            reconnectTimeout = setTimeout(() => {
-              void supabase.removeChannel(newChannel)
-              // Trigger reconnect by incrementing trigger
-              setReconnectTrigger((prev) => prev + 1)
-            }, 3000)
-          }
-        } else if (status === 'TIMED_OUT') {
-          isSubscribed = false
-          setIsConnected(false)
-          // Trigger reconnect on timeout
-          if (!isCleanedUp) {
-            setReconnectTrigger((prev) => prev + 1)
-          }
-        } else if (status === 'CLOSED') {
-          isSubscribed = false
-          setIsConnected(false)
-          // Trigger reconnect when closed
-          if (!isCleanedUp) {
-            setReconnectTrigger((prev) => prev + 1)
-          }
-        }
-      })
+        })
+
+      channel = nextChannel
+    })()
 
     // Return cleanup function
     return () => {
@@ -245,19 +269,19 @@ export function useWebSocketConnection({
       clearTimeout(reconnectTimeout)
       clearInterval(heartbeatInterval)
       clearInterval(presencePruneInterval)
-      if (newChannel) {
+      if (channel) {
         if (isSubscribed) {
           // Best effort: announce offline + leave presence before removing.
-          void newChannel.track({
+          void channel.track({
             online: false,
             userId,
             name: username || 'Anonymous',
             avatar_url: userAvatarUrl,
             timestamp: Date.now()
           })
-          void newChannel.untrack()
+          void channel.untrack()
         }
-        void supabase.removeChannel(newChannel)
+        void supabase.removeChannel(channel)
       }
       setIsConnected(false)
     }
