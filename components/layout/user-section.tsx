@@ -9,8 +9,6 @@ import {
 } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { LogOut, Settings, Bell } from 'lucide-react'
-import { signOutAction } from '@/lib/actions/auth-actions'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { PublicUser } from '@/lib/types/user'
 import { cn } from '@/lib/utils'
@@ -30,7 +28,6 @@ export function UserSection({
   collapsed,
   initialRooms
 }: UserSectionProps) {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
   const { isOnline } = useNetworkConnectivity()
   const { unreadCounts, hasHydrated } = useUIStore()
@@ -78,10 +75,8 @@ export function UserSection({
         }
       }
 
-      await signOutAction()
       clearClientAuthState()
-      router.replace('/login')
-      router.refresh()
+      window.location.assign('/auth/logout')
     } catch (error) {
       console.error('Error signing out:', error)
     }
