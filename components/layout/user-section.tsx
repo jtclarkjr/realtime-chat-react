@@ -16,6 +16,7 @@ import { useNetworkConnectivity } from '@/hooks/connection/use-network-connectiv
 import { NotificationDropdown } from './notification-dropdown'
 import type { DatabaseRoom } from '@/lib/types/database'
 import { useUIStore } from '@/lib/stores/ui-store'
+import { signOutViaLogoutRoute } from '@/lib/auth/client'
 
 interface UserSectionProps {
   user: PublicUser
@@ -51,32 +52,7 @@ export function UserSection({
   const handleSignOut = async () => {
     try {
       setOpen(false)
-
-      // Force clear any lingering client-side Supabase auth/PKCE artifacts.
-      const clearClientAuthState = () => {
-        if (typeof window === 'undefined') return
-        const isAuthKey = (key: string) =>
-          /^sb-.*auth-token/i.test(key) ||
-          /^sb-.*code-verifier/i.test(key) ||
-          /^supabase-auth/i.test(key)
-
-        for (let i = window.localStorage.length - 1; i >= 0; i--) {
-          const key = window.localStorage.key(i)
-          if (key && isAuthKey(key)) {
-            window.localStorage.removeItem(key)
-          }
-        }
-
-        for (let i = window.sessionStorage.length - 1; i >= 0; i--) {
-          const key = window.sessionStorage.key(i)
-          if (key && isAuthKey(key)) {
-            window.sessionStorage.removeItem(key)
-          }
-        }
-      }
-
-      clearClientAuthState()
-      window.location.assign('/auth/logout')
+      signOutViaLogoutRoute()
     } catch (error) {
       console.error('Error signing out:', error)
     }

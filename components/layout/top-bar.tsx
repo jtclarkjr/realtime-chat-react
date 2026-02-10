@@ -1,13 +1,14 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Menu, Hash } from 'lucide-react'
+import { Menu, Hash, LogOut } from 'lucide-react'
 import { useUIStore } from '@/lib/stores/ui-store'
 import { useRooms } from '@/lib/query/queries/use-rooms'
 import { PresenceAvatars } from './presence-avatars'
 import { useParams } from 'next/navigation'
 import type { PublicUser } from '@/lib/types/user'
 import type { DatabaseRoom } from '@/lib/types/database'
+import { signOutViaLogoutRoute } from '@/lib/auth/client'
 
 interface TopBarProps {
   user: PublicUser
@@ -29,7 +30,37 @@ export function TopBar({ user, initialRooms }: TopBarProps) {
     : {}
 
   if (!currentRoom) {
-    return null
+    return (
+      <header className="md:hidden border-b border-border bg-background">
+        <div className="flex items-center justify-between px-4 py-3 gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0"
+              onClick={() => setMobileDrawerOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+            <h1 className="font-semibold text-base truncate">Home</h1>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={signOutViaLogoutRoute}
+            title={user.isAnonymous ? 'Log Out' : 'Sign Out'}
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="sr-only">
+              {user.isAnonymous ? 'Log Out' : 'Sign Out'}
+            </span>
+          </Button>
+        </div>
+      </header>
+    )
   }
 
   return (

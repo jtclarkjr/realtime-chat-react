@@ -5,7 +5,7 @@ import { TopBar } from './top-bar'
 import { UnreadMessageTracker } from './unread-message-tracker'
 import { AnonymousBanner } from '@/components/anonymous-banner'
 import { useUIStore } from '@/lib/stores/ui-store'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { usePathname } from 'next/navigation'
 import { RoomsRealtimeSync } from './rooms-realtime-sync'
 import type { DatabaseRoom } from '@/lib/types/database'
@@ -69,6 +69,10 @@ export function AuthenticatedLayoutClient({
           onOpenChange={setMobileDrawerOpen}
         >
           <SheetContent side="left" className="p-0 w-60">
+            <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+            <SheetDescription className="sr-only">
+              Browse rooms, open notifications, and manage your account.
+            </SheetDescription>
             <Sidebar
               user={user}
               initialRooms={initialRooms}
