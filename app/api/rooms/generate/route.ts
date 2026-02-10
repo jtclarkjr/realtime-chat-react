@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { withNonAnonymousAuth } from '@/lib/auth/middleware'
 import { roomCacheService } from '@/lib/services/room/room-cache-service'
+import { AI_STREAM_MODEL } from '@/lib/ai/constants'
 
 interface GenerateRoomRequest {
   prompt?: string
@@ -118,7 +119,7 @@ export const POST = withNonAnonymousAuth(async (request: NextRequest) => {
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-latest',
+      model: AI_STREAM_MODEL,
       max_tokens: 200,
       system: buildSystemPrompt(allExistingNames),
       messages: [

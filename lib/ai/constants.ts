@@ -1,1 +1,1 @@
-export const AI_STREAM_MODEL = 'claude-3-5-haiku-latest'
+export const AI_STREAM_MODEL = 'claude-haiku-4-5'
