@@ -7,11 +7,15 @@ Features instant messaging, message persistence, and reconnection handling.
 
 ## Features
 
-- **Messaging**: Real-time chat with persistence, unsend, and reconnection recovery
-- **AI assistant**: Claude integration with public/private responses, streaming, and context-aware conversations
+- **Messaging**: Real-time chat with persistence, unsend, and reconnection
+  recovery
+- **AI assistant**: Claude integration with public/private responses, streaming,
+  and context-aware conversations
 - **Rooms**: Multi-room support with create/delete management
-- **Performance**: Redis (local) / Vercel KV (production) for caching and delivery tracking
-- **Platform**: Responsive UI, typed codebase, OpenAPI docs, and Vercel-ready deployment
+- **Performance**: Redis (local) / Vercel KV (production) for caching and
+  delivery tracking
+- **Platform**: Responsive UI, typed codebase, OpenAPI docs, and Vercel-ready
+  deployment
 
 ## Tech Stack
 
