@@ -57,14 +57,16 @@ export const ChatInput = ({
     isConnected: boolean,
     isAnonymous: boolean
   ): string => {
+    if (loading) return 'Loading messages...'
     if (isAnonymous) return 'Sign in to send messages...'
-    // if (loading) return 'Connecting...' temp removed loading
     if (isAILoading) return 'AI is responding...'
     if (!isConnected && !loading)
       return isAIEnabled ? 'Ask AI (offline)...' : 'Type message (offline)...'
     if (isAIEnabled) return 'Ask AI assistant...'
     return 'Type a message...'
   }
+
+  const inputDisabled = loading || isAILoading || isAnonymous
 
   return (
     <form
@@ -76,8 +78,8 @@ export const ChatInput = ({
       <div
         className={cn(
           'flex-1 flex items-center gap-2 rounded-2xl border border-border/50 bg-background dark:bg-transparent transition-all duration-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 px-4 py-3 sm:py-2',
-          isAILoading && 'opacity-50 cursor-not-allowed'
-        )} // temp removed loading
+          inputDisabled && 'opacity-50 cursor-not-allowed'
+        )}
       >
         <Textarea
           ref={(node) => {
@@ -110,10 +112,10 @@ export const ChatInput = ({
             isConnected,
             isAnonymous
           )}
-          disabled={isAILoading || isAnonymous} // temp removed loading
+          disabled={inputDisabled}
           autoComplete="off"
           autoCapitalize="sentences"
-          // autoFocus={!isAILoading} // temp removed !loading
+          autoFocus={!inputDisabled}
           aria-label="Type your message"
           aria-describedby="ai-status"
           rows={1}
