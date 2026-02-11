@@ -15,7 +15,7 @@ export const NewMessagesBadge = ({
   onScrollToBottom
 }: NewMessagesBadgeProps) => {
   return (
-    <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-40 pointer-events-none">
+    <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-40 pointer-events-none">
       <AnimatePresence>
         {isVisible && newMessageCount > 0 && (
           <motion.button

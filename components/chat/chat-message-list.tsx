@@ -11,9 +11,7 @@ import type { ChatMessage } from '@/lib/types/database'
 interface ChatMessageListProps {
   messages: ChatMessage[]
   loading: boolean
-  isConnected: boolean
   userId: string
-  initialMessagesLength: number
   onRetry: (messageId: string) => void
   onUnsend?: (messageId: string) => void
   isUnsending?: (messageId: string) => boolean
@@ -28,9 +26,7 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
     {
       messages,
       loading,
-      isConnected,
       userId,
-      initialMessagesLength,
       onRetry,
       onUnsend,
       isUnsending,
@@ -68,6 +64,11 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
       estimateSize: () => 72,
       overscan: 8
     })
+    const virtualItems = rowVirtualizer.getVirtualItems()
+    const shouldFallbackToStandardList =
+      enableVirtualization &&
+      filteredMessages.length > 0 &&
+      virtualItems.length === 0
 
     const handleCombinedScroll = (e: React.UIEvent<HTMLDivElement>) => {
       handleScroll(e)
@@ -85,23 +86,23 @@ export const ChatMessageList = forwardRef<HTMLDivElement, ChatMessageListProps>(
           aria-live="polite"
           onScroll={handleCombinedScroll}
         >
-          {loading && initialMessagesLength === 0 ? (
+          {loading && filteredMessages.length === 0 ? (
             <div className="py-2 sm:py-4" aria-label="Loading chat messages">
               <MessageListSkeleton />
             </div>
-          ) : !loading && messages.length === 0 ? (
+          ) : !loading && filteredMessages.length === 0 ? (
             <div className="text-center text-sm text-muted-foreground py-8">
               <div>No messages yet. Start the conversation!</div>
             </div>
           ) : null}
-          {(initialMessagesLength > 0 || (!loading && isConnected)) && (
+          {filteredMessages.length > 0 && (
             <>
-              {enableVirtualization ? (
+              {enableVirtualization && !shouldFallbackToStandardList ? (
                 <div
                   className="relative"
                   style={{ height: rowVirtualizer.getTotalSize() }}
                 >
-                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  {virtualItems.map((virtualRow) => {
                     const message = filteredMessages[virtualRow.index]
                     if (!message) return null
                     const prevMessage =

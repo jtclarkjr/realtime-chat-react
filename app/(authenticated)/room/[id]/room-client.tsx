@@ -1,53 +1,48 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { RealtimeChat } from '@/components/realtime-chat'
 import { RoomSkeleton } from '@/components/skeletons'
+import { Button } from '@/components/ui/button'
 import { useEffect, useCallback } from 'react'
 import { useUIStore } from '@/lib/stores/ui-store'
-import type { DatabaseRoom, ChatMessageWithDB } from '@/lib/types/database'
 import type { PresenceState } from '@/lib/types/presence'
-import type { PublicUser } from '@/lib/types/user'
 import { useRoomById } from '@/lib/query/queries'
+import { useAuthenticatedUser } from '@/hooks/use-authenticated-user'
 
 interface RoomClientProps {
   roomId: string
-  initialRoom: DatabaseRoom
-  initialMessages: ChatMessageWithDB[]
-  user: PublicUser
 }
 
-export function RoomClient({
-  roomId,
-  initialRoom,
-  initialMessages,
-  user
-}: RoomClientProps) {
+export function RoomClient({ roomId }: RoomClientProps) {
   const router = useRouter()
+  const user = useAuthenticatedUser()
   const { addRecentRoom, markAsRead, setRoomPresence, setRoomPresenceUsers } =
     useUIStore()
-  const { data: room } = useRoomById({
+  const {
+    data: room,
+    isLoading,
+    isFetching,
+    isError
+  } = useRoomById({
     roomId,
-    initialData: initialRoom
+    enabled: !!roomId
   })
   const activeRoomId = room?.id ?? roomId
 
   const userId = user.id
   const displayName = user.username
 
-  // Handle presence changes
   const handlePresenceChange = useCallback(
     (users: PresenceState) => {
-      // Update presence count in UI store for room list
       const onlineCount = Object.keys(users).length
       setRoomPresence(activeRoomId, onlineCount)
-      // Update full presence users for avatar display
       setRoomPresenceUsers(activeRoomId, users)
     },
     [activeRoomId, setRoomPresence, setRoomPresenceUsers]
   )
 
-  // Track this room as recently visited and clear unread count
   useEffect(() => {
     if (activeRoomId) {
       addRecentRoom(activeRoomId)
@@ -55,12 +50,28 @@ export function RoomClient({
     }
   }, [activeRoomId, addRecentRoom, markAsRead])
 
-  // Prefetch dashboard on mount
   useEffect(() => {
     router.prefetch('/')
   }, [router])
 
-  if (!userId || !room) {
+  if (isError) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-background p-4">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold">Room Not Found</h1>
+          <p className="text-muted-foreground">
+            The room you&apos;re looking for doesn&apos;t exist or has been
+            removed.
+          </p>
+          <Button asChild>
+            <Link href="/">Go Back to Home</Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!userId || !room || (isLoading && !room) || (isFetching && !room)) {
     return <RoomSkeleton />
   }
 
@@ -73,15 +84,6 @@ export function RoomClient({
         userAvatarUrl={user.avatarUrl}
         onPresenceChange={handlePresenceChange}
         isAnonymous={user.isAnonymous}
-        messages={initialMessages.map((message) => ({
-          ...message,
-          roomId: message.channelId,
-          user: {
-            id: message.user.id,
-            name: message.user.name,
-            avatar_url: message.user.avatar_url
-          }
-        }))}
       />
     </div>
   )

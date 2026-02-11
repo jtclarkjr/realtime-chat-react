@@ -23,6 +23,9 @@ export function useRoomById({
       return response.room
     },
     enabled: enabled && !!roomId,
-    initialData
+    initialData,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false
   })
 }

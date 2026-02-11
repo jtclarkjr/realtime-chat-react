@@ -32,18 +32,17 @@ export function useMissedMessages({
 
         return [] as ChatMessage[]
       } catch (error) {
-        // If aborted (timeout or unmount), return empty array
-        // React Query will retry automatically based on retry config
+        // Preserve last successful cache data if this request is aborted.
         if (error instanceof Error && error.name === 'AbortError') {
-          return [] as ChatMessage[]
+          throw error
         }
-        // For other errors, let React Query handle them
         throw error
       }
     },
     enabled: enabled && !!roomId && !!userId,
     staleTime: 0,
+    refetchOnMount: 'always',
     retry: 1,
-    gcTime: 0 // Don't cache failed/aborted requests
+    gcTime: 30 * 60 * 1000
   })
 }

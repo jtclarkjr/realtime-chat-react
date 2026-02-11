@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { Hash, Loader2, Trash2 } from 'lucide-react'
 import {
   Tooltip,
@@ -12,7 +13,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/lib/stores/ui-store'
+import {
+  getMissedMessages,
+  getRoomById,
+  transformApiMessage
+} from '@/lib/api/client'
+import { queryKeys } from '@/lib/query'
 import type { DatabaseRoom } from '@/lib/types/database'
+import { useAuthenticatedUser } from '@/hooks/use-authenticated-user'
 
 interface RoomListItemProps {
   room: DatabaseRoom
@@ -34,12 +42,39 @@ export function RoomListItem({
   onNavigate
 }: RoomListItemProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
+  const user = useAuthenticatedUser()
   const { unreadCounts } = useUIStore()
   const unreadCount = unreadCounts[room.id] || 0
 
-  const handleMouseEnter = () => {
-    // Prefetch the room page on hover
+  const prefetchRoomData = () => {
     router.prefetch(`/room/${room.id}`)
+
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.rooms.detail(room.id),
+      queryFn: async () => {
+        const response = await getRoomById(room.id)
+        return response.room
+      }
+    })
+
+    if (!user.id) return
+
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.messages.missed(room.id, user.id),
+      queryFn: async () => {
+        const data = await getMissedMessages(room.id, user.id)
+        if (
+          (data.type === 'missed_messages' ||
+            data.type === 'recent_messages') &&
+          data.messages?.length > 0
+        ) {
+          return data.messages.map(transformApiMessage)
+        }
+
+        return []
+      }
+    })
   }
 
   const handleClick = () => {
@@ -93,8 +128,8 @@ export function RoomListItem({
           <TooltipTrigger asChild>
             <Link
               href={`/room/${room.id}`}
-              prefetch={false}
-              onMouseEnter={handleMouseEnter}
+              onMouseEnter={prefetchRoomData}
+              onFocus={prefetchRoomData}
               onClick={handleClick}
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative group cursor-pointer',
@@ -121,8 +156,8 @@ export function RoomListItem({
     <div className="flex items-center gap-1 group">
       <Link
         href={`/room/${room.id}`}
-        prefetch={false}
-        onMouseEnter={handleMouseEnter}
+        onMouseEnter={prefetchRoomData}
+        onFocus={prefetchRoomData}
         onClick={handleClick}
         className={cn(
           'flex-1 flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative cursor-pointer',

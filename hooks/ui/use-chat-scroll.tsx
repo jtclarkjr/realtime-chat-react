@@ -1,4 +1,4 @@
-import { useCallback, useRef, useLayoutEffect } from 'react'
+import { useCallback, useLayoutEffect, useRef } from 'react'
 
 export function useChatScroll() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -12,7 +12,7 @@ export function useChatScroll() {
     // Set scrollTop directly for instant positioning without animation
     container.scrollTop = container.scrollHeight
     hasInitiallyScrolled.current = true
-  })
+  }, [])
 
   const scrollToBottom = useCallback((): void => {
     if (!containerRef.current) return
@@ -32,5 +32,9 @@ export function useChatScroll() {
     container.scrollTop = container.scrollHeight
   }, [])
 
-  return { containerRef, scrollToBottom, scrollToBottomInstant }
+  return {
+    containerRef,
+    scrollToBottom,
+    scrollToBottomInstant
+  }
 }

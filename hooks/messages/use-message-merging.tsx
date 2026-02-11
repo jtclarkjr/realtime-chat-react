@@ -55,6 +55,33 @@ export function useMessageMerging({
     const upsertMessage = (message: ChatMessage) => {
       if (!shouldIncludeMessage(message)) return
 
+      if (!message.isOptimistic && message.clientMsgId) {
+        const optimisticMessage = messageById.get(message.clientMsgId)
+        if (optimisticMessage?.isOptimistic) {
+          messageById.delete(message.clientMsgId)
+        }
+      }
+
+      if (!message.isOptimistic && message.createdAt) {
+        const messageTime = Date.parse(message.createdAt)
+        for (const [existingId, existingMessage] of messageById.entries()) {
+          if (
+            existingMessage.isOptimistic &&
+            existingMessage.content === message.content &&
+            existingMessage.user?.id === message.user?.id
+          ) {
+            const existingTime = existingMessage.createdAt
+              ? Date.parse(existingMessage.createdAt)
+              : 0
+
+            if (Math.abs(messageTime - existingTime) < 5000) {
+              messageById.delete(existingId)
+              break
+            }
+          }
+        }
+      }
+
       const existing = messageById.get(message.id)
       if (!existing) {
         messageById.set(message.id, message)

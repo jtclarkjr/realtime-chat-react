@@ -139,6 +139,13 @@ export function useRealtimeChat({
 
     // Deduplication by message ID and clientMsgId
     combinedMessages.forEach((message) => {
+      if (message.isOptimistic && message.serverId) {
+        const confirmedMessage = messageMap.get(message.serverId)
+        if (confirmedMessage && !confirmedMessage.isOptimistic) {
+          return
+        }
+      }
+
       const existingMessage = messageMap.get(message.id)
 
       if (!existingMessage) {

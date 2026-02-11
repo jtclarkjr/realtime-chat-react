@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sheet'
 import { usePathname } from 'next/navigation'
 import { RoomsRealtimeSync } from './rooms-realtime-sync'
+import { AuthenticatedUserProvider } from './authenticated-user-context'
 import type { DatabaseRoom } from '@/lib/types/database'
 import type { PublicUser } from '@/lib/types/user'
 import { cn } from '@/lib/utils'
@@ -47,63 +48,65 @@ export function AuthenticatedLayoutClient({
     : 'Navigated to dashboard'
 
   return (
-    <div className="h-dvh flex flex-col w-full">
-      <RoomsRealtimeSync userId={user.id} />
-      <UnreadMessageTracker userId={user.id} />
-      {user.isAnonymous && <AnonymousBanner />}
+    <AuthenticatedUserProvider user={user}>
+      <div className="h-dvh flex flex-col w-full">
+        <RoomsRealtimeSync userId={user.id} />
+        <UnreadMessageTracker userId={user.id} />
+        {user.isAnonymous && <AnonymousBanner />}
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Desktop Sidebar - hidden on mobile */}
-        <aside
-          className={cn(
-            'relative z-20 hidden md:flex flex-col overflow-visible border-r border-border bg-background transition-all duration-300 ease-in-out',
-            effectiveSidebarCollapsed ? 'w-16' : 'w-60'
-          )}
-        >
-          <Sidebar
-            user={user}
-            initialRooms={initialRooms}
-            initialDefaultRoomId={initialDefaultRoomId}
-            collapsed={effectiveSidebarCollapsed}
-          />
-        </aside>
-
-        {/* Mobile Sidebar Drawer */}
-        <Sheet
-          open={effectiveMobileDrawerOpen}
-          onOpenChange={setMobileDrawerOpen}
-        >
-          <SheetContent side="left" className="p-0 w-60">
-            <SheetTitle className="sr-only">Navigation menu</SheetTitle>
-            <SheetDescription className="sr-only">
-              Browse rooms, open notifications, and manage your account.
-            </SheetDescription>
+        <div className="flex-1 flex overflow-hidden">
+          {/* Desktop Sidebar - hidden on mobile */}
+          <aside
+            className={cn(
+              'relative z-20 hidden md:flex flex-col overflow-visible border-r border-border bg-background transition-all duration-300 ease-in-out',
+              effectiveSidebarCollapsed ? 'w-16' : 'w-60'
+            )}
+          >
             <Sidebar
               user={user}
               initialRooms={initialRooms}
               initialDefaultRoomId={initialDefaultRoomId}
-              collapsed={false}
-              onNavigate={() => setMobileDrawerOpen(false)}
+              collapsed={effectiveSidebarCollapsed}
             />
-          </SheetContent>
-        </Sheet>
+          </aside>
 
-        {/* Main Content Area */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <TopBar user={user} initialRooms={initialRooms} />
-          <div className="flex-1 overflow-hidden">{children}</div>
-        </main>
-      </div>
+          {/* Mobile Sidebar Drawer */}
+          <Sheet
+            open={effectiveMobileDrawerOpen}
+            onOpenChange={setMobileDrawerOpen}
+          >
+            <SheetContent side="left" className="p-0 w-60">
+              <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+              <SheetDescription className="sr-only">
+                Browse rooms, open notifications, and manage your account.
+              </SheetDescription>
+              <Sidebar
+                user={user}
+                initialRooms={initialRooms}
+                initialDefaultRoomId={initialDefaultRoomId}
+                collapsed={false}
+                onNavigate={() => setMobileDrawerOpen(false)}
+              />
+            </SheetContent>
+          </Sheet>
 
-      {/* Live region for screen reader announcements */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
-        {announcement}
+          {/* Main Content Area */}
+          <main className="flex-1 flex flex-col overflow-hidden">
+            <TopBar user={user} initialRooms={initialRooms} />
+            <div className="flex-1 overflow-hidden">{children}</div>
+          </main>
+        </div>
+
+        {/* Live region for screen reader announcements */}
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {announcement}
+        </div>
       </div>
-    </div>
+    </AuthenticatedUserProvider>
   )
 }

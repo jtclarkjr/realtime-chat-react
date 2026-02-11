@@ -137,6 +137,7 @@ export const RealtimeChat = ({
     unreadMessageCount,
     scrollToBottomAndClearUnread
   } = useSmartAutoScroll({
+    roomId,
     messages: allMessages,
     containerRef,
     scrollToBottom,
@@ -288,9 +289,7 @@ export const RealtimeChat = ({
         ref={containerRef}
         messages={allMessages}
         loading={loading}
-        isConnected={effectiveIsConnected}
         userId={userId}
-        initialMessagesLength={initialMessages.length}
         onRetry={retryMessage}
         onUnsend={unsendMessage}
         isUnsending={isUnsending}

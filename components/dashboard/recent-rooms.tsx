@@ -2,10 +2,18 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { Hash, ArrowRight, Bot } from 'lucide-react'
 import { useUIStore } from '@/lib/stores/ui-store'
+import {
+  getMissedMessages,
+  getRoomById,
+  transformApiMessage
+} from '@/lib/api/client'
+import { queryKeys } from '@/lib/query'
 import { formatRelativeTime } from '@/lib/utils/format-time'
 import type { RoomWithLastMessage } from '@/lib/actions/room-actions'
+import { useAuthenticatedUser } from '@/hooks/use-authenticated-user'
 
 interface RecentRoomsProps {
   initialRooms: RoomWithLastMessage[]
@@ -13,6 +21,8 @@ interface RecentRoomsProps {
 
 export function RecentRooms({ initialRooms }: RecentRoomsProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
+  const user = useAuthenticatedUser()
   const { recentRooms } = useUIStore()
   const roomsWithMessages = initialRooms.filter(
     (
@@ -62,8 +72,34 @@ export function RecentRooms({ initialRooms }: RecentRoomsProps) {
     )
   }
 
-  const handleMouseEnter = (roomId: string) => {
+  const prefetchRoomData = (roomId: string) => {
     router.prefetch(`/room/${roomId}`)
+
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.rooms.detail(roomId),
+      queryFn: async () => {
+        const response = await getRoomById(roomId)
+        return response.room
+      }
+    })
+
+    if (!user.id) return
+
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.messages.missed(roomId, user.id),
+      queryFn: async () => {
+        const data = await getMissedMessages(roomId, user.id)
+        if (
+          (data.type === 'missed_messages' ||
+            data.type === 'recent_messages') &&
+          data.messages?.length > 0
+        ) {
+          return data.messages.map(transformApiMessage)
+        }
+
+        return []
+      }
+    })
   }
 
   return (
@@ -75,7 +111,8 @@ export function RecentRooms({ initialRooms }: RecentRoomsProps) {
             <Link
               key={room.id}
               href={`/room/${room.id}`}
-              onMouseEnter={() => handleMouseEnter(room.id)}
+              onMouseEnter={() => prefetchRoomData(room.id)}
+              onFocus={() => prefetchRoomData(room.id)}
               className="flex items-center gap-3 p-4 rounded-lg border border-border bg-card hover:bg-accent transition-colors group"
             >
               <div className="p-2 bg-muted rounded-lg shrink-0">

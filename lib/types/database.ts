@@ -37,6 +37,14 @@ export interface ApiMessage {
   }
   createdAt: string
   channelId: string
+  isAI?: boolean
+  isPrivate?: boolean
+  requesterId?: string
+  isDeleted?: boolean
+  deletedAt?: string
+  deletedBy?: string
+  hasAIResponse?: boolean
+  clientMsgId?: string
 }
 
 // Application layer message types
