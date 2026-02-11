@@ -232,6 +232,75 @@ AI_USER_ID=your_ai_user_id_here
 ENV=dev
 ```
 
+### Full Environment Template (All Features)
+
+Use this expanded template when you need all optional flags and integrations in
+local development:
+
+```bash
+# Supabase Configuration (from your Supabase project settings)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# AI Assistant Configuration (Anthropic Claude)
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+FLAGS_SECRET=your_flags_secret_here
+AI_USER_ID=your_ai_user_id_here
+AI_STREAM_DEFAULT_MODEL=claude-haiku-4-5
+AI_STREAM_CODE_MODEL=claude-sonnet-4-5
+AI_BACKEND_MODE=anthropic_tavily
+AI_SEARCH_DRIVER=auto
+AI_FLAG_FAIL_OPEN=true
+AI_SDK_PROVIDER=anthropic
+AI_SDK_ENABLED=false
+AI_FLAGS_MIGRATION_MODE=shadow
+TAVILY_API_KEY=your_tavily_api_key_here
+AI_WEB_SEARCH_ENABLED=false
+AI_WEB_SEARCH_MAX_RESULTS=5
+AI_WEB_SEARCH_TIMEOUT_MS=6000
+AI_WEB_SEARCH_QUOTA_COOLDOWN_MS=3600000
+
+# Authentication Configuration
+NEXT_PUBLIC_AUTH_CALLBACK_URL=http://localhost:3000/auth/callback
+NEXT_PUBLIC_ENABLE_EMAIL_AUTH=false
+NEXT_PUBLIC_ENABLE_GUEST_USERS=true
+NEXT_PUBLIC_ENABLE_DISCORD_AUTH=true
+NEXT_PUBLIC_ENABLE_GITHUB_AUTH=true
+NEXT_PUBLIC_ENABLE_GOOGLE_AUTH=true
+NEXT_PUBLIC_ENABLE_APPLE_AUTH=true
+
+# Site Configuration
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# External API Routing (optional)
+# Base URL for external API server (example: http://localhost:8000)
+NEXT_PUBLIC_EXTERNAL_API_BASE_URL=http://localhost:8000
+# Global fallback flag for all client-side API calls
+NEXT_PUBLIC_USE_EXTERNAL_API=false
+# Per-endpoint overrides (take priority over global flag when set)
+NEXT_PUBLIC_USE_EXTERNAL_API_ROOMS_LIST=false
+NEXT_PUBLIC_USE_EXTERNAL_API_ROOMS_BY_ID=false
+NEXT_PUBLIC_USE_EXTERNAL_API_ROOMS_REJOIN=false
+NEXT_PUBLIC_USE_EXTERNAL_API_ROOMS_GENERATE=false
+NEXT_PUBLIC_USE_EXTERNAL_API_MESSAGES_SEND=false
+NEXT_PUBLIC_USE_EXTERNAL_API_MESSAGES_UNSEND=false
+NEXT_PUBLIC_USE_EXTERNAL_API_MESSAGES_MARK_RECEIVED=false
+NEXT_PUBLIC_USE_EXTERNAL_API_AI_STREAM=false
+
+# Redis Configuration (Local Development)
+REDIS_URL=redis://localhost:6379
+
+# Local Development
+ENV=dev
+
+# Vercel KV Configuration (Production - Auto-configured)
+# KV_REST_API_URL=your_vercel_kv_rest_api_url
+# KV_REST_API_TOKEN=your_vercel_kv_rest_api_token
+# KV_REST_API_READ_ONLY_TOKEN=your_vercel_kv_read_only_token
+# KV_URL=your_vercel_kv_url
+```
+
 ### Important Notes:
 
 - **JWT Keys**: After running `supabase start`, get your keys from the output.
