@@ -7,33 +7,19 @@ Features instant messaging, message persistence, and reconnection handling.
 
 ## Features
 
-- **Real-time messaging** using Supabase Realtime
-- **AI Assistant integration** with Claude 3.5 Haiku (Anthropic)
-  - Public AI responses (visible to all users)
-  - Private AI responses (visible only to requester)
-  - Real-time streaming responses
-  - Context-aware conversations
-- **Message persistence** with automatic message history loading
-- **Message unsend capability** for non-AI messages
-- **Redis/Vercel KV caching** for improved performance and message tracking
-- **Reconnection handling** with missed message recovery
-- **Responsive design** with Tailwind CSS
-- **TypeScript** for type safety
-- **Multiple room support** with isolated conversations
-- **Room management** with create and delete capabilities
-- **OpenAPI/Swagger documentation** for API endpoints
-- **Production deployment** on Vercel with KV storage
+- **Messaging**: Real-time chat with persistence, unsend, and reconnection recovery
+- **AI assistant**: Claude integration with public/private responses, streaming, and context-aware conversations
+- **Rooms**: Multi-room support with create/delete management
+- **Performance**: Redis (local) / Vercel KV (production) for caching and delivery tracking
+- **Platform**: Responsive UI, typed codebase, OpenAPI docs, and Vercel-ready deployment
 
 ## Tech Stack
 
-- **Frontend**: Next.js 16, React 19, TypeScript
-- **Styling**: Tailwind CSS v4, Radix UI components
-- **Real-time**: Supabase Realtime (WebSocket)
-- **Database**: Supabase (PostgreSQL)
-- **Caching**: Redis (local) / Vercel KV (production)
-- **State/ Data Management**: Zustand (persist)/ TanStack Query
-- **Package Manager**: Bun
-- **Deployment**: Vercel with KV storage
+- **App**: Next.js 16, React 19, TypeScript
+- **UI**: Tailwind CSS v4, Radix UI
+- **Backend services**: Supabase (PostgreSQL + Realtime/WebSocket)
+- **State and caching**: Zustand, TanStack Query, Redis/Vercel KV
+- **Tooling and deploy**: Bun, Vercel
 
 ## Prerequisites
 
