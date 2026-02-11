@@ -73,7 +73,7 @@ graph TB
     end
 
     subgraph "API Layer"
-        Route[/api/ai/stream]
+        Route["/api/ai/stream"]
         Strategy[generateAIResponse]
         Persist[sendAIMessage + markMessageAsAITrigger]
     end
