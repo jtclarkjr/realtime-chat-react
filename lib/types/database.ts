@@ -45,6 +45,7 @@ export interface ApiMessage {
   deletedBy?: string
   hasAIResponse?: boolean
   clientMsgId?: string
+  streamSourceId?: string
 }
 
 // Application layer message types
@@ -97,6 +98,7 @@ export interface ChatMessage {
   serverId?: string
   serverTimestamp?: string
   clientMsgId?: string // Client-generated ID for deterministic deduplication
+  streamSourceId?: string
 }
 
 // Response types

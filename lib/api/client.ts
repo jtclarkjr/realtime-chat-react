@@ -120,6 +120,7 @@ export const transformApiMessage = (msg: ApiMessage): ChatMessage => {
     deletedBy: msg.deletedBy,
     hasAIResponse: msg.hasAIResponse || false,
     clientMsgId: msg.clientMsgId,
+    streamSourceId: msg.streamSourceId,
     isPending: false,
     isQueued: false,
     isRetrying: false,

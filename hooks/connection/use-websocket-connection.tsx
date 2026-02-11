@@ -3,6 +3,10 @@
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { ChatMessage } from '@/lib/types/database'
+import {
+  aiStreamRealtimePayloadSchema,
+  type AIStreamRealtimePayload
+} from '@/lib/types/ai-stream'
 import type { PresenceState, PresenceUser } from '@/lib/types/presence'
 
 const EVENT_MESSAGE_TYPE = 'message'
@@ -15,6 +19,7 @@ interface UseWebSocketConnectionProps {
   roomId: string
   userId: string
   onMessage: (message: ChatMessage) => void
+  onAIStreamEvent?: (event: AIStreamRealtimePayload) => void
   onMessageUnsent?: (messageId: string) => void
   enabled: boolean
   username?: string
@@ -31,6 +36,7 @@ export function useWebSocketConnection({
   roomId,
   userId,
   onMessage,
+  onAIStreamEvent,
   onMessageUnsent,
   enabled = true,
   username,
@@ -40,6 +46,26 @@ export function useWebSocketConnection({
   const [isConnected, setIsConnected] = useState<boolean>(false)
   const [reconnectTrigger, setReconnectTrigger] = useState<number>(0)
   const supabaseRef = useRef(createClient())
+  const onMessageRef = useRef(onMessage)
+  const onAIStreamEventRef = useRef(onAIStreamEvent)
+  const onMessageUnsentRef = useRef(onMessageUnsent)
+  const onPresenceSyncRef = useRef(onPresenceSync)
+
+  useEffect(() => {
+    onMessageRef.current = onMessage
+  }, [onMessage])
+
+  useEffect(() => {
+    onAIStreamEventRef.current = onAIStreamEvent
+  }, [onAIStreamEvent])
+
+  useEffect(() => {
+    onMessageUnsentRef.current = onMessageUnsent
+  }, [onMessageUnsent])
+
+  useEffect(() => {
+    onPresenceSyncRef.current = onPresenceSync
+  }, [onPresenceSync])
 
   const setupChannel = useCallback((): (() => void) | null => {
     if (!enabled) return null
@@ -91,7 +117,7 @@ export function useWebSocketConnection({
       if (hasUsers) {
         lastNonEmptyPresenceAt = now
         lastEmittedPresence = transformedState
-        onPresenceSync?.(transformedState)
+        onPresenceSyncRef.current?.(transformedState)
         return
       }
 
@@ -105,7 +131,7 @@ export function useWebSocketConnection({
       }
 
       lastEmittedPresence = {}
-      onPresenceSync?.({})
+      onPresenceSyncRef.current?.({})
     }
 
     const refreshRealtimeAuth = async (): Promise<void> => {
@@ -160,14 +186,22 @@ export function useWebSocketConnection({
             receivedMessage.content &&
             receivedMessage.content.trim()
           ) {
-            onMessage(receivedMessage)
+            onMessageRef.current(receivedMessage)
           }
+        })
+        .on('broadcast', { event: 'ai_stream' }, (payload) => {
+          if (!onAIStreamEventRef.current) return
+          const parsed = aiStreamRealtimePayloadSchema.safeParse(
+            payload.payload
+          )
+          if (!parsed.success) return
+          onAIStreamEventRef.current(parsed.data)
         })
         .on('broadcast', { event: 'message_unsent' }, (payload) => {
           // Handle message unsend events - Supabase broadcast wraps data in payload.payload
           const { messageId } = payload.payload as { messageId: string }
-          if (messageId && onMessageUnsent) {
-            onMessageUnsent(messageId)
+          if (messageId && onMessageUnsentRef.current) {
+            onMessageUnsentRef.current(messageId)
           }
         })
         .on('presence', { event: 'sync' }, () => {
@@ -289,13 +323,11 @@ export function useWebSocketConnection({
   }, [
     roomId,
     userId,
-    onMessage,
-    onMessageUnsent,
     enabled,
     reconnectTrigger,
     username,
     userAvatarUrl,
-    onPresenceSync
+    onPresenceSyncRef
   ])
 
   const reconnect = useCallback((): void => {

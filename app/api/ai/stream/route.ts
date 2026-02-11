@@ -23,13 +23,43 @@ import {
   enqueueContentByChunks
 } from '@/lib/ai/stream-sse'
 import { generateAIResponse } from '@/lib/ai/response-strategy'
+import type { AIStreamRealtimePayload } from '@/lib/types/ai-stream'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
+const STREAM_BROADCAST_INTERVAL_MS = 120
 
 const AI_ASSISTANT = {
   id: 'ai-assistant',
   name: 'AI Assistant'
+}
+
+const broadcastAIStreamEvent = async ({
+  roomId,
+  payload,
+  supabase
+}: {
+  roomId: string
+  payload: AIStreamRealtimePayload
+  supabase: {
+    channel: (roomId: string) => {
+      httpSend: (event: string, payload: unknown) => Promise<unknown>
+    }
+  }
+}) => {
+  try {
+    const supabaseService = getServiceClient()
+    await supabaseService.channel(roomId).httpSend('ai_stream', payload)
+  } catch (broadcastError) {
+    try {
+      await supabase.channel(roomId).httpSend('ai_stream', payload)
+    } catch (fallbackError) {
+      console.error('AI stream broadcast failed (primary + fallback):', {
+        broadcastError,
+        fallbackError
+      })
+    }
+  }
 }
 
 const buildDatedSystemPrompt = ({
@@ -62,6 +92,7 @@ const persistAndBroadcastAIMessage = async ({
   triggerMessageId,
   isPrivate,
   content,
+  streamSourceId,
   supabase
 }: {
   roomId: string
@@ -69,6 +100,7 @@ const persistAndBroadcastAIMessage = async ({
   triggerMessageId?: string
   isPrivate?: boolean
   content: string
+  streamSourceId?: string
   supabase: {
     channel: (roomId: string) => {
       httpSend: (event: string, payload: unknown) => Promise<unknown>
@@ -93,7 +125,8 @@ const persistAndBroadcastAIMessage = async ({
     roomId,
     channelId: roomId,
     isAI: true,
-    isPrivate: false
+    isPrivate: false,
+    streamSourceId
   }
 
   try {
@@ -193,10 +226,60 @@ export const POST = async (request: NextRequest) => {
     })
 
     const tempMessageId = crypto.randomUUID()
+    const streamStartedAt = new Date().toISOString()
     const encoder = new TextEncoder()
+    const shouldBroadcastStream = !body.isPrivate && !body.draftOnly
+    let latestFullContent = ''
 
     const readableStream = new ReadableStream({
       async start(controller) {
+        let contentBroadcastTimer: NodeJS.Timeout | null = null
+        let lastBroadcastedContent = ''
+
+        const broadcastStreamContent = async (force = false): Promise<void> => {
+          if (!shouldBroadcastStream) return
+          if (!force && latestFullContent === lastBroadcastedContent) return
+
+          await broadcastAIStreamEvent({
+            roomId: body.roomId,
+            supabase,
+            payload: {
+              eventType: 'content',
+              streamId: tempMessageId,
+              roomId: body.roomId,
+              requesterId: body.userId,
+              isPrivate: false,
+              user: AI_ASSISTANT,
+              createdAt: streamStartedAt,
+              fullContent: latestFullContent
+            }
+          })
+
+          lastBroadcastedContent = latestFullContent
+        }
+
+        const scheduleStreamContentBroadcast = (): void => {
+          if (!shouldBroadcastStream || contentBroadcastTimer) return
+          contentBroadcastTimer = setTimeout(() => {
+            contentBroadcastTimer = null
+            void broadcastStreamContent().catch((error) => {
+              console.error(
+                'Failed to broadcast throttled AI stream content:',
+                error
+              )
+            })
+          }, STREAM_BROADCAST_INTERVAL_MS)
+        }
+
+        const flushPendingStreamContent = async (): Promise<void> => {
+          if (!shouldBroadcastStream) return
+          if (contentBroadcastTimer) {
+            clearTimeout(contentBroadcastTimer)
+            contentBroadcastTimer = null
+          }
+          await broadcastStreamContent(true)
+        }
+
         try {
           const initialData = {
             type: 'start',
@@ -206,6 +289,23 @@ export const POST = async (request: NextRequest) => {
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify(initialData)}\n\n`)
           )
+
+          if (shouldBroadcastStream) {
+            await broadcastAIStreamEvent({
+              roomId: body.roomId,
+              supabase,
+              payload: {
+                eventType: 'start',
+                streamId: tempMessageId,
+                roomId: body.roomId,
+                requesterId: body.userId,
+                isPrivate: false,
+                user: AI_ASSISTANT,
+                createdAt: streamStartedAt,
+                fullContent: ''
+              }
+            })
+          }
 
           const generation = await generateAIResponse({
             anthropic,
@@ -223,19 +323,29 @@ export const POST = async (request: NextRequest) => {
                   stream: generation.stream,
                   controller,
                   encoder,
-                  messageId: tempMessageId
+                  messageId: tempMessageId,
+                  onFullContent: (fullContent) => {
+                    latestFullContent = fullContent
+                    scheduleStreamContentBroadcast()
+                  }
                 })
               : (() => {
                   enqueueContentByChunks(
                     controller,
                     encoder,
                     tempMessageId,
-                    generation.fullResponse
+                    generation.fullResponse,
+                    (fullContent) => {
+                      latestFullContent = fullContent
+                      scheduleStreamContentBroadcast()
+                    }
                   )
                   return generation.fullResponse
                 })()
 
           const trimmedResponse = fullResponse.trim()
+          latestFullContent = trimmedResponse
+          await flushPendingStreamContent()
           let persistedMessageId = tempMessageId
           let persistedCreatedAt = new Date().toISOString()
 
@@ -246,6 +356,7 @@ export const POST = async (request: NextRequest) => {
               triggerMessageId: body.triggerMessageId,
               isPrivate: body.isPrivate,
               content: trimmedResponse,
+              streamSourceId: tempMessageId,
               supabase
             })
 
@@ -266,6 +377,26 @@ export const POST = async (request: NextRequest) => {
           controller.close()
         } catch (error) {
           console.error('Streaming error:', error)
+          if (contentBroadcastTimer) {
+            clearTimeout(contentBroadcastTimer)
+            contentBroadcastTimer = null
+          }
+          if (shouldBroadcastStream) {
+            await broadcastAIStreamEvent({
+              roomId: body.roomId,
+              supabase,
+              payload: {
+                eventType: 'error',
+                streamId: tempMessageId,
+                roomId: body.roomId,
+                requesterId: body.userId,
+                isPrivate: false,
+                user: AI_ASSISTANT,
+                createdAt: streamStartedAt,
+                fullContent: latestFullContent
+              }
+            })
+          }
           controller.enqueue(
             encoder.encode(formatSSEError('AI_RESPONSE_FAILED'))
           )

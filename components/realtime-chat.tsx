@@ -56,6 +56,26 @@ export const RealtimeChat = ({
     useChatScroll()
 
   const {
+    streamingMessages,
+    addOrUpdateStreamingMessage,
+    clearStreamingMessage
+  } = useStreamingMessages()
+
+  const handleRemoteAIStreamingMessage = useCallback(
+    (message: ChatMessage) => {
+      addOrUpdateStreamingMessage(message)
+    },
+    [addOrUpdateStreamingMessage]
+  )
+
+  const handleRemoteAIStreamTerminated = useCallback(
+    (streamId: string) => {
+      clearStreamingMessage(streamId)
+    },
+    [clearStreamingMessage]
+  )
+
+  const {
     messages: realtimeMessages,
     sendMessage,
     retryMessage,
@@ -70,7 +90,9 @@ export const RealtimeChat = ({
     roomId,
     username,
     userId,
-    userAvatarUrl
+    userAvatarUrl,
+    onAIStreamingMessage: handleRemoteAIStreamingMessage,
+    onAIStreamTerminated: handleRemoteAIStreamTerminated
   })
 
   // Initialize unsend message
@@ -115,12 +137,6 @@ export const RealtimeChat = ({
     () => true,
     () => false
   )
-  const {
-    streamingMessages,
-    addOrUpdateStreamingMessage,
-    clearStreamingMessage
-  } = useStreamingMessages()
-
   // Merge realtime messages with initial messages and streaming messages
   const allMessages = useMessageMerging({
     initialMessages,
@@ -149,15 +165,19 @@ export const RealtimeChat = ({
   useEffect(() => {
     streamingMessages.forEach((streamingMessage) => {
       if (!streamingMessage.isPrivate && streamingMessage.isAI) {
-        // For AI messages, check by content and timing since IDs might not match
-        const existingBroadcastMessage = realtimeMessages.find(
-          (msg) =>
-            msg.isAI &&
+        const existingBroadcastMessage = realtimeMessages.find((msg) => {
+          if (!msg.isAI || msg.isStreaming) return false
+
+          if (msg.streamSourceId) {
+            return msg.streamSourceId === streamingMessage.id
+          }
+
+          return (
             msg.content === streamingMessage.content &&
             msg.content &&
-            msg.content.trim().length > 0 && // Only match non-empty content
-            !msg.isStreaming
-        )
+            msg.content.trim().length > 0
+          )
+        })
 
         if (existingBroadcastMessage) {
           clearStreamingMessage(streamingMessage.id)

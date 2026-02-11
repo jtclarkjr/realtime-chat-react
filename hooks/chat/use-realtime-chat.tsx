@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { markMessageAsReceived } from '@/lib/api/client'
 import type { ChatMessage } from '@/lib/types/database'
+import type { AIStreamRealtimePayload } from '@/lib/types/ai-stream'
 import type { PresenceState } from '@/lib/types/presence'
 import { useNetworkConnectivity, useWebSocketConnection } from '../connection'
 import { useMissedMessages, useOptimisticMessageSender } from '../messages'
@@ -12,6 +13,8 @@ interface UseRealtimeChatProps {
   username: string
   userId: string
   userAvatarUrl?: string
+  onAIStreamingMessage?: (message: ChatMessage) => void
+  onAIStreamTerminated?: (streamId: string) => void
 }
 
 const roomTimelineSessionCache = new Map<string, ChatMessage[]>()
@@ -20,7 +23,9 @@ export function useRealtimeChat({
   roomId,
   username,
   userId,
-  userAvatarUrl
+  userAvatarUrl,
+  onAIStreamingMessage,
+  onAIStreamTerminated
 }: UseRealtimeChatProps) {
   const cacheKey = `${userId}:${roomId}`
   const cachedTimeline = useMemo(
@@ -105,11 +110,38 @@ export function useRealtimeChat({
     setPresenceUsers(state)
   }, [])
 
+  const handleAIStreamEvent = useCallback(
+    (event: AIStreamRealtimePayload): void => {
+      if (event.isPrivate) return
+
+      if (event.eventType === 'error') {
+        onAIStreamTerminated?.(event.streamId)
+        return
+      }
+
+      const streamingMessage: ChatMessage = {
+        id: event.streamId,
+        content: event.fullContent,
+        user: event.user,
+        createdAt: event.createdAt,
+        roomId: event.roomId,
+        isAI: true,
+        isStreaming: true,
+        isPrivate: false,
+        requesterId: event.requesterId
+      }
+
+      onAIStreamingMessage?.(streamingMessage)
+    },
+    [onAIStreamTerminated, onAIStreamingMessage]
+  )
+
   // WebSocket connection for real-time messaging
   useWebSocketConnection({
     roomId,
     userId,
     onMessage: handleIncomingMessage,
+    onAIStreamEvent: handleAIStreamEvent,
     onMessageUnsent: handleMessageUnsent,
     enabled: networkState.isOnline,
     username,

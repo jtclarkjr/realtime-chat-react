@@ -99,8 +99,8 @@ Three types of API communication:
 1. **HTTP API Routes** - Traditional REST endpoints
 2. **Server Actions** - Next.js server-side functions
 3. **WebSocket** - Realtime bidirectional communication
-4. **Optional External API Routing** - Client can route selected endpoints to
-   an external API base URL via env flags
+4. **Optional External API Routing** - Client can route selected endpoints to an
+   external API base URL via env flags
 
 Auth boundary rules:
 
@@ -705,7 +705,8 @@ sequenceDiagram
 
 This architecture provides:
 
-1. **Fast Initial Loads** - SSR auth/layout bootstrap with client-side room data fetch
+1. **Fast Initial Loads** - SSR auth/layout bootstrap with client-side room data
+   fetch
 2. **Instant Updates** - Optimistic UI + WebSocket
 3. **Automatic Sync** - React Query refetch + realtime invalidation
 4. **Offline Support** - Cached data + queue system

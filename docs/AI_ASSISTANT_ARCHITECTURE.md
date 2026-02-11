@@ -1,8 +1,8 @@
 # AI Assistant Architecture
 
-This document provides a comprehensive overview of how the AI assistant works
-in the realtime chat application, including streaming flow, model/search
-routing, feature flags, and message persistence/broadcast behavior.
+This document provides a comprehensive overview of how the AI assistant works in
+the realtime chat application, including streaming flow, model/search routing,
+feature flags, and message persistence/broadcast behavior.
 
 ## AI Module Layout
 
@@ -25,26 +25,8 @@ The AI assistant uses a layered module split:
 
 4. `components/chat/*`
 
-- User interaction surfaces for AI mode, private/public behavior, and
-  "Respond with AI" draft generation from a selected message.
-
-## Change Timeline (AI Enhancements)
-
-The core AI enhancement set landed on **February 10, 2026** (JST) and was merged
-through **PR #25 (`feat/ai-input-reply`)**:
-
-1. `a9e66b5` (2026-02-10T19:28:01+09:00)
-- Added internet-aware AI behavior, model selector, and AI reply draft input
-  flow.
-
-2. `a770abe` (2026-02-10T19:39:52+09:00)
-- Added recency-aware routing improvements for up-to-date prompts.
-
-3. `cee8eb0` (2026-02-10T20:37:03+09:00)
-- Added alternative backend/provider strategy with feature-flagged routing.
-
-4. `c4925e7`
-- Merge commit for PR #25 into `main`.
+- User interaction surfaces for AI mode, private/public behavior, and "Respond
+  with AI" draft generation from a selected message.
 
 ## Table of Contents
 
@@ -124,19 +106,25 @@ graph TB
 
 ### Layer 3: AI Strategy Execution
 
-1. Strategy chooses backend mode (`anthropic_tavily`,
-   `anthropic_native_web`, `vercel_ai_sdk`).
+1. Strategy chooses backend mode (`anthropic_tavily`, `anthropic_native_web`,
+   `vercel_ai_sdk`).
 2. Recency detector decides whether web search should be attempted.
 3. Generation returns either:
+
 - Native token stream (`native_stream`) or
 - Full text chunked into SSE (`chunked`).
 
 ### Layer 4: Persistence and Realtime
 
-1. If `draftOnly` is false, final AI content is stored via `sendAIMessage`.
-2. Trigger message can be marked (`markMessageAsAITrigger`).
-3. Public AI messages are broadcast to room channel; private AI messages are not
-   broadcast.
+1. Requesting client receives SSE events (`start`/`content`/`complete`).
+2. For public AI responses, room clients also receive realtime `ai_stream`
+   events (`start`/`content`/`error`) while generation is in progress.
+3. `ai_stream` content fan-out is throttled/coalesced to reduce channel churn.
+4. If `draftOnly` is false, final AI content is stored via `sendAIMessage`.
+5. Trigger message can be marked (`markMessageAsAITrigger`).
+6. Public final AI message is broadcast as realtime `message` with
+   `streamSourceId` for deterministic stream-to-final reconciliation.
+7. Private AI messages are never broadcast to the room.
 
 ## Client to API Stream Flow
 
@@ -165,21 +153,26 @@ sequenceDiagram
 The server builds prompt context from:
 
 1. Base system prompt:
+
 - `AI_STREAM_SYSTEM_PROMPT` for plain text
 - `AI_STREAM_MARKDOWN_SYSTEM_PROMPT` for markdown
 
 2. Optional web-search policy instructions:
+
 - Appended only when recency/search is requested and enabled
 
 3. Current-time context:
+
 - UTC ISO + UTC text injected into `CURRENT_TIME_CONTEXT_TEMPLATE`
 - Relative time words (today/yesterday/last week) should anchor to this context
 
 4. Conversation context:
+
 - `previousMessages` mapped into Anthropic message format
 - Current user input appended as final user turn
 
 5. Reply-draft mode context:
+
 - If `targetMessageId + targetMessageContent` are present, route creates a
   constrained drafting instruction so output is only the reply text.
 
@@ -200,7 +193,8 @@ flowchart TD
 
 Routing logic (`resolveAIModel`) uses:
 
-1. Code patterns (fenced blocks, function/class syntax, stack traces, import/export)
+1. Code patterns (fenced blocks, function/class syntax, stack traces,
+   import/export)
 2. Action hints (implement/debug/refactor/show code)
 3. Language hints (TypeScript, Python, Go, Rust, etc.)
 4. Concept-only hints to avoid code model for explanation-only prompts
@@ -275,12 +269,18 @@ sequenceDiagram
     participant RT as Supabase Realtime
     participant Clients as Room Clients
 
-    API->>DB: Persist AI message (unless draftOnly)
-    API->>Trigger: Mark trigger message (optional)
-
     alt Private AI response
-        API-->>Clients: No broadcast
+        API-->>Clients: No room stream broadcast
+        API->>DB: Persist AI message (unless draftOnly)
+        API->>Trigger: Mark trigger message (optional)
     else Public AI response
+        API->>RT: httpSend('ai_stream', start)
+        loop During generation (throttled)
+            API->>RT: httpSend('ai_stream', content fullContent)
+            RT-->>Clients: ai_stream event
+        end
+        API->>DB: Persist AI message (unless draftOnly)
+        API->>Trigger: Mark trigger message (optional)
         API->>RT: httpSend('message', broadcastMessage)
         RT-->>Clients: message event
     end
@@ -290,6 +290,13 @@ Broadcast path has primary + fallback sender:
 
 1. Primary: service-role Supabase client
 2. Fallback: request-bound Supabase client
+
+Client reconciliation behavior:
+
+1. Streaming entries are keyed by temporary stream ID.
+2. Final public `message` broadcast includes `streamSourceId`.
+3. UI clears matching stream entry using `streamSourceId` first, then falls back
+   to content matching when needed.
 
 ## AI Reply Draft Flow
 
@@ -324,38 +331,68 @@ Behavior details:
 The stream emits line-delimited events:
 
 1. `start`
+
 - Contains temporary message ID and AI user metadata.
 
 2. `content`
+
 - Contains incremental chunk and cumulative `fullContent`.
 
 3. `complete`
+
 - Contains final content, persisted message ID (or temp ID for draft), and
   created timestamp.
 
 4. `error`
+
 - Contains formatted error text.
 
 Client parsing in `useAIChat` updates streaming state in-place until completion.
+
+## Realtime AI Stream Contract
+
+Public AI responses also emit Supabase Realtime broadcast event `ai_stream`:
+
+1. `start`
+
+- Contains stream ID, requester ID, room ID, AI user metadata, createdAt, and
+  empty `fullContent`.
+
+2. `content`
+
+- Contains cumulative `fullContent` for the same stream ID.
+- Emitted at throttled intervals to limit event volume.
+
+3. `error`
+
+- Signals stream termination for room clients if generation fails.
+
+Private AI responses and `draftOnly=true` requests do not emit room `ai_stream`
+events.
 
 ## Failure Handling and Fallbacks
 
 Key resilience behavior:
 
 1. Request-level guards
+
 - Auth check, payload validation, self-user enforcement, API key checks.
 
 2. Search fallback
+
 - Tavily quota/rate limits trigger cooldown and fallback to non-search path.
 
 3. Strategy fallback
+
 - `vercel_ai_sdk` mode can fail-open to alternate generation depending on
   `failOpen` flag.
 
 4. Broadcast fallback
+
 - If service broadcast fails, fallback client broadcast is attempted.
 
 5. Client fallback
+
 - On stream/API error, chat renders a user-visible AI error message.
 
 This keeps the chat flow responsive even when search/tools/providers are

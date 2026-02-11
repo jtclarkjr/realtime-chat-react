@@ -26,7 +26,8 @@ export const enqueueContentByChunks = (
   controller: ReadableStreamDefaultController,
   encoder: TextEncoder,
   messageId: string,
-  fullContent: string
+  fullContent: string,
+  onFullContent?: (fullContent: string) => void | Promise<void>
 ) => {
   if (!fullContent.trim()) return
 
@@ -44,6 +45,12 @@ export const enqueueContentByChunks = (
     controller.enqueue(
       encoder.encode(`data: ${JSON.stringify(streamData)}\n\n`)
     )
+
+    if (onFullContent) {
+      void Promise.resolve(onFullContent(assembledContent)).catch((error) => {
+        console.error('Failed to handle chunked SSE callback:', error)
+      })
+    }
   }
 }
 
@@ -51,12 +58,14 @@ export const streamAnthropicTextToSSE = async ({
   stream,
   controller,
   encoder,
-  messageId
+  messageId,
+  onFullContent
 }: {
   stream: AsyncIterable<Anthropic.RawMessageStreamEvent>
   controller: ReadableStreamDefaultController
   encoder: TextEncoder
   messageId: string
+  onFullContent?: (fullContent: string) => void | Promise<void>
 }): Promise<string> => {
   let fullContent = ''
 
@@ -78,6 +87,12 @@ export const streamAnthropicTextToSSE = async ({
       controller.enqueue(
         encoder.encode(`data: ${JSON.stringify(streamData)}\n\n`)
       )
+
+      if (onFullContent) {
+        void Promise.resolve(onFullContent(fullContent)).catch((error) => {
+          console.error('Failed to handle native SSE callback:', error)
+        })
+      }
     }
   }
 
