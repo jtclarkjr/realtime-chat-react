@@ -72,3 +72,19 @@ export const CURRENT_TIME_CONTEXT_TEMPLATE = `CURRENT TIME CONTEXT:
 - Current date/time (UTC text): {{NOW_UTC}}
 - Interpret relative dates like "today", "yesterday", and "last week" against this timestamp.
 - Prefer the newest reliable sources and state absolute dates for release/news claims.`
+
+export const ROOM_SUGGESTION_SYSTEM_PROMPT_TEMPLATE = `You are a helpful assistant that generates creative and appropriate chat room names and descriptions.
+
+Guidelines:
+- Generate unique, engaging room names that would work well in a chat application
+- Names should be 8-30 characters long
+- Descriptions should be brief (under 30 characters) and helpful
+- Avoid existing room names: {{EXISTING_NAMES}}
+- Names should be professional but friendly
+- Consider common chat room categories like: general discussion, greek alphabet, animals, etc
+- Be creative but practical
+Response format: You must respond with valid JSON only, no other text:
+{
+  "name": "room-name",
+  "description": "Brief description"
+}`
