@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { markMessageAsReceived } from '@/lib/api/client'
 import type { ChatMessage } from '@/lib/types/database'
 import type { PresenceState } from '@/lib/types/presence'
@@ -14,12 +14,19 @@ interface UseRealtimeChatProps {
   userAvatarUrl?: string
 }
 
+const roomTimelineSessionCache = new Map<string, ChatMessage[]>()
+
 export function useRealtimeChat({
   roomId,
   username,
   userId,
   userAvatarUrl
 }: UseRealtimeChatProps) {
+  const cacheKey = `${userId}:${roomId}`
+  const cachedTimeline = useMemo(
+    () => roomTimelineSessionCache.get(cacheKey) || [],
+    [cacheKey]
+  )
   const [confirmedMessages, setConfirmedMessages] = useState<ChatMessage[]>([])
   const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(
     new Set()
@@ -129,8 +136,10 @@ export function useRealtimeChat({
 
   // Merge missed messages with optimistic messages
   const allMessages = useMemo(() => {
+    const baseMessages = [...cachedTimeline, ...missedMessages]
+
     // Mark missed messages as deleted if they're in the deleted set
-    const updatedMissedMessages = missedMessages.map((msg) =>
+    const updatedMissedMessages = baseMessages.map((msg) =>
       deletedMessageIds.has(msg.id) ? { ...msg, isDeleted: true } : msg
     )
 
@@ -233,7 +242,11 @@ export function useRealtimeChat({
         new Date(a.createdAt || 0).getTime() -
         new Date(b.createdAt || 0).getTime()
     )
-  }, [missedMessages, optimisticMessages, deletedMessageIds])
+  }, [cachedTimeline, missedMessages, optimisticMessages, deletedMessageIds])
+
+  useEffect(() => {
+    roomTimelineSessionCache.set(cacheKey, allMessages)
+  }, [cacheKey, allMessages])
 
   // Callback to update confirmed messages and track deleted messages
   const handleMessageUpdate = useCallback(
