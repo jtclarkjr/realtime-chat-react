@@ -114,7 +114,9 @@ export function RoomList({
             room={room}
             isActive={room.id === activeRoomId}
             collapsed={collapsed}
-            canDelete={!collapsed && !user.isAnonymous}
+            canDelete={
+              !collapsed && !user.isAnonymous && room.created_by === user.id
+            }
             isDeleting={
               deleteRoomMutation.isPending && roomToDelete?.id === room.id
             }
