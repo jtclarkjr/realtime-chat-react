@@ -1,23 +1,19 @@
+import { MessageListSkeleton } from './message-skeleton'
+
 export function RoomSkeleton() {
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Messages area skeleton */}
-      <div className="flex-1 overflow-hidden p-4 space-y-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-muted shimmer shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-muted rounded w-24 shimmer" />
-              <div className="h-4 bg-muted rounded w-full max-w-md shimmer" />
-              <div className="h-4 bg-muted rounded w-3/4 max-w-sm shimmer" />
-            </div>
-          </div>
-        ))}
+      <div className="flex-1 overflow-hidden p-3 sm:p-4">
+        <MessageListSkeleton />
       </div>
 
-      {/* Input area skeleton */}
-      <div className="border-t border-border p-4">
-        <div className="h-20 bg-muted rounded-lg shimmer" />
+      {/* Input area skeleton with same footprint as ChatInput */}
+      <div className="border-t border-border p-3 sm:p-4 bg-background/50">
+        <div className="flex w-full gap-2 sm:gap-3">
+          <div className="flex-1 h-12 sm:h-11 rounded-2xl border border-border/50 bg-muted/60 shimmer" />
+          <div className="h-12 w-12 sm:h-10 sm:w-10 rounded-full bg-muted/70 shimmer shrink-0" />
+        </div>
       </div>
     </div>
   )
