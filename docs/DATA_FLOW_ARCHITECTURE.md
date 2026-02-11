@@ -50,7 +50,7 @@ graph TB
     subgraph "API Layer"
         API[API Routes]
         SA[Server Actions]
-        SSR[Server Components]
+        SSR[Server Components<br/>Auth/Layout Bootstrap]
     end
 
     subgraph "Data Layer"
@@ -70,8 +70,12 @@ graph TB
     DAL -->|SQL| DB
     API -->|Track| Redis
     RT -->|Broadcast| WS
-    SSR -->|Initial Data| UI
+    SSR -->|Bootstrap Data| UI
 ```
+
+Note: Server Components currently bootstrap auth/layout data (for example
+initial rooms in authenticated layout and dashboard data). Room-level timeline
+data is loaded client-side via `useRoomById` and `useMissedMessages`.
 
 ## Data Flow Layers
 
