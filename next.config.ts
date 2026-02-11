@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'cdn.discordapp.com' // Discord avatars
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.google.com',
+        pathname: '/s2/favicons'
       }
     ]
   }
