@@ -80,7 +80,7 @@ graph TB
 ```mermaid
 flowchart LR
     subgraph "Client State Management"
-        A[React Query Cache] -->|30s stale| B{Needs Refetch?}
+        A[React Query Cache] -->|staleTime by query| B{Needs Refetch?}
         B -->|Yes| C[API Request]
         B -->|No| D[Use Cached Data]
         E[WebSocket Events] -->|Realtime Update| F[Local State]
@@ -95,6 +95,8 @@ Three types of API communication:
 1. **HTTP API Routes** - Traditional REST endpoints
 2. **Server Actions** - Next.js server-side functions
 3. **WebSocket** - Realtime bidirectional communication
+4. **Optional External API Routing** - Client can route selected endpoints to
+   an external API base URL via env flags
 
 Auth boundary rules:
 
@@ -136,7 +138,7 @@ sequenceDiagram
     UI->>RQ: useRooms()
     RQ->>Cache: Check cache
 
-    alt Cache valid (< 30s)
+    alt Cache valid (< 60s for rooms.list)
         Cache-->>UI: Return cached data
     else Cache stale or empty
         RQ->>API: GET /api/rooms
@@ -175,7 +177,7 @@ sequenceDiagram
         Cache->>UI: Optimistically update UI
     end
 
-    Note over UI,DB: Automatic retry on failure
+    Note over UI,DB: Retries are handled by custom send/queue logic where applicable
 ```
 
 ### Server Action Mutation Flow
@@ -216,7 +218,7 @@ sequenceDiagram
     participant User
     participant UI
     participant Optimistic
-    participant Mutation as useSendMessage
+    participant Mutation as useOptimisticMessageSender
     participant API as /api/messages/send
     participant DB as Database
     participant Redis
@@ -425,6 +427,22 @@ sequenceDiagram
     RQ->>UI: Update if changed
 ```
 
+### Room List Realtime Sync
+
+```mermaid
+sequenceDiagram
+    participant Client as AuthenticatedLayoutClient
+    participant Sync as RoomsRealtimeSync
+    participant RT as Supabase Realtime
+    participant RQ as React Query Cache
+
+    Client->>Sync: Mount with userId
+    Sync->>RT: Subscribe postgres_changes on public.rooms
+    RT-->>Sync: INSERT/UPDATE/DELETE event
+    Sync->>RQ: invalidateQueries(queryKeys.rooms.all)
+    RQ->>RQ: Refetch active room queries
+```
+
 ## Cache Strategy
 
 ### React Query Cache Hierarchy
@@ -436,16 +454,14 @@ graph TD
 
     B --> D[rooms.all]
     D --> E[rooms.list<br/>staleTime: 60s]
-    D --> F[rooms.detail roomId<br/>staleTime: 300s]
+    D --> F[rooms.detail roomId<br/>staleTime: 30m]
 
     C --> G[messages.all]
     G --> H[messages.missed roomId, userId<br/>staleTime: 0s]
-    G --> I[messages.recent roomId<br/>staleTime: 0s]
 
     style E fill:#90EE90
     style F fill:#87CEEB
     style H fill:#FFB6C1
-    style I fill:#FFB6C1
 ```
 
 ### Cache Update Strategies
@@ -586,32 +602,37 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     participant Browser
-    participant SSR as Server Component
-    participant UI as Client Component
+    participant SSR as Server Component (Room Route Shell)
+    participant UI as Client Component (RoomClient)
     participant RQ as React Query
     participant WS as WebSocket
     participant API
     participant DB
     participant RT as Realtime
 
-    Note over Browser,RT: 1. Initial Page Load (SSR)
+    Note over Browser,RT: 1. Route Entry (SSR shell only)
 
     Browser->>SSR: GET /room/123
-    SSR->>API: getRoomDataWithMessages()
-    API->>DB: Fetch room + recent messages
-    DB-->>API: Room data + 50 messages
-    API-->>SSR: Initial data
-    SSR-->>Browser: Rendered HTML
+    SSR-->>Browser: Render RoomClient with roomId
 
-    Note over Browser,RT: 2. Client Hydration
+    Note over Browser,RT: 2. Client Data Load
 
     Browser->>UI: Mount component
-    UI->>RQ: useMissedMessages(enabled=false)
-    Note over RQ: Skipped - have SSR data
+    UI->>RQ: useRoomById(roomId)
+    RQ->>API: GET /api/rooms/{roomId}
+    API->>DB: Fetch room
+    DB-->>API: Room data
+    API-->>RQ: room
+    UI->>RQ: useMissedMessages(enabled=true)
+    RQ->>API: GET /api/rooms/{roomId}/rejoin?userId=...
+    API->>DB: Fetch missed/recent based on last received cursor
+    DB-->>API: Message payload
+    API-->>RQ: {type, messages, count}
+
+    Note over Browser,RT: 3. Realtime Subscription
+
     UI->>WS: Subscribe to room channel
     WS->>RT: Join room:123
-
-    Note over Browser,RT: 3. Realtime Updates
 
     RT-->>WS: Connected
     WS-->>UI: Update connection status
@@ -624,14 +645,11 @@ sequenceDiagram
     UI->>UI: Deduplicate
     UI-->>Browser: Render new message
 
-    Note over Browser,RT: 5. Background Sync (if needed)
-
-    UI->>RQ: Manual invalidation (optional)
-    RQ->>API: Refetch missed messages
-    API->>DB: Check for any missed
-    DB-->>API: Empty or new messages
-    API-->>RQ: Update cache
-    RQ-->>UI: Sync complete
+    Note over Browser,RT: 5. Reconnect/Recovery
+    UI->>RQ: Refetch missed messages (staleTime: 0)
+    RQ->>API: Rejoin endpoint
+    API-->>RQ: New missed items or caught_up
+    RQ-->>UI: Timeline remains synchronized
 ```
 
 ## Performance Optimizations
@@ -683,9 +701,9 @@ sequenceDiagram
 
 This architecture provides:
 
-1. **Fast Initial Loads** - SSR with cached data
+1. **Fast Initial Loads** - SSR auth/layout bootstrap with client-side room data fetch
 2. **Instant Updates** - Optimistic UI + WebSocket
-3. **Automatic Sync** - React Query background refetching
+3. **Automatic Sync** - React Query refetch + realtime invalidation
 4. **Offline Support** - Cached data + queue system
 5. **Type Safety** - End-to-end TypeScript
 6. **Developer Experience** - React Query DevTools + clear patterns
