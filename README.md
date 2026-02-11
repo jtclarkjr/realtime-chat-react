@@ -377,39 +377,6 @@ Interactive Swagger/OpenAPI documentation is available at:
 - `bun run dev:docker` - Start Redis and development server together
 - `bun run redis:cli` - Access Redis CLI
 
-## Project Structure
-
-```
-src/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   │   ├── ai/           # AI assistant endpoints
-│   │   ├── docs/         # OpenAPI spec endpoint
-│   │   ├── messages/     # Message handling
-│   │   └── rooms/        # Room management
-│   ├── api-docs/         # Swagger UI documentation page
-│   ├── auth/             # Auth pages
-│   ├── login/            # login page
-│   ├── rooms/[id]        # Room page
-│   ├── layout.tsx        # Root layout
-│   └── page.tsx         # Main chat interface
-├── components/            # React components
-│   ├── chat/               # Chat/chatroom related micro components
-│   ├── ui/                 # Reusable UI components
-│   ├── chat-message.tsx    # Main individual message component
-│   └── realtime-chat.tsx   # Main chat room component
-├── database/              # Database related schema, SQL, etc
-├── hooks/                 # Custom React hooks
-├── lib/                   # Utility libraries
-│   ├── redis/            # Redis client and utilities
-│   ├── services/         # Business logic services
-│   ├── stores/           # Zustand state stores
-│   ├── supabase/         # Supabase client configuration
-│   ├── swagger.ts        # OpenAPI/Swagger configuration
-│   └── types/            # TypeScript type definitions
-└── docker-compose.yml     # Redis container configuration
-```
-
 ## Key Components
 
 ### Redis/Vercel KV Integration
