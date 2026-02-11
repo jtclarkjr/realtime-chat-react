@@ -81,30 +81,51 @@ const extractTrailingSources = (markdown: string): ParsedContent => {
     return { bodyMarkdown: markdown, sources: [] }
   }
 
-  const sourceLine = lines[lastNonEmptyIndex]
-  if (!SOURCES_PREFIX_REGEX.test(sourceLine)) {
+  if (!SOURCES_PREFIX_REGEX.test(lines[lastNonEmptyIndex])) {
     return { bodyMarkdown: markdown, sources: [] }
   }
 
-  const linksPortion = sourceLine.replace(SOURCES_PREFIX_REGEX, '')
+  const sourceLineIndexes: number[] = []
+  for (let i = lastNonEmptyIndex; i >= 0; i -= 1) {
+    const line = lines[i]
+    if (SOURCES_PREFIX_REGEX.test(line)) {
+      sourceLineIndexes.push(i)
+      continue
+    }
+
+    if (!line.trim()) {
+      continue
+    }
+
+    break
+  }
+
+  const sourceLines = sourceLineIndexes
+    .sort((a, b) => a - b)
+    .map((index) => lines[index].replace(SOURCES_PREFIX_REGEX, ''))
+
   const seen = new Set<string>()
   const sources: ExtractedSource[] = []
 
-  for (const match of linksPortion.matchAll(MARKDOWN_LINK_REGEX)) {
-    const rawLabel = (match[1] || '').trim()
-    const rawUrl = (match[2] || '').trim()
-    const safeUrl = sanitizeLinkHref(rawUrl)
-    if (!safeUrl || seen.has(safeUrl)) continue
+  for (const sourceLine of sourceLines) {
+    for (const match of sourceLine.matchAll(MARKDOWN_LINK_REGEX)) {
+      const rawLabel = (match[1] || '').trim()
+      const rawUrl = (match[2] || '').trim()
+      const safeUrl = sanitizeLinkHref(rawUrl)
+      if (!safeUrl || seen.has(safeUrl)) continue
 
-    const domain = toDomain(safeUrl)
-    if (!domain) continue
+      const domain = toDomain(safeUrl)
+      if (!domain) continue
 
-    seen.add(safeUrl)
-    sources.push({
-      label: rawLabel || domain || safeUrl,
-      url: safeUrl,
-      domain
-    })
+      seen.add(safeUrl)
+      sources.push({
+        label: rawLabel || domain || safeUrl,
+        url: safeUrl,
+        domain
+      })
+
+      if (sources.length >= SOURCES_MAX_COUNT) break
+    }
 
     if (sources.length >= SOURCES_MAX_COUNT) break
   }
@@ -114,7 +135,9 @@ const extractTrailingSources = (markdown: string): ParsedContent => {
     return { bodyMarkdown: markdown, sources: [] }
   }
 
-  lines.splice(lastNonEmptyIndex, 1)
+  for (const index of sourceLineIndexes.sort((a, b) => b - a)) {
+    lines.splice(index, 1)
+  }
   const bodyMarkdown = lines.join('\n').replace(/\n+$/, '')
   return { bodyMarkdown, sources }
 }

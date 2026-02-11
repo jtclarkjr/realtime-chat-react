@@ -26,5 +26,6 @@ export const FAVICON_SERVICE_BASE_URL =
 export const SANITIZE_ALLOWED_ATTR = ['href', 'target', 'rel']
 export const lowlight = createLowlight(common)
 export const SOURCES_MAX_COUNT = 3
-export const SOURCES_PREFIX_REGEX = /^\s*sources\s*:\s*/i
+export const SOURCES_PREFIX_REGEX =
+  /^\s*(?:\*\*|__)?\s*sources\s*:\s*(?:\*\*|__)?\s*/i
 export const MARKDOWN_LINK_REGEX = /\[([^\]]*)\]\(([^)]+)\)/g
