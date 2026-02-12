@@ -326,7 +326,7 @@ export const MarkdownMessageContent = ({
     editorProps: {
       attributes: {
         class:
-          'tiptap-markdown leading-relaxed whitespace-normal [&_p]:my-1 [&_h1]:my-2 [&_h1]:text-base [&_h1]:font-semibold [&_h2]:my-2 [&_h2]:text-[0.95rem] [&_h2]:font-semibold [&_h3]:my-1 [&_h3]:font-semibold [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:relative [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:border [&_pre]:border-zinc-700 [&_pre]:bg-zinc-800 [&_pre]:p-3 [&_pre]:text-zinc-100 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_a]:text-blue-700 [&_a]:underline dark:[&_a]:text-blue-300 [&_blockquote]:my-1 [&_blockquote]:border-l-2 [&_blockquote]:pl-3'
+          'tiptap-markdown leading-relaxed whitespace-normal break-words [overflow-wrap:anywhere] [word-break:break-word] [&_p]:my-1 [&_h1]:my-2 [&_h1]:text-base [&_h1]:font-semibold [&_h2]:my-2 [&_h2]:text-[0.95rem] [&_h2]:font-semibold [&_h3]:my-1 [&_h3]:font-semibold [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:relative [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:border [&_pre]:border-zinc-700 [&_pre]:bg-zinc-800 [&_pre]:p-3 [&_pre]:text-zinc-100 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_a]:text-blue-700 [&_a]:underline dark:[&_a]:text-blue-300 [&_blockquote]:my-1 [&_blockquote]:border-l-2 [&_blockquote]:pl-3'
       }
     }
   })
@@ -338,15 +338,17 @@ export const MarkdownMessageContent = ({
 
   if (!editor) {
     return (
-      <div className="leading-relaxed">
-        <div className="whitespace-pre-wrap">{bodyMarkdown}</div>
+      <div className="leading-relaxed break-words [overflow-wrap:anywhere] [word-break:break-word]">
+        <div className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]">
+          {bodyMarkdown}
+        </div>
         <SourceBadgesRow sources={sources} />
       </div>
     )
   }
 
   return (
-    <div className="leading-relaxed">
+    <div className="leading-relaxed break-words [overflow-wrap:anywhere] [word-break:break-word]">
       <EditorContent editor={editor} />
       <SourceBadgesRow sources={sources} />
     </div>

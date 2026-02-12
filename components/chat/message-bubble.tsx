@@ -91,7 +91,7 @@ export const MessageBubble = ({
   const bubbleContent = (
     <div
       className={cn(
-        'group py-3 px-4 rounded-2xl text-sm sm:text-base w-fit break-words shadow-sm transition-all duration-200 hover:shadow-md relative',
+        'group py-3 px-4 rounded-2xl text-sm sm:text-base max-w-full w-fit break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-sm transition-all duration-200 hover:shadow-md relative',
         {
           'cursor-pointer': canUnsend && onUnsend,
           'bg-primary text-primary-foreground rounded-br-md':
@@ -113,9 +113,12 @@ export const MessageBubble = ({
       )}
     >
       <div
-        className={cn('leading-relaxed', {
+        className={cn(
+          'leading-relaxed break-words [overflow-wrap:anywhere] [word-break:break-word]',
+          {
           'whitespace-pre-wrap': !showMarkdownContent
-        })}
+        }
+        )}
         role="text"
         aria-live={isStreaming ? 'polite' : undefined}
       >

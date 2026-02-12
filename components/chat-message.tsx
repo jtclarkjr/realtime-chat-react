@@ -67,7 +67,7 @@ const ChatMessageItemComponent = ({
     >
       <div
         className={cn(
-          'max-w-[85%] sm:max-w-[75%] md:max-w-[60%] w-fit flex flex-col gap-1',
+          'w-full max-w-[85%] sm:max-w-[75%] md:max-w-[60%] min-w-0 flex flex-col gap-1',
           {
             'items-end': isOwnMessage
           }
@@ -96,37 +96,39 @@ const ChatMessageItemComponent = ({
           </div>
         ) : (
           /* Normal message layout for all other messages */
-          <div className="flex items-center gap-2">
-            <MessageBubble
-              message={message}
-              isOwnMessage={isOwnMessage}
-              isAIMessage={isAIMessage}
-              isPrivateForCurrentUser={isPrivateForCurrentUser}
-              isStreaming={isStreaming}
-              onUnsend={onUnsend}
-              isUnsending={
-                isUnsending
-                  ? isUnsending(message.serverId || message.id)
-                  : false
-              }
-              onReplyWithAI={
-                onReplyWithAI
-                  ? async (targetMessage) => onReplyWithAI(targetMessage)
-                  : undefined
-              }
-              onReplyWithAICustom={
-                onReplyWithAI
-                  ? async (targetMessage, customPrompt) =>
-                      onReplyWithAI(targetMessage, customPrompt)
-                  : undefined
-              }
-              isReplyingWithAI={
-                isReplyingWithAI
-                  ? isReplyingWithAI(message.serverId || message.id)
-                  : false
-              }
-              isAnonymous={isAnonymous}
-            />
+          <div className="flex min-w-0 max-w-full items-center gap-2">
+            <div className="min-w-0 max-w-full">
+              <MessageBubble
+                message={message}
+                isOwnMessage={isOwnMessage}
+                isAIMessage={isAIMessage}
+                isPrivateForCurrentUser={isPrivateForCurrentUser}
+                isStreaming={isStreaming}
+                onUnsend={onUnsend}
+                isUnsending={
+                  isUnsending
+                    ? isUnsending(message.serverId || message.id)
+                    : false
+                }
+                onReplyWithAI={
+                  onReplyWithAI
+                    ? async (targetMessage) => onReplyWithAI(targetMessage)
+                    : undefined
+                }
+                onReplyWithAICustom={
+                  onReplyWithAI
+                    ? async (targetMessage, customPrompt) =>
+                        onReplyWithAI(targetMessage, customPrompt)
+                    : undefined
+                }
+                isReplyingWithAI={
+                  isReplyingWithAI
+                    ? isReplyingWithAI(message.serverId || message.id)
+                    : false
+                }
+                isAnonymous={isAnonymous}
+              />
+            </div>
 
             {/* Status indicators for user's own messages */}
             {isOwnMessage && <MessageStatusIndicator message={message} />}
