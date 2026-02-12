@@ -45,8 +45,9 @@ export const aiBackendModeFlag = flag<AIBackendMode>({
   key: 'ai-backend-mode',
   description: 'AI backend mode for /api/ai/stream routing.',
   options: ['anthropic_tavily', 'anthropic_native_web', 'vercel_ai_sdk'],
-  defaultValue: 'anthropic_tavily',
-  decide: () => asBackendMode(process.env.AI_BACKEND_MODE) || 'anthropic_tavily'
+  defaultValue: 'anthropic_native_web',
+  decide: () =>
+    asBackendMode(process.env.AI_BACKEND_MODE) || 'anthropic_native_web'
 })
 
 export const aiSearchDriverFlag = flag<AISearchDriver>({

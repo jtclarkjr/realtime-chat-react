@@ -15,7 +15,7 @@ import {
 
 type AIFeatureFlagsMigrationMode = 'shadow' | 'active'
 
-const DEFAULT_BACKEND_MODE: AIBackendMode = 'anthropic_tavily'
+const DEFAULT_BACKEND_MODE: AIBackendMode = 'anthropic_native_web'
 const DEFAULT_SEARCH_DRIVER: AISearchDriver = 'auto'
 const DEFAULT_PROVIDER: AISDKProvider = 'anthropic'
 

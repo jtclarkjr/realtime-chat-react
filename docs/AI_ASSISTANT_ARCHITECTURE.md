@@ -106,8 +106,8 @@ graph TB
 
 ### Layer 3: AI Strategy Execution
 
-1. Strategy chooses backend mode (`anthropic_tavily`, `anthropic_native_web`,
-   `vercel_ai_sdk`).
+1. Strategy chooses backend mode (`anthropic_native_web` default,
+   `anthropic_tavily`, `vercel_ai_sdk`).
 2. Recency detector decides whether web search should be attempted.
 3. Generation returns either:
 
@@ -232,7 +232,7 @@ flowchart TD
     A[Flags + recency decision] --> B{backendMode}
 
     B -->|vercel_ai_sdk| C[Vercel AI SDK generation]
-    B -->|anthropic_native_web| D[Anthropic direct generation]
+    B -->|anthropic_native_web (default)| D[Anthropic direct + native web search]
     B -->|anthropic_tavily| E[Anthropic direct + Tavily tool path]
 
     C --> F{searchDriver}
@@ -258,6 +258,13 @@ Feature flags are resolved through runtime logic (`getEffectiveAIFlags`) with:
 3. Fail-open behavior
 4. SDK enable/provider
 5. Migration mode (`shadow` vs `active`)
+
+Current defaults:
+
+1. `AI_BACKEND_MODE=anthropic_native_web`
+2. `AI_SEARCH_DRIVER=auto` (resolves to `anthropic_web_search` for
+   `anthropic_native_web`)
+3. `AI_SDK_PROVIDER=anthropic`
 
 ## Message Persistence and Broadcast Flow
 

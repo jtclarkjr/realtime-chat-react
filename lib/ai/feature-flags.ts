@@ -15,7 +15,7 @@ export interface EffectiveAIFlags {
   reason?: string
 }
 
-const DEFAULT_BACKEND_MODE: AIBackendMode = 'anthropic_tavily'
+const DEFAULT_BACKEND_MODE: AIBackendMode = 'anthropic_native_web'
 const DEFAULT_PROVIDER: AISDKProvider = 'anthropic'
 const DEFAULT_SEARCH_DRIVER: AISearchDriver = 'auto'
 const VALID_BACKEND_MODES = new Set<AIBackendMode>([
