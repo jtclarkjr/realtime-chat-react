@@ -117,6 +117,9 @@ export const RealtimeChat = ({
     onStreamingMessage: (message) => {
       addOrUpdateStreamingMessage(message)
     },
+    onRemoveStreamingMessage: (messageId) => {
+      clearStreamingMessage(messageId)
+    },
     onCompleteMessage: (completedMessage) => {
       // Always update the streaming message with completed content
       const finalMessage = { ...completedMessage, isStreaming: false }

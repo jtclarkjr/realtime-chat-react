@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { streamAIMessage } from '@/lib/api/client'
+import { AI_USER_ID } from '@/lib/services/user/ai-user-setup'
 import type { ChatMessage } from '@/lib/types/database'
 
 interface UseAIChatProps {
@@ -9,6 +10,7 @@ interface UseAIChatProps {
   userId: string
   isConnected: boolean
   onStreamingMessage: (message: ChatMessage) => void
+  onRemoveStreamingMessage?: (messageId: string) => void
   onCompleteMessage: (message: ChatMessage) => void
 }
 
@@ -57,6 +59,7 @@ export function useAIChat({
   userId,
   isConnected,
   onStreamingMessage,
+  onRemoveStreamingMessage,
   onCompleteMessage
 }: UseAIChatProps): UseAIChatReturn {
   const [isAIEnabled, setIsAIEnabled] = useState<boolean>(false)
@@ -105,41 +108,49 @@ export function useAIChat({
       if (!reader) throw new Error('No response body')
 
       const decoder = new TextDecoder()
+      let buffered = ''
+
+      const processDataLine = (line: string) => {
+        if (!line.startsWith('data: ')) return
+
+        const payload = line.slice(6).trim()
+        if (!payload || payload === '[DONE]') return
+
+        const data = JSON.parse(payload)
+
+        if (data.type === 'start') {
+          onStart?.(data.messageId, data.user)
+        } else if (data.type === 'content') {
+          onContent?.(data.fullContent, data.messageId)
+        } else if (data.type === 'complete') {
+          onComplete?.({
+            fullContent: data.fullContent || '',
+            messageId: data.messageId,
+            createdAt: data.createdAt
+          })
+        } else if (data.type === 'error') {
+          throw new Error(data.error)
+        }
+      }
 
       while (true) {
         const { done, value } = await reader.read()
-        if (done) break
+        if (done) {
+          buffered += decoder.decode()
+          break
+        }
 
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
+        buffered += decoder.decode(value, { stream: true })
+        const lines = buffered.split(/\r?\n/)
+        buffered = lines.pop() || ''
 
         for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-
-          try {
-            const data = JSON.parse(line.slice(6))
-
-            if (data.type === 'start') {
-              onStart?.(data.messageId, data.user)
-            } else if (data.type === 'content') {
-              onContent?.(data.fullContent, data.messageId)
-            } else if (data.type === 'complete') {
-              onComplete?.({
-                fullContent: data.fullContent || '',
-                messageId: data.messageId,
-                createdAt: data.createdAt
-              })
-            } else if (data.type === 'error') {
-              throw new Error(data.error)
-            }
-          } catch (parseError) {
-            if (parseError instanceof SyntaxError) {
-              console.error('Error parsing stream data:', parseError)
-            } else {
-              throw parseError
-            }
-          }
+          processDataLine(line)
         }
+      }
+
+      if (buffered.trim()) {
+        processDataLine(buffered)
       }
     },
     [isAIPrivate, roomId, userId]
@@ -154,6 +165,7 @@ export function useAIChat({
       if (!isConnected || !content.trim() || isAILoading) return
 
       setIsAILoading(true)
+      let streamingMessage: ChatMessage | null = null
 
       try {
         // Ensure we're connected before starting AI response
@@ -161,17 +173,35 @@ export function useAIChat({
           throw new Error('Not connected to chat')
         }
 
-        // Add a natural delay before AI starts responding (1-2 seconds)
-        // const delay = Math.random() * 1000 + 1000 // Random delay between 1-2 seconds
-        // await new Promise((resolve) => setTimeout(resolve, delay))
-
-        let streamingMessage: ChatMessage | null = null
+        // Show an optimistic typing placeholder immediately while waiting for SSE start event.
+        const optimisticStreamingId = `ai-stream-local-${crypto.randomUUID()}`
+        streamingMessage = {
+          id: optimisticStreamingId,
+          content: '',
+          user: {
+            id: AI_USER_ID || 'ai-assistant',
+            name: 'AI Assistant'
+          },
+          createdAt: new Date().toISOString(),
+          roomId,
+          isAI: true,
+          isStreaming: true,
+          isPrivate: isAIPrivate,
+          requesterId: userId
+        }
+        onStreamingMessage(streamingMessage)
 
         await streamAIResponse({
           content,
           previousMessages,
           triggerMessageId,
           onStart: (messageId, user) => {
+            if (!streamingMessage) return
+
+            if (streamingMessage.id !== messageId) {
+              onRemoveStreamingMessage?.(streamingMessage.id)
+            }
+
             // Initialize streaming message with server's database ID
             streamingMessage = {
               id: messageId,
@@ -186,11 +216,15 @@ export function useAIChat({
             }
             onStreamingMessage(streamingMessage)
           },
-          onContent: (fullContent) => {
+          onContent: (fullContent, messageId) => {
             if (!streamingMessage) return
 
+            if (streamingMessage.id !== messageId) {
+              onRemoveStreamingMessage?.(streamingMessage.id)
+            }
+
             streamingMessage = {
-              id: streamingMessage.id,
+              id: messageId,
               user: streamingMessage.user,
               createdAt: streamingMessage.createdAt,
               roomId: streamingMessage.roomId,
@@ -202,11 +236,15 @@ export function useAIChat({
             }
             onStreamingMessage(streamingMessage)
           },
-          onComplete: ({ fullContent, createdAt }) => {
+          onComplete: ({ fullContent, messageId, createdAt }) => {
             if (!streamingMessage) return
 
+            if (streamingMessage.id !== messageId) {
+              onRemoveStreamingMessage?.(streamingMessage.id)
+            }
+
             const finalMessage: ChatMessage = {
-              id: streamingMessage.id,
+              id: messageId,
               user: streamingMessage.user,
               roomId: streamingMessage.roomId,
               isAI: streamingMessage.isAI,
@@ -222,6 +260,9 @@ export function useAIChat({
         })
       } catch (error) {
         console.error('Error calling AI streaming API:', error)
+        if (streamingMessage) {
+          onRemoveStreamingMessage?.(streamingMessage.id)
+        }
 
         // Show error message in chat
         const errorMessage: ChatMessage = {
@@ -247,6 +288,7 @@ export function useAIChat({
       isAILoading,
       isAIPrivate,
       onStreamingMessage,
+      onRemoveStreamingMessage,
       onCompleteMessage,
       streamAIResponse
     ]
