@@ -232,7 +232,7 @@ flowchart TD
     A[Flags + recency decision] --> B{backendMode}
 
     B -->|vercel_ai_sdk| C[Vercel AI SDK generation]
-    B -->|anthropic_native_web (default)| D[Anthropic direct + native web search]
+    B -->|"anthropic_native_web (default)"| D[Anthropic direct + native web search]
     B -->|anthropic_tavily| E[Anthropic direct + Tavily tool path]
 
     C --> F{searchDriver}
