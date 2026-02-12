@@ -8,6 +8,7 @@ import { MarkdownMessageContent } from './markdown-message-content'
 import { Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import type { ChatMessage } from '@/lib/types/database'
+import { insertBreakOpportunities } from '@/lib/utils/text'
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -84,14 +85,14 @@ export const MessageBubble = ({
       case showMarkdownContent:
         return <MarkdownMessageContent content={message.content} />
       default:
-        return message.content
+        return insertBreakOpportunities(message.content)
     }
   }
 
   const bubbleContent = (
     <div
       className={cn(
-        'group py-3 px-4 rounded-2xl text-sm sm:text-base max-w-full w-fit break-words [overflow-wrap:anywhere] [word-break:break-word] shadow-sm transition-all duration-200 hover:shadow-md relative',
+        'group py-3 px-4 rounded-2xl text-sm sm:text-base max-w-full w-fit break-words [overflow-wrap:break-word] shadow-sm transition-all duration-200 hover:shadow-md relative',
         {
           'cursor-pointer': canUnsend && onUnsend,
           'bg-primary text-primary-foreground rounded-br-md':
@@ -114,10 +115,10 @@ export const MessageBubble = ({
     >
       <div
         className={cn(
-          'leading-relaxed break-words [overflow-wrap:anywhere] [word-break:break-word]',
+          'leading-relaxed break-words [overflow-wrap:break-word]',
           {
-          'whitespace-pre-wrap': !showMarkdownContent
-        }
+            'whitespace-pre-wrap': !showMarkdownContent
+          }
         )}
         role="text"
         aria-live={isStreaming ? 'polite' : undefined}

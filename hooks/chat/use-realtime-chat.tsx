@@ -15,6 +15,7 @@ interface UseRealtimeChatProps {
   userAvatarUrl?: string
   onAIStreamingMessage?: (message: ChatMessage) => void
   onAIStreamTerminated?: (streamId: string) => void
+  onAIBroadcastReceived?: (message: ChatMessage) => void
 }
 
 const roomTimelineSessionCache = new Map<string, ChatMessage[]>()
@@ -25,7 +26,8 @@ export function useRealtimeChat({
   userId,
   userAvatarUrl,
   onAIStreamingMessage,
-  onAIStreamTerminated
+  onAIStreamTerminated,
+  onAIBroadcastReceived
 }: UseRealtimeChatProps) {
   const cacheKey = `${userId}:${roomId}`
   const cachedTimeline = useMemo(
@@ -78,6 +80,12 @@ export function useRealtimeChat({
         return [...current, cleanedMessage]
       })
 
+      // When a confirmed AI broadcast arrives, notify so the requester's
+      // streaming entry can be cleaned up (ensures identical render path).
+      if (receivedMessage.isAI) {
+        onAIBroadcastReceived?.(receivedMessage)
+      }
+
       // Mark message as received (async, don't wait)
       markMessageAsReceived({
         userId,
@@ -87,7 +95,7 @@ export function useRealtimeChat({
         console.error('Error marking message as received:', error)
       )
     },
-    [roomId, userId]
+    [roomId, userId, onAIBroadcastReceived]
   )
 
   // Handle unsent message events

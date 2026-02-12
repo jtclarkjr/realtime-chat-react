@@ -18,6 +18,7 @@ import {
   lowlight
 } from '@/lib/constants/chat-markdown'
 import type { ExtractedSource, ParsedContent } from '@/lib/types/chat-markdown'
+import { insertBreakOpportunities } from '@/lib/utils/text'
 import {
   Tooltip,
   TooltipContent,
@@ -176,6 +177,21 @@ const sanitizeHtml = (html: string): string => {
     }
   }
 
+  // Insert break opportunities in long unbreakable text runs (skipping code blocks)
+  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT)
+  const textNodes: Text[] = []
+  let textNode: Node | null
+  while ((textNode = walker.nextNode())) {
+    textNodes.push(textNode as Text)
+  }
+  for (const node of textNodes) {
+    if (node.parentElement?.closest('pre, code')) continue
+    const processed = insertBreakOpportunities(node.textContent || '')
+    if (processed !== node.textContent) {
+      node.textContent = processed
+    }
+  }
+
   return doc.body.innerHTML
 }
 
@@ -326,7 +342,7 @@ export const MarkdownMessageContent = ({
     editorProps: {
       attributes: {
         class:
-          'tiptap-markdown leading-relaxed whitespace-normal break-words [overflow-wrap:anywhere] [word-break:break-word] [&_p]:my-1 [&_h1]:my-2 [&_h1]:text-base [&_h1]:font-semibold [&_h2]:my-2 [&_h2]:text-[0.95rem] [&_h2]:font-semibold [&_h3]:my-1 [&_h3]:font-semibold [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:relative [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:border [&_pre]:border-zinc-700 [&_pre]:bg-zinc-800 [&_pre]:p-3 [&_pre]:text-zinc-100 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_a]:text-blue-700 [&_a]:underline dark:[&_a]:text-blue-300 [&_blockquote]:my-1 [&_blockquote]:border-l-2 [&_blockquote]:pl-3'
+          'tiptap-markdown leading-relaxed whitespace-normal break-words [overflow-wrap:break-word] [&_p]:my-1 [&_h1]:my-2 [&_h1]:text-base [&_h1]:font-semibold [&_h2]:my-2 [&_h2]:text-[0.95rem] [&_h2]:font-semibold [&_h3]:my-1 [&_h3]:font-semibold [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:relative [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:border [&_pre]:border-zinc-700 [&_pre]:bg-zinc-800 [&_pre]:p-3 [&_pre]:text-zinc-100 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_code]:rounded [&_code]:bg-black/10 [&_code]:px-1 [&_code]:py-0.5 [&_a]:text-blue-700 [&_a]:underline dark:[&_a]:text-blue-300 [&_blockquote]:my-1 [&_blockquote]:border-l-2 [&_blockquote]:pl-3'
       }
     }
   })
@@ -338,9 +354,9 @@ export const MarkdownMessageContent = ({
 
   if (!editor) {
     return (
-      <div className="leading-relaxed break-words [overflow-wrap:anywhere] [word-break:break-word]">
-        <div className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word]">
-          {bodyMarkdown}
+      <div className="leading-relaxed break-words [overflow-wrap:break-word]">
+        <div className="whitespace-pre-wrap break-words [overflow-wrap:break-word]">
+          {insertBreakOpportunities(bodyMarkdown)}
         </div>
         <SourceBadgesRow sources={sources} />
       </div>
@@ -348,7 +364,7 @@ export const MarkdownMessageContent = ({
   }
 
   return (
-    <div className="leading-relaxed break-words [overflow-wrap:anywhere] [word-break:break-word]">
+    <div className="leading-relaxed break-words [overflow-wrap:break-word]">
       <EditorContent editor={editor} />
       <SourceBadgesRow sources={sources} />
     </div>

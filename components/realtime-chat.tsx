@@ -75,6 +75,20 @@ export const RealtimeChat = ({
     [clearStreamingMessage]
   )
 
+  // When a confirmed AI broadcast arrives, clear the requester's streaming
+  // entry so both the requester and other users render the same message object.
+  const handleAIBroadcastReceived = useCallback(
+    (message: ChatMessage) => {
+      // Clear by persisted message ID (the streaming entry after SSE complete)
+      clearStreamingMessage(message.id)
+      // Clear by streamSourceId (the streaming entry during SSE streaming)
+      if (message.streamSourceId) {
+        clearStreamingMessage(message.streamSourceId)
+      }
+    },
+    [clearStreamingMessage]
+  )
+
   const {
     messages: realtimeMessages,
     sendMessage,
@@ -92,7 +106,8 @@ export const RealtimeChat = ({
     userId,
     userAvatarUrl,
     onAIStreamingMessage: handleRemoteAIStreamingMessage,
-    onAIStreamTerminated: handleRemoteAIStreamTerminated
+    onAIStreamTerminated: handleRemoteAIStreamTerminated,
+    onAIBroadcastReceived: handleAIBroadcastReceived
   })
 
   // Initialize unsend message
