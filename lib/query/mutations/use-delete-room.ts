@@ -1,25 +1,21 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { deleteRoomAction } from '@/lib/actions/room-actions'
+import { deleteRoom } from '@/lib/api/client'
 import { queryKeys } from '../query-keys'
 import type { DatabaseRoom } from '@/lib/types/database'
+import type { DeleteRoomResponse } from '@/lib/types/api'
 
 interface DeleteRoomVariables {
   roomId: string
 }
 
-interface DeleteRoomResult {
-  success: boolean
-  error?: string
-}
-
 export function useDeleteRoom() {
   const queryClient = useQueryClient()
 
-  return useMutation<DeleteRoomResult, Error, DeleteRoomVariables>({
+  return useMutation<DeleteRoomResponse, Error, DeleteRoomVariables>({
     mutationFn: async ({ roomId }) => {
-      return deleteRoomAction(roomId)
+      return deleteRoom(roomId)
     },
     onSuccess: (data, variables) => {
       if (data.success) {

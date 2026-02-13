@@ -1,27 +1,17 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createRoomAction } from '@/lib/actions/room-actions'
+import { createRoom } from '@/lib/api/client'
 import { queryKeys } from '../query-keys'
 import type { DatabaseRoom } from '@/lib/types/database'
-
-interface CreateRoomVariables {
-  name: string
-  description?: string
-}
-
-interface CreateRoomResult {
-  success: boolean
-  room?: DatabaseRoom
-  error?: string
-}
+import type { CreateRoomRequest, CreateRoomResponse } from '@/lib/types/api'
 
 export function useCreateRoom() {
   const queryClient = useQueryClient()
 
-  return useMutation<CreateRoomResult, Error, CreateRoomVariables>({
+  return useMutation<CreateRoomResponse, Error, CreateRoomRequest>({
     mutationFn: async ({ name, description }) => {
-      return createRoomAction(name, description)
+      return createRoom({ name, description })
     },
     onSuccess: (data) => {
       if (data.success && data.room) {

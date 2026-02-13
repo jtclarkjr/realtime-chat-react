@@ -22,6 +22,27 @@ export interface RoomByIdResponse {
   room: DatabaseRoom
 }
 
+export interface CreateRoomRequest {
+  name: string
+  description?: string
+}
+
+export interface CreateRoomResponse {
+  success: boolean
+  room?: DatabaseRoom
+  error?: string
+}
+
+export interface DeleteRoomResponse {
+  success: boolean
+  error?: string
+}
+
+export interface AccessTokenResponse {
+  accessToken: string
+  expiresAtMs: number | null
+}
+
 // GET /api/rooms/{roomId}/rejoin - Fetch missed messages
 // Similar to DB_MissedMessagesResponse but uses ApiMessage[] from API
 export interface MissedMessagesResponse {

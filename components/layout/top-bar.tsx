@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Menu, Hash, LogOut } from 'lucide-react'
 import { useUIStore } from '@/lib/stores/ui-store'
 import { useRooms } from '@/lib/query/queries/use-rooms'
+import { useRoomById } from '@/lib/query/queries'
 import { PresenceAvatars } from './presence-avatars'
 import { useParams } from 'next/navigation'
 import type { PublicUser } from '@/lib/types/user'
@@ -19,11 +20,15 @@ export function TopBar({ user, initialRooms }: TopBarProps) {
   const params = useParams()
   const { setMobileDrawerOpen, roomPresenceUsers } = useUIStore()
   const { data: rooms = [] } = useRooms({ initialData: initialRooms })
-
-  // Get current room if we're in a room
   const currentRoomId = params?.id as string | undefined
+  const { data: roomById } = useRoomById({
+    roomId: currentRoomId || '',
+    enabled: !!currentRoomId
+  })
+
+  // Prefer room list lookup, then direct room fetch fallback.
   const currentRoom = currentRoomId
-    ? rooms.find((r) => r.id === currentRoomId)
+    ? rooms.find((r) => r.id === currentRoomId) || roomById || null
     : null
   const presenceUsers = currentRoomId
     ? roomPresenceUsers[currentRoomId] || {}
