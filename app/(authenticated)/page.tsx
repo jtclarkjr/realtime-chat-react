@@ -5,7 +5,6 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { WelcomeCard } from '@/components/dashboard/welcome-card'
 import { RecentRooms } from '@/components/dashboard/recent-rooms'
-import { CreateRoomCard } from '@/components/dashboard/create-room-card'
 import { ChannelSearchCard } from '@/components/dashboard/channel-search-card'
 
 // Use ISR for better performance
@@ -35,8 +34,10 @@ export default async function DashboardPage() {
     <div className="h-full overflow-auto">
       <div className="container max-w-5xl mx-auto py-8 px-4 space-y-8">
         <WelcomeCard user={userData} />
-        <CreateRoomCard user={userData} initialRooms={roomsWithLastMessage} />
-        <ChannelSearchCard initialRooms={roomsWithLastMessage} />
+        <ChannelSearchCard
+          initialRooms={roomsWithLastMessage}
+          canCreateChannel={!userData.isAnonymous}
+        />
         <RecentRooms initialRooms={roomsWithLastMessage} />
       </div>
     </div>
