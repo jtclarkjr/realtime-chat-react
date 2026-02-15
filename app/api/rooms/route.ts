@@ -79,7 +79,7 @@ export const DELETE = withNonAnonymousAuth(
 
       if (!success) {
         return NextResponse.json(
-          { error: 'Room not found or unauthorized to delete' },
+          { error: 'Channel not found or unauthorized to delete' },
           { status: 404 }
         )
       }

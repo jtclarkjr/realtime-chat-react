@@ -198,9 +198,9 @@ export function AddRoomDialog({
       )}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Room</DialogTitle>
+          <DialogTitle>Create Channel</DialogTitle>
           <DialogDescription>
-            Create a new chat room. Enter your own details, or let AI generate
+            Create a new channel. Enter your own details, or let AI generate
             suggestions. You can also start typing and use AI to enhance your
             ideas.
           </DialogDescription>
@@ -226,7 +226,7 @@ export function AddRoomDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="roomName" className="text-sm font-medium">
-              Room Name *
+              Channel Name *
             </label>
             <Input
               id="roomName"
